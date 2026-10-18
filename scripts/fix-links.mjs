@@ -24,7 +24,7 @@ const lowerUrl = (u) => {
 const ATTR_RE = /\b(src|href|data-src|data-bg|data-image|poster|content|xlink:href|background)\s*=\s*(["'])([^"']+)\2/gi;
 const URL_RE = /url\(\s*(["']?)([^"')]+)\1\s*\)/gi;
 const SRCSET_RE = /\bsrcset\s*=\s*(["'])([^"']+)\1/gi;
-const DATA_KEY_RE = /\b(slug|image|cover|folder)\s*:\s*(["'])([^"']+)\2/gi;
+const DATA_KEY_RE = /\b(slug|image|cover)\s*:\s*(["'])([^"']+)\2/gi;
 
 const fixContent = (src) => {
   let out = src;
@@ -51,6 +51,7 @@ const fixContent = (src) => {
   });
 
   out = out.replace(DATA_KEY_RE, (m, key, q, val) => {
+    if (val.includes('/') || val.includes('\\')) return m;
     const lower = val.toLowerCase();
     return lower === val ? m : `${key}: ${q}${lower}${q}`;
   });
