@@ -3,9 +3,15 @@ import { join, extname } from 'node:path';
 
 const root = process.argv[2] ?? '.';
 const EXTS = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.jsx', '.tsx', '.vue', '.svelte']);
-const IMG_RE = /\.(png|jpe?g|gif|svg|webp|avif|ico)(\?.*)?(#.*)?$/i;
+const IMG_EXT = '(?:png|jpe?g|gif|svg|webp|avif|ico)';
+const IMG_RE = new RegExp(`\\.${IMG_EXT}([?#]|$)`, 'i');
 
-const isExternal = (u) => /^(https?:)?\/\//i.test(u) || u.startsWith('data:') || u.startsWith('#');
+const isExternal = (u) =>
+  /^(https?:)?\/\//i.test(u) ||
+  u.startsWith('data:') ||
+  u.startsWith('#') ||
+  u.startsWith('mailto:') ||
+  u.startsWith('tel:');
 
 const lowerUrl = (u) => {
   if (isExternal(u)) return null;
@@ -15,10 +21,9 @@ const lowerUrl = (u) => {
   return lower === u ? null : lower;
 };
 
-const ATTR_RE = /\b(src|href)\s*=\s*(["'])([^"']+)\2/gi;
+const ATTR_RE = /\b(src|href|data-src|data-bg|data-image|poster|content|xlink:href|background)\s*=\s*(["'])([^"']+)\2/gi;
 const URL_RE = /url\(\s*(["']?)([^"')]+)\1\s*\)/gi;
 const SRCSET_RE = /\bsrcset\s*=\s*(["'])([^"']+)\1/gi;
-
 const DATA_KEY_RE = /\b(slug|image|cover|folder)\s*:\s*(["'])([^"']+)\2/gi;
 
 const fixContent = (src) => {
