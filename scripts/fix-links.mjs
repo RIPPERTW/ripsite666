@@ -1,5 +1,5 @@
-import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
-import { join, extname, dirname, basename, resolve } from 'node:path';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { join, extname, dirname, basename } from 'node:path';
 
 const root = process.argv[2] ?? '.';
 const EXTS = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.jsx', '.tsx', '.vue', '.svelte']);
@@ -63,49 +63,44 @@ async function resolveUrl(fromFile, url) {
 const ATTR_RE = /\b(src|href|data-src|data-bg|data-image|poster|content|xlink:href|background)\s*=\s*(["'])([^"']+)\2/gi;
 const URL_RE = /url\(\s*(["']?)([^"')]+)\1\s*\)/gi;
 const SRCSET_RE = /\bsrcset\s*=\s*(["'])([^"']+)\1/gi;
-const DATA_KEY_RE = /\b(slug|image|cover)\s*:\s*(["'])([^"']+)\2/gi;
 
 async function fixContent(file, src) {
-  let out = src;
-
   const tasks = [];
+  const makeSlot = () => `__FIX_${tasks.length}__`;
+
+  let out = src;
 
   out = out.replace(ATTR_RE, (m, attr, q, val) => {
     if (isExternal(val) || !IMG_RE.test(val) || val.includes('${') || val.includes('%')) return m;
-    const idx = `__FIX_${tasks.length}__`;
-    tasks.push(resolveUrl(file, val).then(r => [m, r ? `${attr}=${q}${r}${q}` : m]));
-    return idx;
+    const slot = makeSlot();
+    tasks.push(resolveUrl(file, val).then(r => [slot, r ? `${attr}=${q}${r}${q}` : m]));
+    return slot;
   });
 
   out = out.replace(URL_RE, (m, q, val) => {
     if (isExternal(val) || !IMG_RE.test(val) || val.includes('${') || val.includes('%')) return m;
-    const idx = `__FIX_${tasks.length}__`;
-    tasks.push(resolveUrl(file, val).then(r => [m, r ? `url(${q}${r}${q})` : m]));
-    return idx;
+    const slot = makeSlot();
+    tasks.push(resolveUrl(file, val).then(r => [slot, r ? `url(${q}${r}${q})` : m]));
+    return slot;
   });
 
   out = out.replace(SRCSET_RE, (m, q, val) => {
     if (val.includes('${') || val.includes('%')) return m;
     const parts = val.split(',').map(p => p.trim());
-    const promises = parts.map(async part => {
+    const slot = makeSlot();
+    tasks.push(Promise.all(parts.map(async part => {
       const [url, ...rest] = part.split(/\s+/);
       if (isExternal(url) || !IMG_RE.test(url)) return part;
       const r = await resolveUrl(file, url);
       return [r ?? url, ...rest].join(' ');
-    });
-    const idx = `__FIX_${tasks.length}__`;
-    tasks.push(Promise.all(promises).then(parts2 => [m, `srcset=${q}${parts2.join(', ')}${q}`]));
-    return idx;
+    })).then(parts2 => [slot, `srcset=${q}${parts2.join(', ')}${q}`]));
+    return slot;
   });
 
-  await Promise.all(tasks.map(t => t));
-
   const replaced = await Promise.all(tasks);
-
-  for (const [orig, fixed] of replaced) {
-    out = out.replace(orig, fixed);
+  for (const [slot, fixed] of replaced) {
+    out = out.split(slot).join(fixed);
   }
-
   return out;
 }
 
@@ -119,25 +114,26 @@ async function fixHtmlFile(file) {
 }
 
 async function fixJsDataFile(file) {
-  let src = await readFile(file, 'utf8');
-  const dir = dirname(file);
-  let out = src;
+  const src = await readFile(file, 'utf8');
   const re = /\b(slug|image|cover)\s*:\s*(["'])([^"']+)\2/gi;
   const tasks = [];
+  let out = src;
   out = out.replace(re, (m, key, q, val) => {
     if (val.includes('/') || val.includes('\\') || val.includes('${') || val.includes('%')) return m;
     if (!IMG_RE.test(val)) return m;
-    const idx = `__FIX_${tasks.length}__`;
+    const slot = `__FIX_${tasks.length}__`;
     tasks.push(resolveUrl(file, val).then(r => {
-      if (!r) return [m, m];
+      if (!r) return [slot, m];
       const base = basename(r).replace(/[?#].*$/, '');
-      return [m, `${key}: ${q}${base}${q}`];
+      return [slot, `${key}: ${q}${base}${q}`];
     }));
-    return idx;
+    return slot;
   });
   if (tasks.length === 0) return;
   const replaced = await Promise.all(tasks);
-  for (const [orig, fixed] of replaced) out = out.replace(orig, fixed);
+  for (const [slot, fixed] of replaced) {
+    out = out.split(slot).join(fixed);
+  }
   if (out !== src) {
     await writeFile(file, out, 'utf8');
     console.log('fixed data:', file);
@@ -151,9 +147,7 @@ async function walk(dir) {
     if (e.isDirectory()) { await walk(p); continue; }
     const ext = extname(e.name).toLowerCase();
     if (!EXTS.has(ext)) continue;
-    if (ext === '.js' || ext === '.mjs') {
-      await fixJsDataFile(p);
-    }
+    if (ext === '.js' || ext === '.mjs') await fixJsDataFile(p);
     await fixHtmlFile(p);
   }
 }
