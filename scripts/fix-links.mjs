@@ -3,22 +3,23 @@ import { join, extname } from 'node:path';
 
 const root = process.argv[2] ?? '.';
 const EXTS = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.jsx', '.tsx', '.vue', '.svelte']);
-const IMG_EXT = '(?:png|jpe?g|gif|svg|webp|avif|ico)';
+const IMG_RE = /\.(png|jpe?g|gif|svg|webp|avif|ico)(\?.*)?(#.*)?$/i;
 
-const ATTR_RE = /\b(src|href|data-src|data-bg|data-image|poster|content|xlink:href|background)\s*=\s*(["'])([^"']+)\2/gi;
-const URL_RE = /url\(\s*(["']?)([^"')]+)\1\s*\)/gi;
-const SRCSET_RE = /\bsrcset\s*=\s*(["'])([^"']+)\1/gi;
-const STR_RE = new RegExp(`(["'\`])([^"'\`]*?\\.${IMG_EXT})([?#][^"'\`]*)?\\1`, 'gi');
-
-const isExternal = (u) => /^(https?:)?\/\//i.test(u) || u.startsWith('data:') || u.startsWith('#') || u.startsWith('mailto:') || u.startsWith('tel:');
+const isExternal = (u) => /^(https?:)?\/\//i.test(u) || u.startsWith('data:') || u.startsWith('#');
 
 const lowerUrl = (u) => {
   if (isExternal(u)) return null;
-  if (!new RegExp(`\\.${IMG_EXT}([?#]|$)`, 'i').test(u)) return null;
+  if (!IMG_RE.test(u)) return null;
   const m = u.match(/^([^?#]+)([?#].*)?$/);
   const lower = m[1].toLowerCase() + (m[2] ?? '');
   return lower === u ? null : lower;
 };
+
+const ATTR_RE = /\b(src|href)\s*=\s*(["'])([^"']+)\2/gi;
+const URL_RE = /url\(\s*(["']?)([^"')]+)\1\s*\)/gi;
+const SRCSET_RE = /\bsrcset\s*=\s*(["'])([^"']+)\1/gi;
+
+const DATA_KEY_RE = /\b(slug|image|cover|folder)\s*:\s*(["'])([^"']+)\2/gi;
 
 const fixContent = (src) => {
   let out = src;
@@ -44,10 +45,9 @@ const fixContent = (src) => {
     return changed ? `srcset=${q}${parts.join(', ')}${q}` : m;
   });
 
-  out = out.replace(STR_RE, (m, q, path, tail) => {
-    const full = path + (tail ?? '');
-    const nv = lowerUrl(full);
-    return nv ? `${q}${nv}${q}` : m;
+  out = out.replace(DATA_KEY_RE, (m, key, q, val) => {
+    const lower = val.toLowerCase();
+    return lower === val ? m : `${key}: ${q}${lower}${q}`;
   });
 
   return out;
