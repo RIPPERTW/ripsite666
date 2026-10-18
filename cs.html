@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIPSITE | CS</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #09090f;
+            --card: #101015;
+            --accent: #c11f2b;
+            --accent-dark: #c11f2b;
+            --text: #e0e0ff;
+            --text-muted: #a0a0cc;
+            --border: #1e1e28;
+            --gradient-start: #0f0f1a;
+            --gradient-end: #09090f;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .top-section {
+            background: linear-gradient(to bottom, #0f0f1a 0%, #0c0c16 40%, #0a0a13 70%, var(--bg) 100%);
+            padding: 2.8rem 1rem 4.2rem;
+            text-align: center;
+            position: relative;
+        }
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3.2rem, 13vw, 8.2rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            color: var(--accent);
+        }
+        nav {
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(193,31,43,0.10);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 1rem 1rem;
+            margin-top: -1px;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.6rem 2.8rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.08rem;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 0.4rem;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        nav a:hover, nav a.active {
+            color: white;
+        }
+        nav a.active::after, nav a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            width: 0;
+            height: 2.5px;
+            background: linear-gradient(to right, transparent, var(--accent), transparent);
+            transition: width 0.35s ease;
+            transform: translateX(-50%);
+        }
+        nav a:hover::after, nav a.active::after {
+            width: 85%;
+        }
+        main {
+            max-width: 1480px;
+            margin: -3.2rem auto 4rem;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.6rem;
+            color: var(--accent);
+            text-align: center;
+            margin: 3.5rem 0 2rem;
+            letter-spacing: -0.03em;
+        }
+        .intro-text {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            font-size: 1.12rem;
+        }
+        .content-block {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .tabs {
+            display: flex;
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 0.9rem 2rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.26s ease;
+        }
+        .tab.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            margin-bottom: 2.2rem;
+            align-items: center;
+        }
+        select, .view-mode label {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            min-width: 160px;
+        }
+        .view-mode {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            margin-bottom: 1.8rem;
+        }
+        .view-mode input[type="radio"] {
+            transform: scale(1.4);
+            margin-right: 0.6rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1.4rem;
+            margin: 2.2rem 0;
+        }
+        .stat-card {
+            background: rgba(193,31,43,0.10);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.6rem;
+            text-align: center;
+            transition: all 0.26s ease;
+        }
+        .stat-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(193,31,43,0.15);
+        }
+        .stat-value {
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: var(--accent);
+        }
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+        .win { color: #22c55e; }
+        .lose { color: #ef4444; }
+        .draw { color: #3b82f6; }
+        .rating-plus { color: #22c55e; }
+        .rating-minus { color: #ef4444; }
+        .rating-neutral { color: var(--text-muted); }
+        .charts-row {
+            display: none;
+        }
+        .match {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.4rem;
+            margin: 1.2rem 0;
+            transition: all 0.26s ease;
+        }
+        .match:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(193,31,43,0.2);
+        }
+        .match.compact, .match.advanced {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.4rem;
+            align-items: center;
+        }
+        .match-date { min-width: 100px; font-weight: 600; }
+        .match-map img { width: 36px; vertical-align: middle; margin-left: 0.5rem; }
+        .match-score { font-weight: 900; font-size: 1.5rem; min-width: 90px; }
+        .match-rating { font-weight: 700; min-width: 70px; text-align: center; }
+        .day-header {
+            background: rgba(193,31,43,0.12);
+            border-left: 6px solid var(--accent);
+            padding: 1.4rem 2rem;
+            margin: 3rem 0 1.2rem;
+            border-radius: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.28rem;
+            transition: all 0.25s;
+        }
+        .day-header:hover {
+            background: rgba(193,31,43,0.18);
+        }
+        .day-header .toggle {
+            font-size: 1.8rem;
+            transition: transform 0.3s;
+        }
+        .day-header.collapsed .toggle { transform: rotate(0deg); }
+        .day-header .info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.4rem 2.2rem;
+            align-items: center;
+        }
+        .day-matches {
+            margin-top: 0.8rem;
+            padding-left: 1rem;
+        }
+        .match-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .match-table th {
+            background: #1a1a22;
+            color: #fff;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+        }
+        .match-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        .match-table tr:hover {
+            background: rgba(193,31,43,0.08);
+        }
+        .match-table .score-win { color: #96C626; font-weight: bold; }
+        .match-table .score-lose { color: #A04141; font-weight: bold; }
+        .faceit-plaque {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 1px solid #ff5500;
+            color: #e0e0ff;
+            padding: 1.1rem 2rem;
+            border-radius: 16px;
+            text-align: center;
+            margin: 2.5rem 0 1rem;
+            font-weight: 500;
+            font-size: 1.08rem;
+            box-shadow: 0 6px 20px rgba(255, 85, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .faceit-plaque span {
+            color: #ffaa55;
+            font-weight: 700;
+        }
+        .faceit-plaque a {
+            color: #ff5500;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+        .faceit-plaque a:hover {
+            color: #ff8800;
+            text-decoration: underline;
+        }
+        .faceit-logo {
+            display: inline-block;
+            background: #ff5500;
+            color: white;
+            font-weight: 900;
+            font-size: 1.1rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+        }
+        footer {
+            text-align: center;
+            padding: 4.5rem 1rem 3.5rem;
+            color: #4a4a60;
+            font-size: 0.95rem;
+            border-top: 1px solid #181822;
+        }
+        @media (max-width: 1024px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 820px) {
+            main {
+                margin-top: -2.4rem;
+                padding: 0 1.2rem;
+            }
+            .top-section {
+                padding: 2.2rem 1rem 3.6rem;
+            }
+            header h1 {
+                font-size: clamp(2.8rem, 11vw, 6.2rem);
+            }
+            nav ul {
+                gap: 1rem 1.4rem;
+            }
+            .tabs {
+                gap: 0.8rem;
+            }
+            .tab {
+                padding: 0.7rem 1.4rem;
+                font-size: 0.98rem;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .chart-container {
+                height: 340px;
+            }
+            .match.compact, .match.advanced {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            .day-header .info {
+                gap: 1rem 1.6rem;
+            }
+            .match-table {
+                font-size: 13px;
+            }
+            .match-table th, .match-table td {
+                padding: 8px 6px;
+            }
+        }
+        @media (max-width: 480px) {
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            select {
+                width: 100%;
+            }
+            .view-mode {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .day-header {
+                font-size: 1.15rem;
+                padding: 1.2rem 1.4rem;
+            }
+            .day-header .info {
+                gap: 0.9rem 1.4rem;
+            }
+            .faceit-plaque {
+                font-size: 1rem;
+                padding: 1rem 1.4rem;
+            }
+        }
+        .match.advanced {
+            padding: 1.6rem;
+            gap: 1.6rem 2rem;
+            font-size: 1.05rem;
+        }
+        .match.advanced > div {
+            min-width: 110px;
+        }
+        .chart-tooltip {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            pointer-events: none;
+            transition: opacity 0.2s;
+            text-align: center;
+            color: #eee;
+            position: absolute;
+            z-index: 1000;
+        }
+        .day-avg {
+            color: #a0a0cc;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-section">
+        <header>
+            <h1>RIPSITE</h1>
+        </header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Главная</a></li>
+                <li><a href="links.html">Ссылки</a></li>
+                <li><a href="different.html">Разное</a></li>
+                <li><a href="anime.html">Аниме</a></li>
+                <li><a href="movies.html">Фильмы</a></li>
+                <li><a href="games.html">Игры</a></li>
+            </ul>
+        </nav>
+    </div>
+    <main>
+        <h2 class="section-title">COUNTER-STRIKE 2</h2>
+        <p class="intro-text" style="text-align:center;">
+            Всего часов в игре: <strong>2050+</strong> | Последнее обновление: <span id="update-date">—</span>
+        </p>
+
+        <div class="content-block">
+            <div class="tabs">
+                <div class="tab active" data-tab="stats">СТАТИСТИКА</div>
+                <div class="tab" data-tab="history">ИСТОРИЯ МАТЧЕЙ</div>
+            </div>
+            <div id="stats-tab">
+                <div class="filters">
+                    <select id="mode-stats">
+                        <option value="premier" selected>Премьер</option>
+                        <option value="comp">Соревновательный</option>
+                        <option value="duo">Напарники</option>
+                    </select>
+                    <select id="premier-season">
+                        <option value="all" selected>Все сезоны</option>
+                        <option value="2">Премьер Сезон 2</option>
+                        <option value="3">Премьер Сезон 3</option>
+                        <option value="4">Премьер Сезон 4</option>
+                        <option value="5">Премьер Сезон 5</option>
+                    </select>
+                    <select id="period">
+                        <option value="all">За всё время</option>
+                        <option value="30">Последние 30 матчей</option>
+                        <option value="60">Последние 60 матчей</option>
+                        <option value="90">Последние 90 матчей</option>
+                    </select>
+                    <select id="map-filter-stats">
+                        <option value="all">Все карты</option>
+                    </select>
+                    <img id="stats-map-icon" src="" alt="Map icon" style="width:50px; height:auto; display:none; vertical-align:middle; margin-left:1rem;">
+                </div>
+                <div class="stats-grid" id="stats-grid"></div>
+                <!-- Charts removed -->
+            </div>
+            <div id="history-tab" style="display:none;">
+                <div class="view-mode">
+                    <label><input type="radio" name="viewMode" value="compact" checked> Компактный</label>
+                    <label><input type="radio" name="viewMode" value="advanced"> Продвинутый</label>
+                </div>
+                <div class="filters">
+                    <select id="mode-history">
+                        <option value="premier" selected>Премьер</option>
+                        <option value="comp">Соревновательный</option>
+                        <option value="duo">Напарники</option>
+                    </select>
+                    <select id="premier-season-history">
+                        <option value="all" selected>Все сезоны</option>
+                        <option value="2">Премьер Сезон 2</option>
+                        <option value="3">Премьер Сезон 3</option>
+                        <option value="4">Премьер Сезон 4</option>
+                        <option value="5">Премьер Сезон 5</option>
+                    </select>
+                    <select id="filter-map">
+                        <option value="all">Все карты</option>
+                    </select>
+                    <img id="history-map-icon" src="" alt="Map icon" style="width:50px; height:auto; display:none; vertical-align:middle; margin-left:1rem;">
+                </div>
+                <div id="matches-container"></div>
+            </div>
+        </div>
+
+        <div class="faceit-plaque">
+            <div class="faceit-logo">FACEIT</div>
+            <div>
+                Стата собрана здесь • 
+                <a href="https://www.faceit.com/ru/players/RIPPER47" target="_blank">Открыть</a>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>© 2025–2026 RIPSITE · Все права защищены</p>
+    </footer>
+    <script src="agreement.js" defer></script>
+    <script src="csstats.js"></script>
+    <script>
+        document.getElementById("update-date").textContent = csstats.lastModified.toLocaleDateString("ru-RU");
+        const statsGrid = document.getElementById("stats-grid");
+        const modeStatsSelect = document.getElementById("mode-stats");
+        const premierSeasonSelect = document.getElementById("premier-season");
+        const periodSelect = document.getElementById("period");
+        const mapFilterStats = document.getElementById("map-filter-stats");
+        const matchesContainer = document.getElementById("matches-container");
+        const modeHistorySelect = document.getElementById("mode-history");
+        const premierSeasonHistory = document.getElementById("premier-season-history");
+        const filterMap = document.getElementById("filter-map");
+        // Charts removed
+
+        const mapsPremier = [...new Set(csstats.matches.filter(m => m[10] === "premier").map(m => m[1]))].sort();
+        const mapsComp = [...new Set(csstats.matches.filter(m => m[10] === "comp").map(m => m[1]))].sort();
+        const mapsDuo = [...new Set(csstats.matches.filter(m => m[10] === "duo").map(m => m[1]))].sort();
+
+        let viewMode = localStorage.getItem("csHistoryViewMode") || "compact";
+        document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+            radio.checked = (radio.value === viewMode);
+            radio.addEventListener("change", () => {
+                viewMode = radio.value;
+                localStorage.setItem("csHistoryViewMode", viewMode);
+                renderMatches();
+            });
+        });
+
+        document.querySelectorAll(".tab").forEach(tab => {
+            tab.addEventListener("click", () => {
+                document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+                tab.classList.add("active");
+                document.getElementById("stats-tab").style.display = tab.dataset.tab === "stats" ? "block" : "none";
+                document.getElementById("history-tab").style.display = tab.dataset.tab === "history" ? "block" : "none";
+                if (tab.dataset.tab === "stats") updateStats();
+                if (tab.dataset.tab === "history") renderMatches();
+            });
+        });
+
+        function parseDate(str) {
+            const [d, m, y] = str.split(".");
+            return new Date(`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`);
+        }
+        function formatDateKey(date) {
+            return date.toISOString().split('T')[0];
+        }
+        function formatDateRu(dateKey) {
+            const [y, mo, d] = dateKey.split('-');
+            return `${d}.${mo}.${y}`;
+        }
+        function getPremierSeasonBounds(season) {
+            if (season === "2") return { start: new Date("2025-05-21"), end: new Date("2025-06-15") };
+            if (season === "3") return { start: new Date("2025-08-10"), end: new Date("2026-01-19") };
+            if (season === "4") return { start: new Date("2026-01-22"), end: new Date("2026-07-07") };
+            if (season === "5") return { start: new Date("2026-07-09"), end: new Date("2099-12-31") };
+            return null;
+        }
+        function getResultFromFlag(flag) {
+            if (flag === "W") return "win";
+            if (flag === "L") return "loss";
+            if (flag === "T") return "draw";
+            return "unknown";
+        }
+        function getRatingClass(ratingStr, mode) {
+            if (mode === "duo") return "rating-neutral";
+            if (!ratingStr || ratingStr === "---") return "rating-neutral";
+            if (ratingStr.startsWith("+")) return "rating-plus";
+            if (ratingStr.startsWith("-")) return "rating-minus";
+            return "rating-neutral";
+        }
+
+        function getRatingImageHTML(ratingStr, mode) {
+            if (!ratingStr || ratingStr === "---") return ratingStr || '—';
+            
+            if (mode === "duo" && ratingStr.startsWith("S")) {
+                const num = ratingStr.substring(1);
+                return `<img src="images/cs/wingman${num}.svg" alt="${ratingStr}" style="width:80px; height:auto; vertical-align:middle; margin-left:-10px;">`;
+            }
+            
+            if (mode === "comp" && ratingStr.startsWith("MM")) {
+                const num = ratingStr.substring(2);
+                return `<img src="images/cs/competitive${num}.svg" alt="${ratingStr}" style="width:80px; height:auto; vertical-align:middle; margin-left:-10px;">`;
+            }
+            
+            return ratingStr;
+        }
+
+        function parseRatingChange(ratingStr, mode) {
+            if (mode === "duo" || mode === "comp") return 0;
+            if (!ratingStr || ratingStr === "---") return 0;
+            const match = ratingStr.match(/([+-]?\d+)/);
+            return match ? parseInt(match[1]) : 0;
+        }
+        function extractRatingValue(ratingStr, mode) {
+            if (mode === "duo") {
+                const match = ratingStr.match(/S(\d+)/);
+                return match ? parseInt(match[1]) : null;
+            }
+            if (mode === "comp") {
+                return ratingStr && ratingStr !== "---" ? ratingStr : null;
+            }
+            if (!ratingStr || ratingStr === "---") return null;
+            const match = ratingStr.match(/→\s*(\d+)/);
+            return match ? parseInt(match[1]) : null;
+        }
+        function getStats() {
+            const mode = modeStatsSelect.value;
+            const season = premierSeasonSelect.value;
+            const period = periodSelect.value;
+            const mapName = mapFilterStats.value;
+
+            let seasonStart = null, seasonEnd = null;
+            const bounds = getPremierSeasonBounds(season);
+            if (bounds && mode === "premier") {
+                seasonStart = bounds.start;
+                seasonEnd = bounds.end;
+            }
+
+            const allModeMatches = csstats.matches.filter(m => m[10] === mode).sort((a,b) => parseDate(b[0]) - parseDate(a[0]));
+            let filtered = allModeMatches;
+            if (period !== "all") {
+                const numMatches = parseInt(period);
+                filtered = allModeMatches.slice(0, numMatches);
+            }
+
+            filtered = filtered.filter(m => {
+                const matchDate = parseDate(m[0]);
+                const matchMode = m[10];
+                if (mode !== matchMode) return false;
+                if (season !== "all" && mode === "premier" && (matchDate < seasonStart || matchDate > seasonEnd)) return false;
+                if (mapName !== "all" && m[1] !== mapName) return false;
+                return true;
+            });
+
+            let wins = 0, losses = 0, draws = 0;
+            let kills = 0, deaths = 0, assists = 0, hsTotal = 0, adrTotal = 0;
+            const mapStats = {};
+
+            filtered.forEach(m => {
+                const result = getResultFromFlag(m[3]);
+                if (result === "win") wins++;
+                else if (result === "loss") losses++;
+                else if (result === "draw") draws++;
+
+                kills += m[5];
+                deaths += m[6];
+                assists += m[7];
+                hsTotal += m[8];
+                adrTotal += m[9];
+
+                const map = m[1];
+                if (!mapStats[map]) mapStats[map] = { played: 0, win: 0 };
+                mapStats[map].played++;
+                if (result === "win") mapStats[map].win++;
+            });
+
+            const total = wins + losses + draws;
+            const winrate = total ? Math.round(wins / total * 100) : 0;
+            const lossrate = total ? Math.round(losses / total * 100) : 0;
+            const drawrate = total ? Math.round(draws / total * 100) : 0;
+            const avgHS = total ? Math.round(hsTotal / total) : 0;
+            const avgADR = total ? Math.round(adrTotal / total) : 0;
+            const kd = deaths === 0 ? kills.toFixed(2) : (kills / deaths).toFixed(2);
+
+            let bestMap = "", bestWR = -1;
+            for (const [map, s] of Object.entries(mapStats)) {
+                const wr = s.played > 0 ? s.win / s.played : 0;
+                if (wr > bestWR || (wr === bestWR && s.played > (mapStats[bestMap]?.played || 0))) {
+                    bestWR = wr;
+                    bestMap = map;
+                }
+            }
+
+            const allModeMatchesForRating = csstats.matches.filter(m => m[10] === mode).sort((a,b) => parseDate(b[0]) - parseDate(a[0]));
+            const recent30 = allModeMatchesForRating.slice(0, 30);
+            const reversed = [...recent30].reverse();
+
+            const ratingHistoryForward = [];
+            const resultFlagsForward = [];
+            let lastKnownRating = null;
+            let totalRatingChange = 0;
+
+            for (let match of reversed) {
+                const ratingStr = match[4];
+                const matchMode = match[10];
+                const ratingValue = extractRatingValue(ratingStr, matchMode);
+                const ratingChange = parseRatingChange(ratingStr, matchMode);
+
+                if (ratingValue !== null) {
+                    lastKnownRating = ratingValue;
+                }
+                ratingHistoryForward.push(lastKnownRating);
+                resultFlagsForward.push(getResultFromFlag(match[3]));
+                totalRatingChange += ratingChange;
+            }
+
+            const ratingHistory = ratingHistoryForward.reverse();
+            const resultFlags = resultFlagsForward.reverse();
+            const currentRating = ratingHistory[0];
+
+            return {
+                wins, losses, draws, total, winrate, lossrate, drawrate,
+                kills, deaths, assists, avgHS, avgADR, kd, bestMap, mapStats,
+                mapDistribution: mapStats, ratingHistory, currentRating, totalRatingChange, resultFlags, mode
+            };
+        }
+
+        function updateMapOptions(selectId, mode) {
+            let maps = mode === "premier" ? mapsPremier : mode === "comp" ? mapsComp : mode === "duo" ? mapsDuo : mapsPremier;
+            let options = `<option value="all">Все карты</option>` + maps.map(m => `<option value="${m}">${m}</option>`).join("");
+            const select = document.getElementById(selectId);
+            select.innerHTML = options;
+            select.value = "all";
+        }
+
+        function updateSeasonVisibility() {
+            const mode = modeStatsSelect.value;
+            premierSeasonSelect.style.display = mode === "premier" ? "inline-block" : "none";
+            if (mode !== "premier") premierSeasonSelect.value = "all";
+        }
+        function updateSeasonVisibilityHistory() {
+            const mode = modeHistorySelect.value;
+            premierSeasonHistory.style.display = mode === "premier" ? "inline-block" : "none";
+            if (mode !== "premier") premierSeasonHistory.value = "all";
+        }
+
+        // customTooltip removed as charts are gone
+
+        function updateStats() {
+            const s = getStats();
+            statsGrid.innerHTML = `
+                <div class="stat-card"><div class="stat-value">${s.total}</div><div class="stat-label">Матчей</div></div>
+                <div class="stat-card"><div class="stat-value win">${s.wins} <small>(${s.winrate}%)</small></div><div class="stat-label">Побед</div></div>
+                <div class="stat-card"><div class="stat-value lose">${s.losses} <small>(${s.lossrate}%)</small></div><div class="stat-label">Поражений</div></div>
+                <div class="stat-card"><div class="stat-value draw">${s.draws} <small>(${s.drawrate}%)</small></div><div class="stat-label">Ничьих</div></div>
+                <div class="stat-card"><div class="stat-value" style="color:${s.kd >= 1.3 ? '#22c55e' : s.kd >= 1 ? '#eab308' : '#ef4444'};">${s.kd}</div><div class="stat-label">K/D</div></div>
+                <div class="stat-card"><div class="stat-value">${s.kills}</div><div class="stat-label">Убийств</div></div>
+                <div class="stat-card"><div class="stat-value">${s.deaths}</div><div class="stat-label">Смертей</div></div>
+                <div class="stat-card"><div class="stat-value">${s.assists}</div><div class="stat-label">Помощи</div></div>
+                <div class="stat-card"><div class="stat-value">${s.avgHS}%</div><div class="stat-label">HS%</div></div>
+                <div class="stat-card"><div class="stat-value">${s.avgADR}</div><div class="stat-label">ADR</div></div>
+            `;
+
+            const map = mapFilterStats.value;
+            document.getElementById("stats-map-icon").style.display = map !== "all" ? "inline" : "none";
+            if (map !== "all") document.getElementById("stats-map-icon").src = `images/cs/${map.toLowerCase()}.png`;
+        }
+
+        function renderMatches() {
+            matchesContainer.innerHTML = "";
+            const mode = modeHistorySelect.value;
+            const season = premierSeasonHistory.value;
+            const bounds = getPremierSeasonBounds(season);
+
+            let filtered = csstats.matches.filter(m => {
+                const matchDate = parseDate(m[0]);
+                const matchMode = m[10];
+                let seasonOk = (season === "all" || mode !== "premier") || (matchDate >= bounds?.start && matchDate <= bounds?.end);
+                const mapOk = filterMap.value === "all" || m[1] === filterMap.value;
+                const modeOk = matchMode === mode;
+                return seasonOk && mapOk && modeOk;
+            });
+
+            filtered.sort((a, b) => parseDate(b[0]) - parseDate(a[0]));
+
+            const mapFilterValue = filterMap.value;
+            if (mapFilterValue !== "all") {
+                document.getElementById("history-map-icon").src = `images/cs/${mapFilterValue.toLowerCase()}.png`;
+                document.getElementById("history-map-icon").style.display = "inline";
+            } else {
+                document.getElementById("history-map-icon").style.display = "none";
+            }
+
+            if (viewMode === "advanced") {
+                const days = {};
+                filtered.forEach(m => {
+                    const dateObj = parseDate(m[0]);
+                    const dateKey = formatDateKey(dateObj);
+                    if (!days[dateKey]) {
+                        days[dateKey] = {
+                            matches: [],
+                            ratingChange: 0,
+                            wins: 0,
+                            losses: 0,
+                            draws: 0,
+                            totalKD: {k:0, d:0},
+                            totalADR: 0,
+                            totalKills: 0,
+                            count: 0
+                        };
+                    }
+                    const day = days[dateKey];
+                    day.matches.push(m);
+                    day.count++;
+                    const result = getResultFromFlag(m[3]);
+                    if (result === "win") day.wins++;
+                    else if (result === "loss") day.losses++;
+                    else if (result === "draw") day.draws++;
+
+                    if (m[4] && m[4] !== "---" && mode !== "comp") {
+                        const val = parseRatingChange(m[4], m[10]);
+                        if (!isNaN(val)) day.ratingChange += val;
+                    }
+                    day.totalKD.k += m[5];
+                    day.totalKD.d += m[6];
+                    day.totalADR += m[9];
+                    day.totalKills += m[5];
+                });
+
+                const sortedDays = Object.keys(days).sort((a,b) => new Date(b) - new Date(a));
+                sortedDays.forEach(dateKey => {
+                    const day = days[dateKey];
+                    const kd = day.totalKD.d === 0 ? day.totalKD.k.toFixed(1) : (day.totalKD.k / day.totalKD.d).toFixed(2);
+                    const adr = (day.totalADR / day.count).toFixed(0);
+                    const avgKills = (day.totalKills / day.count).toFixed(1);
+
+                    const dayBlock = document.createElement("div");
+                    dayBlock.className = "matches-day";
+
+                    const header = document.createElement("div");
+                    header.className = "day-header";
+                    let ratingChangeHtml = '';
+                    if (mode !== "duo" && mode !== "comp") {
+                        ratingChangeHtml = `<span class="rating-change ${day.ratingChange > 0 ? "rating-plus" : day.ratingChange < 0 ? "rating-minus" : "rating-neutral"}">
+                            ${day.ratingChange > 0 ? "+" : ""}${day.ratingChange}
+                        </span>`;
+                    }
+                    header.innerHTML = `
+                        <div class="info">
+                            <span class="date">${formatDateRu(dateKey)}</span>
+                            <span class="matches-count">матчей: ${day.count}</span>
+                            ${ratingChangeHtml}
+                            <span class="day-wins">W: ${day.wins}</span>
+                            <span class="day-losses">L: ${day.losses}</span>
+                            ${day.draws > 0 ? `<span class="day-draws">T: ${day.draws}</span>` : ""}
+                            <span class="day-kd">K/D ${kd}</span>
+                            <span class="day-adr">ADR ${adr}</span>
+                            <span class="day-avg">AVG ${avgKills}</span>
+                        </div>
+                        <span class="toggle">▼</span>
+                    `;
+
+                    const matchesList = document.createElement("div");
+                    matchesList.className = "day-matches";
+
+                    day.matches.forEach(m => {
+                        const result = getResultFromFlag(m[3]);
+                        const scoreClass = result === "win" ? "win" : result === "draw" ? "draw" : "lose";
+                        const ratingClass = getRatingClass(m[4], m[10]);
+                        const ratingDisplay = getRatingImageHTML(m[4], m[10]);
+
+                        const div = document.createElement("div");
+                        div.className = "match advanced";
+                        div.innerHTML = `
+                            <div class="match-date">${m[0]}</div>
+                            <div class="match-map"><img src="images/cs/${m[1].toLowerCase()}.png" alt="${m[1]}" style="width:32px; vertical-align:middle; margin-right:8px;">${m[1]}</div>
+                            <div class="match-score ${scoreClass}">${m[2]}</div>
+                            <div class="match-rating ${ratingClass}" style="color: ${result === 'win' ? '#22c55e' : result === 'loss' ? '#ef4444' : 'inherit'};">${ratingDisplay}</div>
+                            <div class="match-kda">${m[5]}K / ${m[6]}D / ${m[7]}A</div>
+                            <div class="match-hs">HS ${m[8]}%</div>
+                            <div class="match-adr">ADR ${m[9]}</div>
+                        `;
+                        matchesList.appendChild(div);
+                    });
+
+                    dayBlock.appendChild(header);
+                    dayBlock.appendChild(matchesList);
+                    matchesContainer.appendChild(dayBlock);
+
+                    header.addEventListener("click", () => {
+                        const isCollapsed = header.classList.toggle("collapsed");
+                        matchesList.style.display = isCollapsed ? "none" : "block";
+                        const toggle = header.querySelector(".toggle");
+                        toggle.textContent = isCollapsed ? "▶" : "▼";
+                    });
+                });
+            } else {
+                let tableHTML = `
+                    <table width="100%" class="match-table" style="border-collapse:separate; font-size:14px;" id="matches-table">
+                        <thead>
+                            <tr style="color:#fff;">
+                                <th data-sort="0">Дата</th>
+                                <th></th>
+                                <th data-sort="2">Карта</th>
+                                <th data-sort="3">Счёт</th>
+                                <th data-sort="4" style="text-align:center;">Ранг</th>
+                                <th data-sort="5">K</th>
+                                <th data-sort="6">D</th>
+                                <th data-sort="7">A</th>
+                                <th data-sort="8">HS%</th>
+                                <th data-sort="9">ADR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                filtered.forEach(m => {
+                    const result = getResultFromFlag(m[3]);
+                    const scoreClass = result === "win" ? "score-win" : result === "loss" ? "score-lose" : "";
+                    const ratingDisplay = getRatingImageHTML(m[4], m[10]);
+
+                    tableHTML += `
+                        <tr style="cursor:pointer;">
+                            <td style="text-align:left; white-space:nowrap;">${m[0]}</td>
+                            <td></td>
+                            <td><img src="images/cs/${m[1].toLowerCase()}.png" alt="${m[1]}" style="width:24px; vertical-align:middle; margin-right:6px;">${m[1]}</td>
+                            <td class="${scoreClass}">${m[2]}</td>
+                            <td style="text-align:center; font-weight:600; color: ${result === 'win' ? '#22c55e' : result === 'loss' ? '#ef4444' : 'inherit'};">${ratingDisplay}</td>
+                            <td>${m[5]}</td>
+                            <td>${m[6]}</td>
+                            <td>${m[7]}</td>
+                            <td>${m[8]}%</td>
+                            <td>${m[9]}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += `</tbody></table>`;
+                matchesContainer.innerHTML = tableHTML;
+            }
+        }
+
+        modeStatsSelect.addEventListener("change", () => {
+            modeHistorySelect.value = modeStatsSelect.value;
+            updateSeasonVisibility();
+            updateSeasonVisibilityHistory();
+            updateMapOptions("map-filter-stats", modeStatsSelect.value);
+            updateMapOptions("filter-map", modeStatsSelect.value);
+            updateStats();
+        });
+
+        premierSeasonSelect.addEventListener("change", updateStats);
+        periodSelect.addEventListener("change", updateStats);
+        mapFilterStats.addEventListener("change", updateStats);
+
+        modeHistorySelect.addEventListener("change", () => {
+            modeStatsSelect.value = modeHistorySelect.value;
+            updateSeasonVisibilityHistory();
+            updateSeasonVisibility();
+            updateMapOptions("filter-map", modeHistorySelect.value);
+            updateMapOptions("map-filter-stats", modeHistorySelect.value);
+            renderMatches();
+        });
+
+        premierSeasonHistory.addEventListener("change", renderMatches);
+        filterMap.addEventListener("change", renderMatches);
+
+        updateSeasonVisibility();
+        updateSeasonVisibilityHistory();
+        updateMapOptions("map-filter-stats", modeStatsSelect.value);
+        updateMapOptions("filter-map", modeHistorySelect.value);
+        updateStats();
+        renderMatches();
+
+        // Sorting functionality for table
+        function makeTableSortable() {
+            const table = document.getElementById('matches-table');
+            if (!table) return;
+            const headers = table.querySelectorAll('th[data-sort]');
+            headers.forEach((header, index) => {
+                header.style.cursor = 'pointer';
+                header.addEventListener('click', () => {
+                    const tbody = table.querySelector('tbody');
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    const colIndex = parseInt(header.getAttribute('data-sort'));
+                    
+                    let ascending = header.getAttribute('data-asc') === 'true';
+                    header.setAttribute('data-asc', !ascending);
+                    
+                    rows.sort((a, b) => {
+                        let valA = a.cells[colIndex] ? a.cells[colIndex].textContent.trim() : '';
+                        let valB = b.cells[colIndex] ? b.cells[colIndex].textContent.trim() : '';
+                        
+                        // Special handling for dates
+                        if (colIndex === 0) {
+                            const dateA = parseDate(valA);
+                            const dateB = parseDate(valB);
+                            return ascending ? dateA - dateB : dateB - dateA;
+                        }
+                        
+                        // Numeric
+                        const numA = parseFloat(valA.replace(/[^0-9.-]/g, ''));
+                        const numB = parseFloat(valB.replace(/[^0-9.-]/g, ''));
+                        if (!isNaN(numA) && !isNaN(numB)) {
+                            return ascending ? numA - numB : numB - numA;
+                        }
+                        
+                        // String compare
+                        return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    });
+                    
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+        }
+
+        // Call after render
+        const originalRenderMatches = renderMatches;
+        renderMatches = function() {
+            originalRenderMatches.apply(this, arguments);
+            setTimeout(makeTableSortable, 100);
+        };
+    </script>
+</body>
+</html>

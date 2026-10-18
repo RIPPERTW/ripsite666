@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>RIPPEDIA — свободная энциклопедия о Ripper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Linux Libertine', 'Georgia', 'Times New Roman', 'Times', serif;
+            background: #f6f6f6;
+            color: #202122;
+            line-height: 1.5;
+        }
+
+        /* Wiki-подобная обёртка */
+        .mw-body-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Верхняя панель (аналог vector) */
+        .vector-header {
+            background: #fff;
+            border-bottom: 1px solid #a7d7f9;
+            padding: 0 1.2rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+        }
+
+        .wiki-icon {
+            font-size: 2rem;
+            font-weight: bold;
+            background: #3366cc;
+            color: white;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .site-name {
+            font-size: 1.7rem;
+            font-family: 'Linux Libertine', 'Georgia', serif;
+            font-weight: normal;
+            letter-spacing: 0.5px;
+        }
+
+        .site-name span {
+            font-weight: bold;
+            color: #3366cc;
+        }
+
+        .tagline {
+            font-size: 0.75rem;
+            color: #54595d;
+            margin-top: 2px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+            background: #f8f9fa;
+            border: 1px solid #c8ccd1;
+            border-radius: 2px;
+            padding: 4px 8px;
+        }
+
+        .search-box input {
+            border: none;
+            background: transparent;
+            padding: 6px 4px;
+            width: 200px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .search-box button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #3366cc;
+        }
+
+        /* основной контент — две колонки */
+        .mw-content-layout {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        /* боковая панель (навигация) */
+        .mw-sidebar {
+            width: 260px;
+            background: #f8f9fa;
+            border-right: 1px solid #eaecf0;
+            padding: 1.2rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .mw-sidebar h3 {
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 1rem 0 0.5rem 0;
+            border-bottom: 1px solid #c8ccd1;
+            padding-bottom: 0.25rem;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .mw-sidebar ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .mw-sidebar li {
+            margin: 0.6rem 0;
+        }
+
+        .mw-sidebar a {
+            text-decoration: none;
+            color: #0645ad;
+        }
+
+        .mw-sidebar a:hover {
+            text-decoration: underline;
+        }
+
+        /* основная статья */
+        .mw-main-content {
+            flex: 1;
+            padding: 1.5rem 2rem 3rem 2rem;
+            background: #fff;
+        }
+
+        /* имитация вики-заголовка */
+        .firstHeading {
+            font-family: 'Linux Libertine', 'Georgia', serif;
+            font-weight: normal;
+            font-size: 1.8rem;
+            border-bottom: 1px solid #a2a9b1;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.2rem;
+        }
+
+        .infobox {
+            float: right;
+            clear: right;
+            width: 280px;
+            background: #f8f9fa;
+            border: 1px solid #c8ccd1;
+            padding: 0.8rem;
+            margin: 0 0 1rem 1.5rem;
+            font-size: 0.85rem;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .infobox-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            background: #e9ecef;
+            margin: -0.8rem -0.8rem 0.8rem -0.8rem;
+            padding: 0.6rem;
+            border-bottom: 1px solid #c8ccd1;
+        }
+
+        .infobox-image {
+            text-align: center;
+            margin: 0.5rem 0;
+        }
+
+        .infobox-image .avatar-place {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #1a2a4f, #2a3f6e);
+            border-radius: 50%;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 2px solid #ffcd7e;
+        }
+
+        .infobox-row {
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #eaecf0;
+        }
+
+        .infobox-label {
+            font-weight: bold;
+            width: 85px;
+            display: inline-block;
+        }
+
+        .social-links-compact a {
+            margin-right: 12px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* ссылки */
+        .external-link {
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>') no-repeat left center;
+            background-size: 10px;
+            padding-left: 14px;
+        }
+
+        .citation {
+            background: #f0f2f5;
+            border-left: 4px solid #3366cc;
+            padding: 0.5rem 1rem;
+            margin: 1rem 0;
+            font-style: italic;
+        }
+
+        .wiki-table {
+            background: #f8f9fa;
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        .wiki-table th, .wiki-table td {
+            border: 1px solid #c8ccd1;
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        .wiki-table th {
+            background: #eaecf0;
+        }
+
+        .btn-wiki {
+            display: inline-block;
+            background: #eef2f6;
+            border: 1px solid #a2a9b1;
+            padding: 4px 10px;
+            border-radius: 2px;
+            font-size: 0.85rem;
+            transition: 0.1s;
+        }
+
+        footer {
+            background: #f8f9fa;
+            border-top: 1px solid #c8ccd1;
+            padding: 1rem 2rem;
+            font-size: 0.8rem;
+            text-align: center;
+            color: #54595d;
+        }
+
+        @media (max-width: 800px) {
+            .mw-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #eaecf0;
+            }
+            .infobox {
+                float: none;
+                margin: 1rem auto;
+                width: 100%;
+                max-width: 320px;
+            }
+            .mw-main-content {
+                padding: 1.2rem;
+            }
+            .search-box input {
+                width: 140px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="mw-body-container">
+    <div class="vector-header">
+        <div class="logo-area">
+            <div class="wiki-icon">R</div>
+            <div>
+                <div class="site-name"><span>RIPPEDIA</span> — энциклопедия</div>
+                <div class="tagline">Свободная энциклопедия о Ripper_cmertanoc</div>
+            </div>
+        </div>
+        <div class="search-box">
+            <input type="text" id="wikiSearch" placeholder="Поиск по RIPPEDIA..." value="">
+            <button id="searchBtn">🔍</button>
+        </div>
+    </div>
+    <div class="mw-content-layout">
+        <div class="mw-sidebar">
+            <h3>Навигация</h3>
+            <ul>
+                <li><a href="#" class="nav-link" data-page="home">🏠 Главная</a></li>
+                <li><a href="#" class="nav-link" data-page="bio">📖 Биография</a></li>
+                <li><a href="#" class="nav-link" data-page="content">🎬 Контент & стримы</a></li>
+                <li><a href="#" class="nav-link" data-page="quotes">💬 Цитаты сообщества</a></li>
+            </ul>
+            <h3>Связь и соцсети</h3>
+            <ul>
+                <li><a href="https://www.twitch.tv/ripper_cmertanoc" target="_blank" class="external-link">Twitch</a></li>
+                <li><a href="https://www.youtube.com/@ripper_cmertanoc" target="_blank" class="external-link">YouTube</a></li>
+                <li><a href="https://t.me/ripper_cmertanoc" target="_blank" class="external-link">Telegram</a></li>
+            </ul>
+            <h3>Инструменты</h3>
+            <ul>
+                <li><a href="#" id="randomPageBtn">Случайная статья</a></li>
+                <li><a href="#">Свежие правки</a></li>
+            </ul>
+        </div>
+        <div class="mw-main-content" id="mainContent">
+            <!-- Динамическая загрузка через JS, но начальная версия - главная вики-статья -->
+        </div>
+    </div>
+    <footer>
+        RIPPEDIA — неофициальная, но задокументированная энциклопедия. Текст доступен по лицензии Creative Commons.
+        Страница последний раз редактировалась сегодня, вдохновлена стилем Википедии.
+    </footer>
+</div>
+
+<script>
+    // База данных "вики-статей" для Ripper
+    const wikiPages = {
+        home: {
+            title: "Ripper_cmertanoc",
+            content: `
+                <h1 class="firstHeading">Ripper_cmertanoc</h1>
+                <div class="infobox">
+                    <div class="infobox-title">Ripper_cmertanoc</div>
+                    <div class="infobox-image">
+                        <div class="avatar-place">🎙️</div>
+                    </div>
+                    <div class="infobox-row"><span class="infobox-label">Платформа:</span> Twitch / YouTube</div>
+                    <div class="infobox-row"><span class="infobox-label">Жанр:</span> Just Chatting, Игры, Реакции</div>
+                    <div class="infobox-row"><span class="infobox-label">Активность:</span> 2021 — н.в.</div>
+                    <div class="infobox-row"><span class="infobox-label">Подписчики:</span> быстрорастущее комьюнити</div>
+                    <div class="infobox-row social-links-compact">
+                        <span class="infobox-label">Ссылки:</span>
+                        <a href="https://www.twitch.tv/ripper_cmertanoc" target="_blank">Twitch</a> | 
+                        <a href="https://www.youtube.com/@ripper_cmertanoc" target="_blank">YT</a> | 
+                        <a href="https://t.me/ripper_cmertanoc" target="_blank">TG</a>
+                    </div>
+                </div>
+                <p><strong>Ripper_cmertanoc</strong> (часто просто <strong>Ripper</strong>) — популярный стример, контент-мейкер и лидер мнений в русскоязычном сегменте. Известен своим неповторимым стилем общения, остроумием и прямыми эфирами, где царит атмосфера полного погружения.</p>
+                <p>Канал на Twitch: <strong>twitch.tv/ripper_cmertanoc</strong> — регулярные стримы по вечерам. YouTube-канал содержит лучшие нарезки, клипы и влоги. В Telegram-канале Ripper публикует анонсы и мемы.</p>
+                <div class="citation">
+                    «RIPPEDIA — это как Википедия, только про Ripper'а и без цензуры, но с уважением к фактам» — основатель энциклопедии.
+                </div>
+                <h2>🎯 Основные достижения</h2>
+                <ul>
+                    <li>✔️ Участник хайлайт-марафонов 2023-2024</li>
+                    <li>✔️ Собственный стиль «ламповых стримов» с высоким интерактивом</li>
+                    <li>✔️ Коллаборации с топ-стримерами СНГ</li>
+                </ul>
+                <p>Сообщество Ripper активно пополняет вики-статьи о его лучших моментах. Данная страница является официальным источником знаний о стримере.</p>
+                <hr>
+                <p><i>См. также: <a href="#" class="nav-link" data-page="bio">Биография</a>, <a href="#" class="nav-link" data-page="content">Контент</a>.</i></p>
+            `
+        },
+        bio: {
+            title: "Биография Ripper_cmertanoc",
+            content: `
+                <h1 class="firstHeading">Биография</h1>
+                <p><strong>Ripper_cmertanoc</strong> начал свой путь в онлайн-трансляциях в 2021 году. Родился и живёт в часовом поясе UTC+3, но его стримы смотрят зрители со всего постсоветского пространства. Псевдоним «Ripper» отсылает к бескомпромиссности и перфекционизму в контенте, а часть "cmertanoc" имеет философский оттенок, что стало предметом споров среди фанатов.</p>
+                <p>Первые стримы были посвящены хардкорным играм, но со временем формат расширился до «Just Chatting», просмотра вирусных видео и обсуждения событий. Популярность резко выросла после серии стримов с разборами мемов и общением со зрителями в режиме реального времени.</p>
+                <h2>🏆 Этапы карьеры</h2>
+                <table class="wiki-table">
+                    <tr><th>Год</th><th>Событие</th></tr>
+                    <tr><td>2021</td><td>Первый стрим на Twitch, начало создания комьюнити</td></tr>
+                    <tr><td>2022</td><td>Преодоление отметки в 1000 одновременных зрителей</td></tr>
+                    <tr><td>2023</td><td>Создание Telegram-канала и активный YouTube</td></tr>
+                    <tr><td>2024</td><td>Запуск RIPPEDIA — вики о себе, чтобы фанаты знали всё</td></tr>
+                </table>
+                <div class="citation">
+                    «Ripper умеет превратить обычный стрим в интерактивное шоу. Биография пишется на глазах у зрителей» — из комментария модера.
+                </div>
+                <p>Кроме стриминга, Ripper увлекается музыкой, иногда включает живое исполнение треков под гитару во время перерывов.</p>
+                <p><a href="#" class="nav-link" data-page="home">← Вернуться на главную</a></p>
+            `
+        },
+        content: {
+            title: "Контент и стримы",
+            content: `
+                <h1 class="firstHeading">Контент & стримы</h1>
+                <p>Ripper_cmertanoc создаёт уникальный контент, который сложно вписать в один жанр. Основные направления:</p>
+                <ul>
+                    <li><strong>🎮 Игровые стримы</strong> — хорроры, инди-новинки, классика (от Resident Evil до quirky-симуляторов).</li>
+                    <li><strong>🗣️ Just Chatting</strong> — общение с чатом, решение житейских проблем зрителей, психологические разборы в лёгком формате.</li>
+                    <li><strong>📺 Реакции</strong> — Ripper смотрит клипы, тиктоки и мемы, создавая вирусные моменты.</li>
+                    <li><strong>🔴 Мафия / среди нас</strong> — командные игры с другими стримерами.</li>
+                </ul>
+                <h2>📅 Расписание и ссылки</h2>
+                <p>Актуальные стримы: обычно <strong>вторник, четверг, суббота</strong> в 19:00 МСК. Следите за анонсами в Telegram.</p>
+                <div class="btn-wiki" style="margin-right: 12px;"><a href="https://www.twitch.tv/ripper_cmertanoc" target="_blank" style="text-decoration: none;">🔴 Заглянуть на Twitch</a></div>
+                <div class="btn-wiki"><a href="https://www.youtube.com/@ripper_cmertanoc" target="_blank" style="text-decoration: none;">▶️ YouTube канал</a></div>
+                <h2>📌 Популярные рубрики</h2>
+                <ul>
+                    <li>«Байки от Ripper» — истории из жизни.</li>
+                    <li>«Разбор полётов» — обсуждение новостей стриминга.</li>
+                    <li>«Стрим с подписчиками» — зрители играют вместе.</li>
+                </ul>
+                <p><a href="#" class="nav-link" data-page="home">⛭ На главную</a> | <a href="#" class="nav-link" data-page="quotes">Цитаты</a></p>
+            `
+        },
+        quotes: {
+            title: "Цитаты сообщества",
+            content: `
+                <h1 class="firstHeading">Цитаты и крылатые фразы</h1>
+                <p>Сообщество Ripper собрало лучшие фразы со стримов, которые стали мемами и паролями в чате.</p>
+                <div class="citation">«Короче, пацаны, это просто взрыв мозга, но мы идём дальше» — Ripper во время прохождения сложного босса.</div>
+                <div class="citation">«Чат, вы гении, но иногда я сомневаюсь... Ладно, всем спасибо за донат!» — реакция на провокационные сообщения.</div>
+                <div class="citation">«RIPPEDIA не врёт, я реально лучший (шутка, но не совсем)» — из интервью.</div>
+                <p>Также в телеграм-канале регулярно публикуются «фразы дня». Самые активные зрители участвуют в сборе материалов для энциклопедии.</p>
+                <h2>🎭 Авторские выражения</h2>
+                <ul>
+                    <li>«На рипера надейся, а сам не плошай» (вариация народной мудрости).</li>
+                    <li>«СмертаноЧНОСТЬ гарантирую» — игровая отсылка к нику.</li>
+                </ul>
+                <p><a href="#" class="nav-link" data-page="home">Вернуться на главную</a>  •  <a href="#" class="nav-link" data-page="content">Контент</a></p>
+            `
+        }
+    };
+
+    // функция рендеринга страницы
+    function renderPage(pageId) {
+        const page = wikiPages[pageId];
+        if (!page) {
+            // fallback на главную
+            renderPage('home');
+            return;
+        }
+        const mainDiv = document.getElementById('mainContent');
+        mainDiv.innerHTML = page.content;
+
+        // после рендера перепривязать все ссылки с классом nav-link
+        const navLinks = mainDiv.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetPage = link.getAttribute('data-page');
+                if (targetPage && wikiPages[targetPage]) {
+                    renderPage(targetPage);
+                    // обновить заголовок окна
+                    document.title = `${wikiPages[targetPage].title} — RIPPEDIA`;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else if (targetPage === 'home') {
+                    renderPage('home');
+                    document.title = 'Ripper_cmertanoc — RIPPEDIA';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        });
+
+        // также обрабатываем все внутренние ссылки возможно с data-page в боковой панели уже навешаны
+        document.title = `${page.title} — RIPPEDIA`;
+    }
+
+    // функция для случайной статьи
+    function randomPage() {
+        const pages = Object.keys(wikiPages);
+        const randomKey = pages[Math.floor(Math.random() * pages.length)];
+        renderPage(randomKey);
+    }
+
+    // поиск по страницам (простой текстовый поиск по содержимому)
+    function searchInWiki(term) {
+        if (!term.trim()) {
+            alert('Введите поисковый запрос (например, "стрим", "биография")');
+            return;
+        }
+        const lowerTerm = term.toLowerCase();
+        const results = [];
+        for (const [id, page] of Object.entries(wikiPages)) {
+            // ищем в заголовке и тексте (без html тегов)
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = page.content;
+            const plainText = (page.title + " " + tempDiv.textContent).toLowerCase();
+            if (plainText.includes(lowerTerm)) {
+                results.push({ id, title: page.title });
+            }
+        }
+        if (results.length === 0) {
+            alert(`По запросу «${term}» ничего не найдено. Попробуйте «Ripper», «Twitch», «цитаты».`);
+        } else if (results.length === 1) {
+            renderPage(results[0].id);
+        } else {
+            // покажем простой выбор
+            let msg = `Найдено ${results.length} статей:\n`;
+            results.forEach((r, idx) => { msg += `${idx+1}. ${r.title}\n`; });
+            msg += `\nВведите номер страницы (1-${results.length}) для перехода:`;
+            const choice = prompt(msg);
+            const idx = parseInt(choice, 10);
+            if (!isNaN(idx) && idx >= 1 && idx <= results.length) {
+                renderPage(results[idx-1].id);
+            }
+        }
+    }
+
+    // инициализация обработчиков
+    document.addEventListener('DOMContentLoaded', () => {
+        // загрузка домашней страницы по умолчанию
+        renderPage('home');
+
+        // ссылки в боковой панели
+        const homeLink = document.querySelector('.nav-link[data-page="home"]');
+        const bioLink = document.querySelector('.nav-link[data-page="bio"]');
+        const contentLink = document.querySelector('.nav-link[data-page="content"]');
+        const quotesLink = document.querySelector('.nav-link[data-page="quotes"]');
+        if (homeLink) homeLink.addEventListener('click', (e) => { e.preventDefault(); renderPage('home'); });
+        if (bioLink) bioLink.addEventListener('click', (e) => { e.preventDefault(); renderPage('bio'); });
+        if (contentLink) contentLink.addEventListener('click', (e) => { e.preventDefault(); renderPage('content'); });
+        if (quotesLink) quotesLink.addEventListener('click', (e) => { e.preventDefault(); renderPage('quotes'); });
+
+        const randomBtn = document.getElementById('randomPageBtn');
+        if (randomBtn) randomBtn.addEventListener('click', (e) => { e.preventDefault(); randomPage(); });
+
+        const searchBtn = document.getElementById('searchBtn');
+        const searchInput = document.getElementById('wikiSearch');
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => { searchInWiki(searchInput.value); });
+        }
+        if (searchInput) {
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchInWiki(searchInput.value);
+            });
+        }
+
+        // также обработать возможные внешние клики от инфобокса ссылок навигации - они уже есть
+        const allSideLinks = document.querySelectorAll('.mw-sidebar a');
+        allSideLinks.forEach(link => {
+            if (link.getAttribute('href') === '#') {
+                // не трогаем уже имеющие обработчики, но для чистоты предотвратим переход
+                link.addEventListener('click', (e) => {
+                    if (!link.classList.contains('external-link') && link.getAttribute('href') === '#') {
+                        e.preventDefault();
+                    }
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>

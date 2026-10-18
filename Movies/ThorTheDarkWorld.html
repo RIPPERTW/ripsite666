@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIPSITE | Тор 2: Царство тьмы</title>
+    <style>
+        :root {
+            --bg: #09090f;
+            --card: #101015;
+            --accent: #c11f2b;
+            --accent-dark: #c11f2b;
+            --text: #e0e0ff;
+            --text-muted: #a0a0cc;
+            --border: #1e1e28;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .film-cover {
+            aspect-ratio: 2 / 3;
+            width: 100%;
+            max-width: 380px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            background-image: url('icon/ThorTheDarkWorld.png');
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .top-section {
+            background: linear-gradient(to bottom, #0f0f1a 0%, #0c0c16 40%, #0a0a13 70%, var(--bg) 100%);
+            padding: 2.8rem 1rem 4.2rem;
+            text-align: center;
+            position: relative;
+        }
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3.2rem, 13vw, 8.2rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            color: var(--accent);
+        }
+        nav {
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(193,31,43,0.10);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 1rem 1rem;
+            margin-top: -1px;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.6rem 2.8rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.08rem;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 0.4rem;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        nav a:hover, nav a.active {
+            color: white;
+        }
+        nav a.active::after, nav a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            width: 0;
+            height: 2.5px;
+            background: linear-gradient(to right, transparent, var(--accent), transparent);
+            transition: width 0.35s ease;
+            transform: translateX(-50%);
+        }
+        nav a:hover::after, nav a.active::after {
+            width: 85%;
+        }
+        main {
+            max-width: 1480px;
+            margin: -3.2rem auto 4rem;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.6rem;
+            color: var(--accent);
+            text-align: center;
+            margin: 2.5rem 0 2rem;
+            letter-spacing: -0.02em;
+        }
+        .film-header {
+            display: flex;
+            gap: 2.5rem;
+            margin-bottom: 3.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .film-info {
+            flex: 1;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+        }
+        .film-description {
+            color: var(--text-muted);
+            font-size: 1.08rem;
+            line-height: 1.75;
+            margin-bottom: 2rem;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 0.8rem;
+        }
+        .film-description::-webkit-scrollbar { width: 7px; }
+        .film-description::-webkit-scrollbar-track { background: var(--card); }
+        .film-description::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+        .film-rating {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-align: center;
+            margin-top: 1.5rem;
+            padding: 0.8rem 1.5rem;
+            background: rgba(193,31,43,0.12);
+            border-radius: 12px;
+            width: fit-content;
+            align-self: center;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            margin: 1rem 0 3rem;
+            background: var(--card);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .episodes-list h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: var(--accent);
+            margin: 3rem 0 2rem;
+            text-align: center;
+        }
+        .episodes-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1.2rem;
+        }
+        .episode-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.28s ease;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 1.05rem;
+        }
+        .episode-item:hover, .episode-item.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(193,31,43,0.25);
+        }
+        .episodes-list.hidden {
+            display: none;
+        }
+        footer {
+            text-align: center;
+            padding: 4.5rem 1rem 3.5rem;
+            color: #4a4a60;
+            font-size: 0.95rem;
+            border-top: 1px solid #181822;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-section">
+        <header>
+            <h1>RIPSITE</h1>
+        </header>
+        <nav>
+            <ul>
+                <li><a href="../index.html">Главная</a></li>
+                <li><a href="../links.html">Ссылки</a></li>
+                <li><a href="../different.html">Разное</a></li>
+                <li><a href="../anime.html">Аниме</a></li>
+                <li><a href="../movies.html" class="active">Фильмы</a></li>
+                <li><a href="../games.html">Игры</a></li>
+            </ul>
+        </nav>
+    </div>
+    <main>
+        <h2 class="section-title">Тор 2: Царство тьмы</h2>
+        <div class="film-header">
+            <div class="film-cover"></div>
+            <div class="film-info">
+                <div class="film-description">
+                    <p>Могучему Тору предстоит вновь сразиться за восстановление порядка в галактике, встретившись лицом к лицу с древней инопланетной расой, ведомой злодеем Малекитом, который жаждет установить в девяти мирах власть тьмы. Столкнувшись с врагом, более могущественным, чем сам Один и всё воинство Асгарда, Тор должен собрать силы для решающей битвы. Его ждёт опасное путешествие и долгожданная встреча со своей земной возлюбленной Джейн Фостер. Сможет ли Тор рискнуть самым дорогим, чтобы не дать тьме воцариться на просторах вселенной? Один из самых космических и визуально впечатляющих фильмов первой фазы Marvel с мощными битвами, развитием отношений Тора и Джейн и первым серьёзным взглядом на Тёмные Эльфы.</p>
+                </div>
+                <div class="film-rating">Моя оценка: 8/10</div>
+            </div>
+        </div>
+
+        <div class="video-container">
+            <iframe id="video-player" src="" title="Video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        </div>
+
+        <div class="episodes-list">
+            <h3>Список серий</h3>
+            <div class="episodes-container">
+                <div class="episode-item active" data-dzen="okkbGnW0MAAA">Серия 1</div>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>© 2025–2026 RIPSITE · Все права защищены</p>
+    </footer>
+    
+    <script src="../agreement.js" defer></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const player = document.getElementById('video-player');
+            const episodesList = document.querySelector('.episodes-list');
+            const episodes = document.querySelectorAll('.episode-item');
+
+            function updatePlayerSrc(episode) {
+                const dzenId = episode.dataset.dzen;
+                let src = '';
+                if (dzenId) {
+                    src = `https://dzen.ru/embed/${dzenId}`;
+                } else {
+                    alert('Видео для этой серии недоступно');
+                    return;
+                }
+                if (src) {
+                    player.src = src;
+                }
+            }
+
+            if (episodes.length === 1) {
+                episodesList.classList.add('hidden');
+                updatePlayerSrc(episodes[0]);
+            } else {
+                episodes.forEach(episode => {
+                    episode.addEventListener('click', function() {
+                        episodes.forEach(ep => ep.classList.remove('active'));
+                        this.classList.add('active');
+                        updatePlayerSrc(this);
+                    });
+                });
+
+                const initialActive = document.querySelector('.episode-item.active');
+                if (initialActive) updatePlayerSrc(initialActive);
+            }
+        });
+    </script>
+</body>
+</html>

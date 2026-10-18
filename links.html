@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIPSITE | Ссылки</title>
+    <style>
+        :root {
+            --bg: #09090f;
+            --card: #101015;
+            --accent: #c11f2b;
+            --accent-dark: #c11f2b;
+            --text: #e0e0ff;
+            --text-muted: #a0a0cc;
+            --border: #1e1e28;
+            --gradient-start: #0f0f1a;
+            --gradient-end: #09090f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .top-section {
+            background: linear-gradient(
+                to bottom,
+                #0f0f1a 0%,
+                #0c0c16 40%,
+                #0a0a13 70%,
+                var(--bg) 100%
+            );
+            padding: 2.8rem 1rem 4.2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3.2rem, 13vw, 8.2rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            color: #c11f2b;
+        }
+
+        nav {
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(230,57,70,0.10);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 1rem 1rem;
+            margin-top: -1px;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.6rem 2.8rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.08rem;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 0.4rem;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        nav a:hover,
+        nav a.active {
+            color: white;
+        }
+
+        nav a.active::after,
+        nav a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            width: 0;
+            height: 2.5px;
+            background: linear-gradient(to right, transparent, var(--accent), transparent);
+            transition: width 0.35s ease;
+            transform: translateX(-50%);
+        }
+
+        nav a:hover::after,
+        nav a.active::after {
+            width: 85%;
+        }
+
+        main {
+            max-width: 1480px;
+            margin: -3.2rem auto 4rem;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .social-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.6rem;
+        }
+
+        .social-item {
+            display: flex;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.28s ease;
+        }
+
+        .social-item:hover {
+            transform: translateY(-6px);
+            border-color: #2a2a35;
+            box-shadow: 0 20px 48px rgba(0,0,0,0.45);
+        }
+
+        .social-icon {
+            width: 120px;
+            min-width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .social-icon svg {
+            width: 64px;
+            height: 64px;
+            fill: #c11f2b;
+        }
+
+        .social-info {
+            padding: 2rem 2.8rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .social-info h4 {
+            color: #c11f2b;
+            font-size: 1.7rem;
+            margin: 0 0 0.6rem 0;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .social-info p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            margin: 0 0 1.6rem 0;
+        }
+
+        .social-info a,
+        .telegram-buttons a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+            padding: 1rem 2.3rem;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.26s ease;
+            font-size: 1.08rem;
+            width: fit-content;
+        }
+
+        .social-info a:hover,
+        .telegram-buttons a:hover {
+            background: var(--accent-dark);
+            transform: translateY(-3px);
+        }
+
+        .telegram-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.3rem;
+            margin-top: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 4.5rem 1rem 3.5rem;
+            color: #4a4a60;
+            font-size: 0.95rem;
+            border-top: 1px solid #181822;
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                max-width: 960px;
+                padding: 0 2rem;
+            }
+            .social-item {
+                flex-direction: column;
+            }
+            .social-icon {
+                width: 100%;
+                height: 100px;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+            .social-icon svg {
+                width: 56px;
+                height: 56px;
+            }
+            .social-info {
+                text-align: center;
+                padding: 2rem 2.2rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .top-section { padding: 2.2rem 1rem 3.4rem; }
+            header h1 { font-size: clamp(2.8rem, 12vw, 6rem); }
+            nav ul { gap: 1.2rem 1.6rem; }
+            main { 
+                margin-top: -2.8rem;
+                padding: 0 1.2rem;
+            }
+            .social-item { 
+                flex-direction: column;
+            }
+            .social-icon {
+                width: 100%;
+                height: 90px;
+            }
+            .social-icon svg { width: 52px; height: 52px; }
+            .social-info { 
+                padding: 1.8rem 1.8rem; 
+                text-align: center;
+            }
+            .telegram-buttons { 
+                flex-direction: column; 
+                gap: 1rem; 
+            }
+            .social-info a, .telegram-buttons a { 
+                margin: 0 auto; 
+                width: 100%; 
+                max-width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-section">
+        <header>
+            <h1>RIPSITE</h1>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="index.html">Главная</a></li>
+                <li><a href="links.html" class="active">Ссылки</a></li>
+                <li><a href="different.html">Разное</a></li>
+                <li><a href="anime.html">Аниме</a></li>
+                <li><a href="movies.html">Фильмы</a></li>
+                <li><a href="games.html">Игры</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <main>
+
+        <div class="social-list">
+
+            <div class="social-item">
+                <div class="social-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                        <path d="M0 24C0 10.7452 10.7452 0 24 0C37.2548 0 48 10.7452 48 24C48 37.2548 37.2548 48 24 48C10.7452 48 0 37.2548 0 24Z" fill="#c11f2b"/>
+                        <path d="M36.265 18.0732C35.9706 16.9422 35.1031 16.0516 34.0016 15.7493C32.0054 15.2 24 15.2 24 15.2C24 15.2 15.9946 15.2 13.9983 15.7493C12.8967 16.0516 12.0292 16.9422 11.7348 18.0732C11.2 20.1231 11.2 24.4 11.2 24.4C11.2 24.4 11.2 28.6768 11.7348 30.7268C12.0292 31.8578 12.8967 32.7484 13.9983 33.0508C15.9946 33.6 24 33.6 24 33.6C24 33.6 32.0054 33.6 34.0016 33.0508C35.1031 32.7484 35.9706 31.8578 36.265 30.7268C36.8 28.6768 36.8 24.4 36.8 24.4C36.8 24.4 36.8 20.1231 36.265 18.0732" fill="#111111"/>
+                        <path d="M21.6 28.8V20.8L28 24.8001L21.6 28.8Z" fill="#c11f2b"/>
+                    </svg>
+                </div>
+                <div class="social-info">
+                    <h4>YouTube</h4>
+                    <p>Мой канал с видео и стримами</p>
+                    <a href="https://www.youtube.com/@ripper_cmertanoc" target="_blank" rel="noopener">Перейти на канал</a>
+                </div>
+            </div>
+
+            <div class="social-item">
+                <div class="social-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M24 48C10.7452 48 0 37.2548 0 24C0 10.7452 10.7452 0 24 0C37.2548 0 48 10.7452 48 24C48 37.2548 37.2548 48 24 48ZM12.3312 11.2L10.4529 16.2088V36.2416H17.3366V40H21.0948L24.8493 36.2416H30.4825L37.9951 28.7317V11.2H12.3312Z" fill="#c11f2b"/>
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M14.8335 13.7029H35.4917V27.4771L31.1088 31.8603H24.224L20.4706 35.6135V31.8603H14.8335V13.7029ZM21.7199 26.2265H24.224V18.7143H21.7199V26.2265ZM28.6052 26.2265H31.1087V18.7143H28.6052V26.2265Z" fill="#c11f2b"/>
+                    </svg>
+                </div>
+                <div class="social-info">
+                    <h4>Twitch</h4>
+                    <p>Стримы и клипы</p>
+                    <a href="https://www.twitch.tv/ripper_cmertanoc" target="_blank" rel="noopener">Смотреть стримы</a>
+                </div>
+            </div>
+
+            <div class="social-item">
+                <div class="social-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                        <path d="M256,0C114.615,0,0,114.615,0,256S114.615,512,256,512,512,397.385,512,256,397.385,0,256,0ZM389.059,161.936,343.591,379a16.007,16.007,0,0,1-25.177,9.593l-66.136-48.861-40.068,37.8a5.429,5.429,0,0,1-7.74-.294l-.861-.946,6.962-67.375L336.055,194.266a3.358,3.358,0,0,0-4.061-5.317L171.515,290.519,102.4,267.307a9.393,9.393,0,0,1-.32-17.694L372.5,147.744A12.441,12.441,0,0,1,389.059,161.936Z"/>
+                    </svg>
+                </div>
+                <div class="social-info">
+                    <h4>Telegram</h4>
+                    <p>Новости, анонсы, архив просмотренного</p>
+                    <div class="telegram-buttons">
+                        <a href="https://t.me/ripper_cmertanoc" target="_blank" rel="noopener">Основной канал</a>
+                        <a href="https://t.me/ripperarchive" target="_blank" rel="noopener">Архив просмотров</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="social-item">
+                <div class="social-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M0 24C0 10.7452 10.7452 0 24 0C37.2548 0 48 10.7452 48 24C48 37.2548 37.2548 48 24 48C10.7452 48 0 37.2548 0 24ZM33.8949 10.4H14.9051C13.3038 10.4 12 11.688 12 13.284V32.212C12 33.808 13.3038 35.096 14.9051 35.096H30.9755L30.2245 32.506L32.0384 34.172L33.7531 35.74L36.8 38.4V13.284C36.8 11.688 35.4962 10.4 33.8949 10.4Z" fill="#c11f2b"/>
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M28.4247 28.684C28.4247 28.684 27.9145 28.082 27.4894 27.55C29.3458 27.032 30.0544 25.884 30.0544 25.884C29.4734 26.262 28.9207 26.528 28.4247 26.71C27.7161 27.004 27.0359 27.2 26.3698 27.312C25.0094 27.564 23.7623 27.494 22.6994 27.298C21.8917 27.144 21.1973 26.92 20.6162 26.696C20.2903 26.57 19.936 26.416 19.5817 26.22C19.5392 26.192 19.4967 26.178 19.4542 26.15C19.4258 26.136 19.4117 26.122 19.3975 26.108C19.1424 25.968 19.0007 25.87 19.0007 25.87C19.0007 25.87 19.6809 26.99 21.4807 27.522C21.0555 28.054 20.5312 28.684 20.5312 28.684C17.3993 28.586 16.2089 26.556 16.2089 26.556C16.2089 22.048 18.2496 18.394 18.2496 18.394C20.2903 16.882 22.2318 16.924 22.2318 16.924L22.3735 17.092C19.8226 17.82 18.6464 18.926 18.6464 18.926C18.6464 18.926 18.9582 18.758 19.4825 18.52C20.9989 17.862 22.2034 17.68 22.6994 17.638C22.7845 17.624 22.8553 17.61 22.9403 17.61C23.8048 17.498 24.7826 17.47 25.803 17.582C27.1493 17.736 28.5947 18.128 30.0686 18.926C30.0686 18.926 28.949 17.876 26.5399 17.148L26.7383 16.924C26.7383 16.924 28.6798 16.882 30.7205 18.394C30.7205 18.394 32.7611 22.048 32.7611 26.556C32.7611 26.556 31.5566 28.586 28.4247 28.684ZM22.2341 22.4C21.4327 22.4 20.8 23.1207 20.8 24C20.8 24.8793 21.4467 25.6 22.2341 25.6C23.0355 25.6 23.6682 24.8793 23.6682 24C23.6822 23.1207 23.0355 22.4 22.2341 22.4ZM27.3659 22.4C26.5645 22.4 25.9318 23.1207 25.9318 24C25.9318 24.8793 26.5786 25.6 27.3659 25.6C28.1673 25.6 28.8 24.8793 28.8 24C28.8 23.1207 28.1673 22.4 27.3659 22.4Z" fill="#c11f2b"/>
+                    </svg>
+                </div>
+                <div class="social-info">
+                    <h4>Discord</h4>
+                    <p>Для общения и новостей</p>
+                    <a href="https://discord.com/invite/3AwfEQCjMa" target="_blank" rel="noopener">Залетай на сервер</a>
+                </div>
+            </div>
+
+            <div class="social-item">
+                <div class="social-icon">
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 24 24"
+     width="64"
+     height="64"
+     fill="#c11f2b">
+    <path d="M11.979 0C5.678 0 .511 4.86.011 11.033l6.456 2.67a3.43 3.43 0 0 1 1.95-.607c.177 0 .351.014.521.039l2.873-4.163v-.059a4.52 4.52 0 1 1 4.52 4.52h-.103l-4.099 2.927c.004.061.004.122.004.184a3.437 3.437 0 1 1-6.874 0v-.077L.642 14.604C1.789 19.924 6.52 24 11.979 24 18.617 24 24 18.627 24 11.989 24 5.372 18.617 0 11.979 0zM7.98 18.18l-1.478-.61a2.582 2.582 0 0 0 4.858-.934 2.58 2.58 0 0 0-2.58-2.58c-.173 0-.343.018-.507.051l1.528.633a1.89 1.89 0 0 1 .993 2.478 1.89 1.89 0 0 1-2.477.993h-.001zm8.351-11.543a2.68 2.68 0 1 0 0 5.36 2.68 2.68 0 0 0 0-5.36zm0 .67a2.01 2.01 0 1 1 0 4.02 2.01 2.01 0 0 1 0-4.02z"/>
+</svg>
+                </div>
+                <div class="social-info">
+                    <h4>Steam</h4>
+                    <p>Мой профиль</p>
+                    <a href="https://steamcommunity.com/id/ripper_cmertanoc/" target="_blank" rel="noopener">Добавить в Steam</a>
+                </div>
+            </div>
+
+            <div class="social-item">
+                <div class="social-icon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="#c11f2b">
+    <path d="M439.646,414.689V283.835c0-80.865-52.543-149.686-125.275-174.131c15.477-15.161,25.105-36.272,25.105-59.599v-33.39 c0-12.377-13.06-20.485-24.162-14.934c-37.129,18.57-81.475,18.575-118.626,0c-11.142-5.559-24.162,2.591-24.162,14.934v33.39 c0,23.327,9.627,44.438,25.105,59.599C124.897,134.149,72.355,202.97,72.355,283.835v130.853 c-19.434,6.891-33.39,25.461-33.39,47.227C38.965,489.533,61.432,512,89.05,512h333.901c27.618,0,50.085-22.467,50.085-50.085 C473.036,440.151,459.08,421.58,439.646,414.689z M263.13,291.341c23.793,12.576,53.411,28.232,53.411,59.275 c0,27.96-18.869,51.549-44.52,58.841v7.939c0,9.222-7.478,16.695-16.695,16.695c-9.217,0-16.695-7.473-16.695-16.695v-7.939 c-25.651-7.292-44.52-30.881-44.52-58.841c0-9.222,7.478-16.695,16.695-16.695s16.695,7.473,16.695,16.695 c0,15.342,12.478,27.825,27.825,27.825c15.347,0,27.825-12.483,27.825-27.825c0-10.923-18.109-20.499-35.629-29.754 c-23.793-12.581-53.411-28.238-53.411-59.286c0-27.96,18.869-51.549,44.52-58.841v-7.939c0-9.222,7.478-16.695,16.695-16.695 c9.217,0,16.695,7.473,16.695,16.695v7.939c25.651,7.292,44.52,30.881,44.52,58.841c0,9.222-7.478,16.695-16.695,16.695 c-9.217,0-16.695-7.473-16.695-16.695c0-15.342-12.478-27.825-27.825-27.825c-15.347,0-27.825,12.483-27.825,27.825 C227.501,272.505,245.609,282.08,263.13,291.341z"/>
+</svg>
+                </div>
+                <div class="social-info">
+                    <h4>Donatex</h4>
+                    <p>Поддержать меня монеткой</p>
+                    <a href="https://donatex.gg/donate/ripper" target="_blank" rel="noopener">Задонатить</a>
+                </div>
+            </div>
+
+            <div class="social-item">
+                <div class="social-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path fill="#c11f2b" d="M2.661 14.337L6.801 0h6.362L11.88 4.444l-.038.077l-3.378 11.733h3.15q-1.982 4.934-3.086 7.733c-5.816-.063-7.442-4.228-6.02-9.155M8.554 24l7.67-11.035h-3.25l2.83-7.073c4.852.508 7.137 4.33 5.791 8.952C20.16 19.81 14.344 24 8.68 24h-.127z"/>
+                    </svg>
+                </div>
+                <div class="social-info">
+                    <h4>Boosty</h4>
+                    <p>Архив просмотров аниме и фильмов</p>
+                    <a href="https://boosty.to/ripper666" target="_blank" rel="noopener">Подписаться</a>
+                </div>
+            </div>
+
+            <div class="social-item">
+                <div class="social-icon">
+                    <svg fill="#c11f2b" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16.656 1.029c1.637-0.025 3.262-0.012 4.886-0.025 0.054 2.031 0.878 3.859 2.189 5.213l-0.002-0.002c1.411 1.271 3.247 2.095 5.271 2.235l0.028 0.002v5.036c-1.912-0.048-3.71-0.489-5.331-1.247l0.082 0.034c-0.784-0.377-1.447-0.764-2.077-1.196l0.052 0.034c-0.012 3.649 0.012 7.298-0.025 10.934-0.103 1.853-0.719 3.543-1.707 4.954l0.020-0.031c-1.652 2.366-4.328 3.919-7.371 4.011l-0.014 0c-0.123 0.006-0.268 0.009-0.414 0.009-1.73 0-3.347-0.482-4.725-1.319l0.040 0.023c-2.508-1.509-4.238-4.091-4.558-7.094l-0.004-0.041c-0.025-0.625-0.037-1.25-0.012-1.862 0.49-4.779 4.494-8.476 9.361-8.476 0.547 0 1.083 0.047 1.604 0.136l-0.056-0.008c0.025 1.849-0.050 3.699-0.050 5.548-0.423-0.153-0.911-0.242-1.42-0.242-1.868 0-3.457 1.194-4.045 2.861l-0.009 0.030c-0.133 0.427-0.21 0.918-0.21 1.426 0 0.206 0.013 0.41 0.037 0.61l-0.002-0.024c0.332 2.046 2.086 3.59 4.201 3.59 0.061 0 0.121-0.001 0.181-0.004l-0.009 0c1.463-0.044 2.733-0.831 3.451-1.994l0.010-0.018c0.267-0.372 0.45-0.822 0.511-1.311l0.001-0.014c0.125-2.237 0.075-4.461 0.087-6.698 0.012-5.036-0.012-10.060 0.025-15.083z"></path>
+                    </svg>
+                </div>
+                <div class="social-info">
+                    <h4>TikTok</h4>
+                    <p>Мой сборник позора (вырезок со стримов)</p>
+                    <a href="https://www.tiktok.com/@ripper_cmertanoc" target="_blank" rel="noopener">Смотреть TikTok</a>
+                </div>
+            </div>
+
+            <!-- Новые карточки -->
+            <div class="social-item">
+                <div class="social-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#c11f2b">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2v-4h2v4zm4 0h-2v-7h2v7zm2-11H5V5h14v1z"/>
+                    </svg>
+                </div>
+                <div class="social-info">
+                    <h4>Google Таблица</h4>
+                    <p>Список просмотренного аниме и фильмов и тирлист игр</p>
+                    <a href="https://docs.google.com/spreadsheets/d/1WCepmuA0TbgfDCLkNEyX-3U4ReqgGQQHxBMT05h1_gk" target="_blank" rel="noopener">Открыть таблицу</a>
+                </div>
+            </div>
+
+            <div class="social-item">
+                <div class="social-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#c11f2b">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+                <div class="social-info">
+                    <h4>Яндекс Музыка</h4>
+                    <p>Мои любимые треки</p>
+                    <a href="https://music.yandex.ru/playlists/lk.162b10f8-9b68-47b4-bb33-2404821fb51b?utm_source=desktop&utm_medium=copy_link" target="_blank" rel="noopener">Слушать плейлист</a>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer>
+        <p>© 2025–2026 RIPSITE · Все права защищены</p>
+    </footer>
+    <script src="agreement.js" defer></script>
+</body>
+</html>

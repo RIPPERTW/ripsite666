@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RIPSITE | Игры</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #09090f;
+            --card: #101015;
+            --accent: #c11f2b;
+            --accent-dark: #c11f2b;
+            --text: #e0e0ff;
+            --text-muted: #a0a0cc;
+            --border: #1e1e28;
+            --gradient-start: #0f0f1a;
+            --gradient-end: #09090f;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            overflow-x: hidden;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        body.modal-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        .top-section {
+            background: linear-gradient(
+                to bottom,
+                #0f0f1a 0%,
+                #0c0c16 40%,
+                #0a0a13 70%,
+                var(--bg) 100%
+            );
+            padding: 2.8rem 1rem 4.2rem;
+            text-align: center;
+            position: relative;
+        }
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3.2rem, 13vw, 8.2rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            color: #c11f2b;
+        }
+        nav {
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(230,57,70,0.10);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 1rem 1rem;
+            margin-top: -1px;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.6rem 2.8rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.08rem;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 0.4rem;
+            transition: color 0.25s ease;
+            position: relative;
+        }
+        nav a:hover,
+        nav a.active {
+            color: white;
+        }
+        nav a.active::after,
+        nav a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            width: 0;
+            height: 2.5px;
+            background: linear-gradient(to right, transparent, var(--accent), transparent);
+            transition: width 0.35s ease;
+            transform: translateX(-50%);
+        }
+        nav a:hover::after,
+        nav a.active::after {
+            width: 85%;
+        }
+        main {
+            max-width: 1480px;
+            margin: -3.2rem auto 4rem;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.6rem;
+            color: var(--accent);
+            text-align: center;
+            margin: 3.5rem 0 2rem;
+            letter-spacing: -0.03em;
+        }
+        .intro-text {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            font-size: 1.12rem;
+        }
+        .search-container {
+            margin: 2.2rem 0;
+            text-align: center;
+        }
+        .search-bar {
+            width: 100%;
+            max-width: 620px;
+            padding: 1.1rem 1.8rem;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--card);
+            color: var(--text);
+            font-size: 1.08rem;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+        .search-bar:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(193,31,43,0.18);
+        }
+        .sort-container {
+            display: flex;
+            justify-content: center;
+            gap: 1.1rem;
+            margin: 1.8rem 0 3rem;
+            flex-wrap: wrap;
+        }
+        .sort-button {
+            padding: 0.85rem 1.3rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--card);
+            color: var(--text-muted);
+            font-size: 1.35rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+        }
+        .sort-button:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .sort-button.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .steam-widget-section {
+            margin: 0.5rem 0 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 1rem;
+        }
+        .steam-widget-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            border-radius: 18px;
+            overflow: hidden;
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(193,31,43,0.08);
+            line-height: 0;
+            display: block;
+            text-decoration: none;
+        }
+        .steam-widget-wrap img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 18px;
+            position: relative;
+            z-index: 1;
+        }
+        .steam-widget-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-top: 1rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            letter-spacing: 0.4px;
+        }
+        .steam-widget-label i {
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+        .tier-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.6rem;
+            margin-bottom: 5rem;
+        }
+        .tier-row {
+            display: flex;
+            align-items: stretch;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            min-height: 220px;
+            contain: layout paint style;
+        }
+        .tier-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 120px;
+            min-width: 120px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.2rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            position: relative;
+        }
+        .tier-S .tier-label { background: linear-gradient(135deg, #c11f2b, #6a0f17); }
+        .tier-A .tier-label { background: linear-gradient(135deg, #c11f2b, #8a1520); }
+        .tier-B .tier-label { background: linear-gradient(135deg, #8a1520, #4a0a10); }
+        .tier-C .tier-label { background: linear-gradient(135deg, #5a3a7a, #2a1a3a); }
+        .tier-D .tier-label { background: linear-gradient(135deg, #2a4a5a, #152530); }
+        .tier-E .tier-label { background: linear-gradient(135deg, #3a3a5a, #1a1a2e); }
+        .tier-F .tier-label { background: linear-gradient(135deg, #2a2a3a, #151520); }
+        .tier-games {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.6rem;
+            padding: 1.6rem 1.8rem;
+            align-items: center;
+            flex: 1;
+        }
+        .game-card {
+            width: 200px;
+            cursor: pointer;
+            transition: transform 0.25s ease, border-color 0.25s ease;
+            border-radius: 16px;
+            overflow: hidden;
+            background: var(--card);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+            display: block;
+            position: relative;
+            contain: layout paint style;
+        }
+        .game-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent);
+        }
+        .game-poster {
+            aspect-ratio: 2 / 3;
+            width: 100%;
+            position: relative;
+            background-color: #1a1a24;
+            overflow: hidden;
+        }
+        .game-poster img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        .game-title {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 2.4rem 1rem 0.6rem;
+            background: linear-gradient(to top, rgba(9,9,15,0.98) 40%, transparent 100%);
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            line-height: 1.35;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.95);
+            color: var(--text);
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            text-overflow: ellipsis;
+        }
+        .planned-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.6rem;
+            margin-bottom: 5rem;
+            padding: 2rem 2rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+        .planned-list .game-card {
+            width: 100%;
+            cursor: default;
+        }
+        .planned-list .game-card:hover {
+            transform: translateY(-6px);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(9,9,15,0.96);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            overscroll-behavior: contain;
+        }
+        .modal.open {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            max-width: 920px;
+            width: 100%;
+            height: 510px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            will-change: transform, opacity;
+        }
+        .modal:not(.visible) .modal-content {
+            opacity: 0;
+            transform: translateY(16px) scale(0.98);
+        }
+        .modal.visible .modal-content {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .modal-content.fullscreen {
+            max-width: 100%;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            border-radius: 0;
+            border: none;
+        }
+        .modal-poster {
+            width: 340px;
+            min-width: 340px;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #1a1a24;
+            position: relative;
+            flex-shrink: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            will-change: opacity, transform;
+        }
+        .modal-content.fullscreen .modal-poster {
+            width: 0;
+            min-width: 0;
+            opacity: 0;
+            transform: translateX(-20px);
+            pointer-events: none;
+        }
+        .modal-poster::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to right,
+                transparent 55%,
+                rgba(16,16,21,0.7) 85%,
+                rgba(16,16,21,1) 100%
+            );
+            pointer-events: none;
+        }
+        .modal-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            min-width: 0;
+            height: 100%;
+        }
+        .modal-actions {
+            position: absolute;
+            top: 1.2rem;
+            right: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            z-index: 20;
+        }
+        .modal-action-btn {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: color 0.2s ease, background 0.2s ease;
+            background: transparent;
+            border: none;
+            font-family: inherit;
+        }
+        .modal-action-btn:hover {
+            color: white;
+        }
+        .modal-action-btn.close-btn {
+            font-size: 2.4rem;
+            line-height: 1;
+            padding-bottom: 4px;
+        }
+        .modal-header {
+            padding: 2rem 2.8rem 1rem;
+            flex-shrink: 0;
+        }
+        .modal-rank {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: white;
+            width: 70px;
+            height: 70px;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            transition: transform 0.3s ease;
+        }
+        .modal-content.fullscreen .modal-rank {
+            transform: scale(1.15);
+        }
+        .modal-rank::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: rgba(16,16,21,0.85);
+            z-index: 1;
+        }
+        .modal-rank::after {
+            content: '';
+            position: absolute;
+            inset: 7px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: rgba(16,16,21,0.95);
+            z-index: 1;
+        }
+        .modal-rank > span {
+            position: relative;
+            z-index: 3;
+        }
+        .rank-S { background: linear-gradient(135deg, #c11f2b, #6a0f17); }
+        .rank-A { background: linear-gradient(135deg, #c11f2b, #8a1520); }
+        .rank-B { background: linear-gradient(135deg, #8a1520, #4a0a10); }
+        .rank-C { background: linear-gradient(135deg, #5a3a7a, #2a1a3a); }
+        .rank-D { background: linear-gradient(135deg, #2a4a5a, #152530); }
+        .rank-E { background: linear-gradient(135deg, #3a3a5a, #1a1a2e); }
+        .rank-F { background: linear-gradient(135deg, #2a2a3a, #151520); }
+        .modal-title {
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            margin-bottom: 0.8rem;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+        }
+        .modal-content.fullscreen .modal-title {
+            font-size: 2.2rem;
+        }
+        .modal-divider {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(to right, var(--accent), transparent);
+            border-radius: 2px;
+            margin-bottom: 0;
+            transition: width 0.3s ease;
+        }
+        .modal-content.fullscreen .modal-divider {
+            width: 100px;
+            height: 4px;
+        }
+        .modal-date {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            letter-spacing: 0.3px;
+            font-style: italic;
+        }
+        .modal-content.fullscreen .modal-date {
+            font-size: 0.95rem;
+        }
+        .modal-review-wrap {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0 2rem 2.8rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) var(--border);
+            min-height: 0;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-content.fullscreen .modal-review-wrap {
+            padding: 1.5rem 0 4rem 2.8rem;
+        }
+        .modal-review-wrap::-webkit-scrollbar {
+            width: 6px;
+        }
+        .modal-review-wrap::-webkit-scrollbar-track {
+            background: var(--border);
+            border-radius: 3px;
+        }
+        .modal-review-wrap::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+        .modal-review {
+            color: var(--text);
+            font-size: 0.88rem;
+            line-height: 1.65;
+            position: relative;
+            padding-left: 0.6rem;
+            padding-right: 2.8rem;
+            border-left: 2px solid rgba(193,31,43,0.35);
+            white-space: pre-wrap;
+        }
+        .modal-content.fullscreen .modal-review {
+            font-size: 1rem;
+            line-height: 1.75;
+        }
+        .modal-review::before {
+            position: absolute;
+            left: -2px;
+            top: -13px;
+            font-size: 3rem;
+            color: rgba(193,31,43,0.4);
+            font-family: Georgia, serif;
+            line-height: 1;
+        }
+        .game-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 1px dashed rgba(193,31,43,0.5);
+            transition: color 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            display: inline;
+        }
+        .game-link:hover {
+            color: #ff2d3d;
+            border-bottom-color: #ff2d3d;
+        }
+        .game-hover-preview {
+            display: none;
+            position: fixed;
+            z-index: 99999;
+            background: var(--card);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.85);
+            pointer-events: none;
+            align-items: center;
+            gap: 10px;
+        }
+        .game-hover-preview.visible {
+            display: flex;
+        }
+        .game-hover-preview .preview-poster {
+            width: 64px;
+            height: 96px;
+            border-radius: 6px;
+            background-size: cover;
+            background-position: center;
+            background-color: #1a1a24;
+            flex-shrink: 0;
+        }
+        .game-hover-preview .preview-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .game-hover-preview .preview-rank {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: white;
+            width: 44px;
+            height: 44px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            position: relative;
+        }
+        .game-hover-preview .preview-rank::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: rgba(16,16,21,0.85);
+            z-index: 1;
+        }
+        .game-hover-preview .preview-rank::after {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: rgba(16,16,21,0.95);
+            z-index: 1;
+        }
+        .game-hover-preview .preview-rank > span {
+            position: relative;
+            z-index: 3;
+        }
+        .all-games-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.6rem;
+            margin-bottom: 5rem;
+            padding: 2rem 2rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+        .all-games-list .game-card {
+            width: 100%;
+        }
+        footer {
+            text-align: center;
+            padding: 4.5rem 1rem 3.5rem;
+            color: #4a4a60;
+            font-size: 0.95rem;
+            border-top: 1px solid #181822;
+        }
+
+        @media (max-width: 820px) {
+            main {
+                margin-top: -2.4rem;
+                padding: 0 1.2rem;
+            }
+            .top-section {
+                padding: 2.2rem 1rem 3.6rem;
+            }
+            header h1 {
+                font-size: clamp(2.8rem, 11vw, 6.2rem);
+            }
+            nav ul {
+                gap: 1rem 1.4rem;
+            }
+            .section-title {
+                font-size: 2.1rem;
+                margin: 2.8rem 0 1.6rem;
+            }
+            .steam-widget-section {
+                margin: 2.8rem 0 1.6rem;
+            }
+            .steam-widget-wrap {
+                border-radius: 14px;
+            }
+            .steam-widget-wrap img {
+                border-radius: 14px;
+            }
+            .steam-widget-label {
+                font-size: 0.85rem;
+            }
+            .tier-label {
+                width: 80px;
+                min-width: 80px;
+                font-size: 2.2rem;
+            }
+            .tier-games {
+                padding: 1.2rem;
+                gap: 1rem;
+            }
+            .game-card {
+                width: 155px;
+            }
+            .game-title {
+                font-size: 0.95rem;
+                padding: 2rem 0.8rem 0.5rem;
+            }
+            .planned-list {
+                grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+                gap: 1rem;
+                padding: 1.4rem;
+            }
+            .all-games-list {
+                grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+                gap: 1rem;
+                padding: 1.4rem;
+            }
+            .modal-content {
+                height: 400px;
+            }
+            .modal-poster {
+                width: 220px;
+                min-width: 220px;
+            }
+            .modal-header {
+                padding: 1.6rem 1.8rem 0.8rem;
+            }
+            .modal-review-wrap {
+                padding: 0.8rem 0 1.6rem 1.8rem;
+            }
+            .modal-content.fullscreen .modal-review-wrap {
+                padding: 1rem 0 3rem 1.8rem;
+            }
+            .modal-rank {
+                width: 58px;
+                height: 58px;
+                font-size: 1.8rem;
+            }
+            .modal-title {
+                font-size: 1.35rem;
+            }
+            .modal-review {
+                font-size: 0.82rem;
+                padding-right: 1.8rem;
+            }
+            .sort-button {
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .steam-widget-section {
+                margin: 2.2rem 0 1.2rem;
+                padding: 0 0.4rem;
+            }
+            .steam-widget-wrap {
+                border-radius: 12px;
+            }
+            .steam-widget-wrap img {
+                border-radius: 12px;
+            }
+            .steam-widget-label {
+                font-size: 0.78rem;
+                gap: 0.4rem;
+            }
+            .steam-widget-label i {
+                font-size: 0.9rem;
+            }
+            .tier-games {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.8rem;
+                padding: 1rem;
+            }
+            .game-card {
+                width: 100%;
+            }
+            .game-title {
+                font-size: 0.82rem;
+                padding: 1.6rem 0.5rem 0.4rem;
+                -webkit-line-clamp: 2;
+            }
+            .planned-list {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.6rem;
+                padding: 1rem;
+            }
+            .planned-list .game-card {
+                width: 100%;
+            }
+            .planned-list .game-title {
+                font-size: 0.7rem;
+                padding: 1.2rem 0.3rem 0.3rem;
+                -webkit-line-clamp: 2;
+            }
+            .all-games-list {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.6rem;
+                padding: 1rem;
+            }
+            .all-games-list .game-card {
+                width: 100%;
+            }
+            .all-games-list .game-title {
+                font-size: 0.7rem;
+                padding: 1.2rem 0.3rem 0.3rem;
+                -webkit-line-clamp: 2;
+            }
+            .modal {
+                padding: 0;
+                align-items: flex-end;
+            }
+            .modal-content {
+                flex-direction: column;
+                height: 94vh;
+                height: 94dvh;
+                max-height: 94vh;
+                max-height: 94dvh;
+                border-radius: 20px 20px 0 0;
+                overflow: hidden;
+                position: relative;
+            }
+            .modal-content.fullscreen {
+                border-radius: 0;
+                height: 100vh;
+                height: 100dvh;
+                max-height: 100vh;
+                max-height: 100dvh;
+            }
+            .modal-poster {
+                width: 100%;
+                min-width: 100%;
+                height: 38vh;
+                min-height: 38vh;
+                flex-shrink: 0;
+                background-size: cover;
+                background-position: center 20%;
+            }
+            .modal-content.fullscreen .modal-poster {
+                height: 0;
+                min-height: 0;
+            }
+            .modal-poster::after {
+                background: linear-gradient(
+                    to bottom,
+                    rgba(16,16,21,0.1) 0%,
+                    rgba(16,16,21,0.4) 50%,
+                    rgba(16,16,21,0.92) 85%,
+                    rgba(16,16,21,1) 100%
+                );
+            }
+            .modal-info {
+                flex: 1;
+                height: auto;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+                margin-top: -5vh;
+                position: relative;
+                z-index: 2;
+                background: var(--card);
+                border-radius: 20px 20px 0 0;
+                overflow: hidden;
+            }
+            .modal-content.fullscreen .modal-info {
+                margin-top: 0;
+                border-radius: 0;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                padding-top: env(safe-area-inset-top, 0px);
+            }
+            .modal-actions {
+                position: absolute;
+                top: 0.8rem;
+                right: 0.8rem;
+                gap: 0.4rem;
+                z-index: 9999;
+            }
+            .modal-content.fullscreen .modal-actions {
+                position: fixed;
+                top: calc(env(safe-area-inset-top, 0px) + 0.8rem);
+            }
+            .modal-action-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 1.8rem;
+                color: #fff;
+                background: rgba(9,9,15,0.7);
+                border-radius: 50%;
+            }
+            .modal-header {
+                padding: 1.2rem 1.4rem 0.6rem;
+                margin-top: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.6rem;
+                flex-shrink: 0;
+            }
+            .modal-rank {
+                width: 56px;
+                height: 56px;
+                font-size: 1.8rem;
+                margin-bottom: 0;
+                flex-shrink: 0;
+            }
+            .modal-content.fullscreen .modal-rank {
+                transform: scale(1.08);
+            }
+            .modal-header-text {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0.3rem;
+                width: 100%;
+            }
+            .modal-title {
+                font-size: 1.15rem;
+                margin-bottom: 0.2rem;
+                line-height: 1.2;
+                overflow: visible;
+                display: block;
+                word-break: break-word;
+                white-space: normal;
+            }
+            .modal-content.fullscreen .modal-title {
+                font-size: 1.25rem;
+            }
+            .modal-divider {
+                width: 40px;
+                height: 2px;
+                margin-top: 0;
+            }
+            .modal-date {
+                font-size: 0.75rem;
+                margin-top: 0.3rem;
+            }
+            .modal-content.fullscreen .modal-date {
+                font-size: 0.85rem;
+            }
+            .modal-review-wrap {
+                flex: 1;
+                overflow-y: auto;
+                padding: 0.8rem 0 2rem 1.4rem;
+                min-height: 0;
+                scrollbar-width: thin;
+                scrollbar-color: var(--accent) transparent;
+                -webkit-overflow-scrolling: touch;
+            }
+            .modal-content.fullscreen .modal-review-wrap {
+                padding: 0.8rem 0 4rem 1.4rem;
+                flex: 1;
+                overflow-y: auto;
+                min-height: 0;
+            }
+            .modal-review-wrap::-webkit-scrollbar {
+                width: 4px;
+            }
+            .modal-review-wrap::-webkit-scrollbar-thumb {
+                background: var(--accent);
+                border-radius: 2px;
+            }
+            .modal-review {
+                font-size: 0.75rem;
+                line-height: 1.55;
+                padding-left: 0.6rem;
+                padding-right: 1.4rem;
+                border-left: 2px solid rgba(193,31,43,0.4);
+            }
+            .modal-content.fullscreen .modal-review {
+                font-size: 0.78rem;
+                line-height: 1.6;
+            }
+            .modal-review::before {
+                font-size: 2.4rem;
+                top: -10px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .modal-poster {
+                height: 34vh;
+                min-height: 34vh;
+            }
+            .modal-rank {
+                width: 48px;
+                height: 48px;
+                font-size: 1.5rem;
+            }
+            .modal-title {
+                font-size: 1rem;
+            }
+            .modal-content.fullscreen .modal-title {
+                font-size: 1.1rem;
+            }
+            .modal-review {
+                font-size: 0.7rem;
+            }
+            .modal-content.fullscreen .modal-review {
+                font-size: 0.72rem;
+            }
+            .modal-date {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-section">
+        <header>
+            <h1>RIPSITE</h1>
+        </header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Главная</a></li>
+                <li><a href="links.html">Ссылки</a></li>
+                <li><a href="different.html">Разное</a></li>
+                <li><a href="anime.html">Аниме</a></li>
+                <li><a href="movies.html">Фильмы</a></li>
+                <li><a href="games.html" class="active">Игры</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <main>
+        <div class="steam-widget-section">
+            <div>
+                <a href="https://steamcommunity.com/id/ripper_cmertanoc/" target="_blank" rel="noopener noreferrer" class="steam-widget-wrap">
+                    <img src="https://steam-widget.com/widget/img?id=76561199007449644&width=900&style=CRIMSON" alt="Steam профиль">
+                </a>
+                <div class="steam-widget-label">
+                    <i class="fa-brands fa-steam"></i>
+                    <span>Steam status</span>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="section-title">Тирлист игр</h2>
+        <p class="intro-text">Игры которые я проходил и играл</p>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-bar" placeholder="Поиск игр..." onkeyup="searchGames()">
+        </div>
+
+        <div class="sort-container">
+            <button class="sort-button" onclick="toggleSort(this, 'title-asc')" title="По алфавиту (А-Я)">
+                <i class="fa-solid fa-arrow-down-a-z"></i>
+            </button>
+            <button class="sort-button" onclick="toggleSort(this, 'title-desc')" title="По алфавиту (Я-А)">
+                <i class="fa-solid fa-arrow-up-a-z"></i>
+            </button>
+            <button class="sort-button" onclick="toggleSort(this, 'date-asc')" title="По дате (старые)">
+                <i class="fa-solid fa-arrow-down-1-9"></i>
+            </button>
+            <button class="sort-button" onclick="toggleSort(this, 'date-desc')" title="По дате (новые)">
+                <i class="fa-solid fa-arrow-down-9-1"></i>
+            </button>
+        </div>
+
+        <div id="searchResultsContainer" style="display: none;">
+            <h2 class="section-title">Результаты поиска</h2>
+            <div class="all-games-list" id="searchResultsList"></div>
+        </div>
+
+        <div id="tierlistContainer">
+            <div class="tier-container" id="tierContainer"></div>
+        </div>
+
+        <div id="plannedContainer">
+            <h2 class="section-title">Игры в которые хочу поиграть</h2>
+            <p class="intro-text">Планы и в раздумьях</p>
+            <div class="planned-list" id="plannedList"></div>
+        </div>
+    </main>
+
+    <div id="reviewModal" class="modal">
+        <div class="modal-content" id="modalContent">
+            <div class="modal-poster" id="modalPoster"></div>
+            <div class="modal-info">
+                <div class="modal-actions">
+                    <button class="modal-action-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="На весь экран">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="modal-action-btn close-btn" onclick="closeModal()" title="Закрыть">×</button>
+                </div>
+                <div class="modal-header">
+                    <div class="modal-rank" id="modalRank"><span></span></div>
+                    <div class="modal-header-text">
+                        <h2 class="modal-title" id="modalTitle"></h2>
+                        <div class="modal-divider"></div>
+                        <div class="modal-date" id="modalDate"></div>
+                    </div>
+                </div>
+                <div class="modal-review-wrap">
+                    <p class="modal-review" id="modalReview"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="globalHoverPreview" class="game-hover-preview">
+        <span class="preview-poster" id="hoverPoster"></span>
+        <span class="preview-info">
+            <span class="preview-rank" id="hoverRank"><span></span></span>
+        </span>
+    </div>
+
+    <footer>
+        <p>© 2025–2026 RIPSITE · Все права защищены</p>
+    </footer>
+    <script src="agreement.js" defer></script>
+    <script>
+        const gamesData = [
+            { title: "Everlasting Summer", rang: "S", date: "", comment: "Очень хороший сюжет" },
+            { title: "Banebush", rang: "A", date: "", comment: "" },
+            { title: "Castle Crashers", rang: "A", date: "", comment: "" },
+            { title: "Chained Together", rang: "C", date: "", comment: "" },
+            { title: "Climber Animals Together", rang: "B", date: "", comment: "" },
+            { title: "CrossCode", rang: "S", date: "", comment: "" },
+            { title: "Cube Escape Collection", rang: "A", date: "", comment: "" },
+            { title: "Cube Escape Paradox", rang: "B", date: "", comment: "" },
+            { title: "Eyes The Horror Game", rang: "D", date: "", comment: "" },
+            { title: "Forager", rang: "B", date: "", comment: "" },
+            { title: "GIBZ", rang: "D", date: "", comment: "" },
+            { title: "Human Fall Flat", rang: "A", date: "", comment: "" },
+            { title: "Keep Digging", rang: "B", date: "", comment: "" },
+            { title: "Left 4 Dead 2", rang: "B", date: "", comment: "" },
+            { title: "PANICORE", rang: "B", date: "", comment: "" },
+            { title: "Raft", rang: "C", date: "", comment: "" },
+            { title: "Ranch Simulator", rang: "A", date: "", comment: "" },
+            { title: "Rusty Lake Hotel", rang: "A", date: "", comment: "" },
+            { title: "Rusty Lake Paradise", rang: "B", date: "", comment: "" },
+            { title: "Rusty Lake Roots", rang: "A", date: "", comment: "" },
+            { title: "SUPERHOT", rang: "A", date: "", comment: "" },
+            { title: "Terraria", rang: "D", date: "", comment: "" },
+            { title: "The White Door", rang: "C", date: "", comment: "" },
+            { title: "Tiny Bunny", rang: "S", date: "", comment: "" },
+            { title: "Wall World", rang: "B", date: "", comment: "" },
+            { title: "Watch_Dogs", rang: "S", date: "", comment: "" },
+            { title: "Watch_Dogs 2", rang: "E", date: "", comment: "" },
+            { title: "The Binding of Isaac", rang: "S", date: "", comment: "" },
+            { title: "Among Us", rang: "A", date: "", comment: "" },
+            { title: "House Flipper", rang: "D", date: "", comment: "" },
+            { title: "Ben and Ed", rang: "E", date: "", comment: "" },
+            { title: "Ben and Ed - Blood Party", rang: "B", date: "", comment: "" },
+            { title: "Content Warning", rang: "B", date: "", comment: "" },
+            { title: "City Car Driving", rang: "C", date: "", comment: "" },
+            { title: "BeamNG drive", rang: "B", date: "", comment: "" },
+            { title: "Euro Truck Simulator", rang: "C", date: "", comment: "" },
+            { title: "Euro Truck Simulator 2", rang: "S", date: "", comment: "" },
+            { title: "Deadlock", rang: "E", date: "", comment: "" },
+            { title: "Fears to Fathom - Home Alone", rang: "B", date: "", comment: "" },
+            { title: "Graveyard Keeper", rang: "F", date: "", comment: "" },
+            { title: "Hero Tale", rang: "D", date: "", comment: "" },
+            { title: "Mortal Shell", rang: "D", date: "", comment: "" },
+            { title: "Prison Life", rang: "C", date: "", comment: "" },
+            { title: "Prologue Go Wayback", rang: "E", date: "", comment: "" },
+            { title: "ShellShock Live", rang: "D", date: "", comment: "" },
+            { title: "Shift Happens", rang: "D", date: "", comment: "" },
+            { title: "Totally Reliable Delivery Service", rang: "E", date: "", comment: "" },
+            { title: "The Slimekings Tower", rang: "C", date: "", comment: "" },
+            { title: "Zenless Zone Zero", rang: "A", date: "", comment: "" },
+            { title: "Marvels Spider-Man Remastered", rang: "S", date: "29.09.2026", comment: "Игра, в которую я изначально не должен был играть, скачал грубо говоря, из-за того, что она мало весит да и сердце желало сюжета. Когда-то давно видел, как в неё играл друг (не помню уже, в какую именно часть), а ещё смотрел по телеку на канале Gameshow (потом он стал E, а дальше уже не следил там были стримы парня по имени Gideon — там были игровые каналы и других стримеров и всякие программы про игры). Я посмотрел часов пять в каком то моменте. Плюс можно было спокойно играть на максималках. А ещё поскольку мы с вами на стримах смотрим все фильмы Марвел, решил связать это дело и поиграть. В итоге игра оказалась охуенной — нравится буквально всё. Читал, что многим не зашли стелс-секции за Мэри Джейн, но я так и не понял, в чём претензия так как это же часть сюжета и просто другой игровой опыт, небольшой, но нужный. Тогда уж и вставки за Майлза должны были не понравиться по той же логике, но при них ни слова. По объёму игра проходится нормально — ни растянуто, ни сжато, шёл с удовольствием. Из реальных минусов только то, что диалоги иногда не рассчитаны на расстояние: добираешься уже до зоны квеста, а разговор всё ещё идёт, и приходится тупо ждать. Ещё в стелс-миссиях за Паука не всегда понятно, когда можно притянуть врага, а когда нет — хотя ситуации на вид одинаковые. Играл на предмаксимальной сложности, горело только в битве с Фиском (там ещё учился так что без вопросов) и в квесте «Да в полымя» — там я больше часа страдал. Допы почти не трогал, потому что они вне сюжета, а вот все сюжетные миссии из DLC закрыл. Игра ещё и на эмоции пробила — первая, которая так сделала, и вообще первая, в которую я по-настоящему погрузился в историю. Как обычно, мысли что  у него жизнь, а у меня хуйня, но это похуй уже дефолт так что это просто мысли (в Everlasting Summer я был погружен и тоже пробивало и не раз всё по тем же причинам, но это был немного другой взгляд на игру). Надеюсь что части Marvels Spider-Man Miles Morales и Marvels Spider-Man 2 будет не хуже." },
+            { title: "Fran Bow", rang: "B", date: "", comment: "" },
+            { title: "Strinova", rang: "D", date: "", comment: "" },
+            { title: "Celeste", rang: "B", date: "", comment: "" },
+            { title: "Super Meat Boy 3D", rang: "S", date: "", comment: "" },
+            { title: "Reventure", rang: "C", date: "", comment: "" },
+            { title: "Clone Drone in the Danger Zone", rang: "S", date: "", comment: "" },
+            { title: "Cookie Clicker", rang: "A", date: "", comment: "" },
+            { title: "Cuphead", rang: "A", date: "", comment: "" },
+            { title: "Megabonk", rang: "A", date: "", comment: "" },
+            { title: "Hammerwatch", rang: "B", date: "", comment: "" },
+            { title: "PEAK", rang: "S", date: "", comment: "" },
+            { title: "Peglin", rang: "B", date: "", comment: "" },
+            { title: "REPO", rang: "A", date: "", comment: "" },
+            { title: "Stumble Guys", rang: "S", date: "", comment: "" },
+            { title: "White Knuckle", rang: "S", date: "", comment: "" },
+            { title: "SUPERHOT MIND CONTROL DELETE", rang: "B", date: "", comment: "" },
+            { title: "Bloons TD 6", rang: "S", date: "", comment: "" },
+            { title: "Geometry Dash", rang: "A", date: "", comment: "" },
+            { title: "BRAIN OUT", rang: "A", date: "", comment: "" },
+            { title: "Idle Slayer", rang: "C", date: "", comment: "" },
+            { title: "Drakensang Online", rang: "B", date: "", comment: "" },
+            { title: "Krunker", rang: "S", date: "", comment: "" },
+            { title: "World of Tanks Blitz", rang: "B", date: "", comment: "" },
+            { title: "Tanki online", rang: "S", date: "", comment: "" },
+            { title: "Quarantine Zone The Last Check", rang: "C", date: "", comment: "" },
+            { title: "Escape from Duckov", rang: "B", date: "", comment: "" },
+            { title: "Rogue Legacy", rang: "B", date: "", comment: "" },
+            { title: "The Past Within", rang: "A", date: "", comment: "" },
+            { title: "60 Seconds", rang: "B", date: "", comment: "" },
+            { title: "Dicey Dungeons", rang: "B", date: "", comment: "" },
+            { title: "Islets", rang: "C", date: "", comment: "" },
+            { title: "Lost in Play", rang: "A", date: "", comment: "" },
+            { title: "Little Inferno", rang: "C", date: "", comment: "" },
+            { title: "Chuchel", rang: "C", date: "", comment: "" },
+            { title: "Prison Escape", rang: "B", date: "", comment: "" },
+            { title: "Outpath", rang: "E", date: "", comment: "" },
+            { title: "Forza Horizon 3", rang: "A", date: "", comment: "" },
+            { title: "World of Warcraft", rang: "B", date: "", comment: "" },
+            { title: "Dont Play This", rang: "B", date: "", comment: "" },
+            { title: "Fall Guys", rang: "C", date: "", comment: "" },
+            { title: "Pratfall", rang: "C", date: "", comment: "" },
+            { title: "Hytale", rang: "F", date: "", comment: "" },
+            { title: "Balatro", rang: "B", date: "", comment: "" },
+            { title: "MiSide", rang: "A", date: "", comment: "" },
+            { title: "Just Shapes and Beats", rang: "C", date: "", comment: "" },
+            { title: "Buckshot Roulette", rang: "C", date: "", comment: "" },
+            { title: "Move or Die", rang: "B", date: "", comment: "" },
+            { title: "Stick Fight The Game", rang: "B", date: "", comment: "" },
+            { title: "Supermarket Together", rang: "D", date: "", comment: "" },
+            { title: "Tricky Towers", rang: "C", date: "", comment: "" },
+            { title: "Pummel Party", rang: "C", date: "", comment: "" },
+            { title: "Swag and Sorcery", rang: "B", date: "", comment: "" },
+            { title: "Creepy Tale", rang: "A", date: "", comment: "" },
+            { title: "McPixel 3", rang: "B", date: "", comment: "" },
+            { title: "Getting Over It with Bennett Foddy", rang: "C", date: "", comment: "" },
+            { title: "IRULE", rang: "A", date: "", comment: "" },
+            { title: "Super Bunny Man", rang: "S", date: "", comment: "" },
+            { title: "CATS Crash Arena Turbo Stars", rang: "B", date: "", comment: "" },
+            { title: "Minesweeper Collector", rang: "B", date: "", comment: "" },
+            { title: "Penguin Helper", rang: "C", date: "", comment: "" },
+            { title: "An Alt Girl for Skoof", rang: "C", date: "", comment: "" },
+            { title: "Forage Wizard", rang: "C", date: "", comment: "" },
+            { title: "The Spell Brigade", rang: "D", date: "", comment: "" },
+            { title: "Plants vs Zombies", rang: "S", date: "", comment: "" },
+            { title: "Brotato", rang: "B", date: "", comment: "" },
+            { title: "Summoners Greed", rang: "A", date: "", comment: "" },
+            { title: "Minecraft Legends", rang: "D", date: "", comment: "" },
+            { title: "Minecraft", rang: "A", date: "", comment: "" },
+            { title: "Golf With Your Friends", rang: "C", date: "", comment: "" },
+            { title: "Dota 2", rang: "F", date: "", comment: "" },
+            { title: "Cat Quest 2", rang: "C", date: "", comment: "" },
+            { title: "The Escapists", rang: "F", date: "02.10.2026", comment: "Перед тем как играть в эту часть, я уже успел наиграть в The Escapists 2 чуть больше десяти часов — правда, большую часть времени просто бегал по основной карте, соблюдал распорядок дня, лазил по столам сокамерников, дрался с ними и надзирателями, пытался прятаться, копал и прятал вещи, как мог. До прохождения было ещё далеко, но удовольствия я получал массу. Потом логично подумал, что раз есть вторая часть, должна быть и первая, скачал её — но буквально ничего не понял: всё выглядело уродски и убого, и спустя минут десять, так ничего и не разобрав, удалил и продолжил играть во вторую. Сейчас, став постарше и поумнее, зашёл снова — и в принципе ничего не изменилось. В игре жуткий передроченный гринд: приходится ждать конца дня, чтобы обновились вещи в столах и у торговцев. Предметы совершенно непонятные — какие нужны, какие нет, потому что чтобы что-то скрафтить, нужно сначала получить записку с рецептом, а её в лучшем случае одна в день, да и то не факт, что она не повторится или не окажется бесполезной, ведь ты всё равно не поймёшь, надо оно тебе или нет. Плюс, подозреваю, в каждой тюрьме эти записки приходится добывать заново. Крафт тяжёлый до безобразия: нужные предметы приходится выдрачивать часами — например, чтобы найти одну из трёх деталей для кусачек, ушёл почти час (возможно, просто не повезло). А записки, которые я мог бы использовать, так и не нашёл, поэтому просто загуглил, как сбежать. Для игры 2015 года это выглядит отвратительно, да и баланс тоже полный пиздец. Кому-то такое, может, и нравится, но мне — нет. Возможно, если бы я начал именно с первой части, мнение сложилось бы иначе, но я в этом очень сомневаюсь." },
+            { title: "The Escapists The Walking Dead", rang: "F", date: "02.10.2026", comment: "Об этой игре узнал, когда купил The Escapists — они шли в паке за смешные 56 рублей, и я подумал «чё бы и нет». После разочарования первой частью Escapists запустил эту, сначала вроде интересно, но уже в обучении понял, что это далеко не то же самое. А когда выпустили в свободное плавание, окончательно осознал, что это вообще дерьмо: опять ебанутый гринд, играешь за копа, который должен отбиваться от зомби и выполнять поручения — геймплей просто говно, совсем не то, что я хотел получить, и после небольшого времени стало ясно, что это полное дерьмо." },
+            { title: "The Escapists 2", rang: "B", date: "", comment: "" },
+            { title: "Overcome Your Fears - Caretaker", rang: "C", date: "", comment: "" },
+            { title: "Rock Bottom", rang: "C", date: "", comment: "" },
+            { title: "Servant of the Lake", rang: "A", date: "", comment: "" },
+            { title: "Machine Party", rang: "C", date: "", comment: "" },
+            { title: "Counter Strike", rang: "S", date: "14.09.2026", comment: "Как вы знаете я не особо социальный человек, стоим у гардероба большая очередь, 5 класс, и один чел другому говорит ты купил КС?. Ну и вообщем они начали пиздеть про это, а я не знал о стиме и тп, думал что диск с игрой надо покупать, ну или иначе что за ебланы игры покупать, ну вообщем они общались так про КС как играли, я слушаю тупо и все, потом по телеку, в то время был канал game show, потом стал телеканал E, может опять название поменял. Игры там были, типы стримили и поток был на телек, ну человек 5 было вроде в то время. Ну и всякое игровое дерьмо ещё помимо было новости и всякие программы, не важно. Но там показывали турниры доты и кс, и я смотрел и не задумывался играть так как видел что там делают типы и охуевал, моментальная наводка и тп. А также я думал что у них вх … (это было буквально минут 5 максимум). Но потом понял это для спектаторов сделали что видно даунов. Ну и мне бы в голову не пришла мысль наверное попробовать так как в то время я ещё не качал игры на ПК. Потом начал, узнал что мой ПК слабый от слова совсем. Ну ладно аутласт у меня тянуло. А потом я регнулся в ДС затем в Стиме (регнулся в ДС так как до этого я играл в браузерную игру кранкер ио, и там типо КС но с графикой простой игры кубойдной. Но там были кража флага, захват точки одной типо стоишь очки лутаешь, дезмачи соло и тимой. Ну с бомбой добавили позже и отдельные сервера, там были кастомки. И вот, меня пригласили в киберспорт по игре (я быль реально в ахуе, кто думает что игра кал, то она реально популярная). Ну я регнул ДС ради перехода на сервер киберспорта её, ну регнул фасик и узнал что мне надо 14 лет а я маленький, ну и отложил, потом зарегал Стим вроде из-за того что в Стиме игра вышла (кранкер). Потом я увидел там кс, прошло довольно много времени, и увидел что КС бесплатная, но я решил трайнуть и в итоге я запустил меню, переключиться куда то хотел, но сразу игра все, и приходилось ПК перезапускать, на фоне был кста эншент." },
+            { title: "Sally Face", rang: "B", date: "", comment: "" },
+            { title: "Dome Keeper", rang: "A", date: "", comment: "" },
+            { title: "PICO PARK", rang: "C", date: "", comment: "" },
+            { title: "Anime Shop Simulator", rang: "B", date: "", comment: "" },
+            { title: "Escape from Yandere", rang: "C", date: "", comment: "" },
+            { title: "Shovel Knight Treasure Trove", rang: "_", date: "", comment: "" },
+            { title: "Remothered Tormented Fathers", rang: "F", date: "", comment: "" },
+            { title: "The Crackpet Show", rang: "C", date: "", comment: "" },
+            { title: "Alabaster Dawn", rang: "_", date: "", comment: "" },
+            { title: "Human Fall Flat 2", rang: "_", date: "", comment: "" },
+            { title: "Castle Doombad Classic", rang: "D", date: "", comment: "" },
+            { title: "Castle Doombad 2 Muahaha", rang: "_", date: "", comment: "" },
+            { title: "Medieval Pig", rang: "_", date: "", comment: "" },
+            { title: "Sally Face 2", rang: "_", date: "", comment: "" },
+            { title: "Golf With Your Friends 2", rang: "_", date: "", comment: "" },
+            { title: "Everlasting Summer 2", rang: "_", date: "", comment: "" },
+            { title: "Nuclear Nightmare", rang: "F", date: "", comment: "" },
+            { title: "You Suck at Parking", rang: "C", date: "", comment: "" },
+            { title: "Ultimate Chicken Horse", rang: "D", date: "", comment: "" },
+            { title: "Gang Beasts", rang: "D", date: "", comment: "" },
+            { title: "Forza Horizon 4", rang: "A", date: "", comment: "" },
+            { title: "Forza Horizon 5", rang: "_", date: "", comment: "" },
+            { title: "Forza Horizon 6", rang: "_", date: "", comment: "" },
+            { title: "Hogwarts Legacy", rang: "_", date: "", comment: "" },
+            { title: "Detroit", rang: "_", date: "", comment: "" },
+            { title: "The Last of Us Part 1", rang: "_", date: "", comment: "" },
+            { title: "The Last of Us Part 2 Remastered", rang: "_", date: "", comment: "" },
+            { title: "God of War", rang: "_", date: "", comment: "" },
+            { title: "Marvels Spider-Man Miles Morales", rang: "_", date: "", comment: "" },
+            { title: "Marvels Spider-Man 2", rang: "_", date: "", comment: "" },
+            { title: "Grand Theft Auto 5", rang: "A", date: "16.10.2026", comment: "Даже не начиная играть, я уже знал, что эта игра не попадёт в верхние строчки лучших игр что играл. В целом она неплохая, спорить не буду, но как-то не втянуло: каждый запуск ощущался лёгким принуждением — не то чтобы играть не хотелось, просто не хотелось запускать, в голове была мысль что если уж играть, то нормально, а сессия на час смысла не имеет, не получишь кайф. В игру я не погрузился, максимум в первые пару часов что-то цепляло, а дальше просто играл. Вертолёты, самолёты и дирижабли — отдельный ад: такое управление надо было ещё суметь сделать, во всех играх что играл тоже бывало говно, но тут полный пиздец. Сначала не нравилась и езда, пока не сделал первый заказ у мужика, которому тачки пригоняли, потом втянулся. Больше понравилось играть за Тревора и Майкла — квесты у них ощущались интереснее как по мне. Способности персонажей как по мне довольно казуальны: у Франклина можно резко повернуть и легко уйти от аварии, хотя физически это невозможно, способность по факту убирает физику, у Майкла замедление времени — сильный чит в перестрелках, а у Тревора я так и не понял, что она делает, и не пользовался ни одной способкой у персонажей почти, только там где необходимо использовал. Возможно как для игры механика да окей, но я расцениваю с точки реализма, так как для меня это слово ассоциируется с ГТА, да возможно я не упоминаю другие вещи, но мы не будем до этого доёбываться. Также про момент когда уже тревор узнал правду что баз умер и всё такое. Ну раз попиздели на счёт этого, ну два, ну ладно ещё, но нет, мы будем пиздеть на миссии когда нас просто расстреляют за то что сделали, мы будем терять время, да сука, да. Мы же как Франклин говорил, сучки нытливые. Также про момент когда Тревор узнал правду про База: ну раз попиздели на счёт этого, ну два, ну ладно ещё, но нет, мы ещё будем пиздеть на миссии когда нас просто расстреляют за то что сделали, мы будем терять время, да сука, да. Мы же как Франклин говорил, сучки нытливые. Ну и вообще этот момент что Тревор разозлился только из-за того что Майкл обманул, а он писал Брэду столько лет эти письма, думая что он тоже жив. Ну а если не из-за этого то я хз из-за чего он зол. Понятно что для Тревора убивать это нормально и из-за этого он не видит в этом ничего такого если убьет Майкла грубо говоря … Вообщем тяжело. На счёт побочных квестов по типу найти 50 кусков корабля и тп, что не показывается на карте ничего не буду говорить и так понятно что ну мне чё делать нехуй собирать всё это? Как и остальные другие побочки подобного характера. Ну пусть кому нужна игра на 100 процентов страдают. Можно ещё придраться к мелочам так как хочу и могу: после кат-сцены персонаж иногда не может сразу бежать, хотя все уже бегут, а в ранних миссиях, пока не прокачан, физически невозможно обогнать противника. Ну а вообще в финальной миссии, в которой надо было именно банк так сказать ограбить, перед входом в хранилище вот тогда у меня даже началось какое-то волнение, как будто это не по сценарию игра, а вот всё зависит от меня и реально один шанс. И в день, когда мне оставалось буквально два задания и я прошёл игру, я словил спойлер, и не хилый: это всё было из-за миссии, когда я гуглил, как попасть на высокое здание для квеста с челом, с которым прыгаем на парашюте, и мне в рекомендации попалось видео типа того, что будет после смерти Майкла и Тревора, и на превьюхе была смерть Франклина, а на телефоне ещё вариант убить себя, я думал, что скорее всего третий вариант фейк либо это как-то немного по-другому обыграется, и я себя уверял, что скорее всего это наполовину правда в превью, в итоге так и оказалось, что был вариант вместо смерти Франклина спасти обоих, ну я выбрал конечно его, так как ну из логических побуждений человечности во мне, как и в самом Франклине, я думал, что возможно они могут и умереть, или я, что будет не удивительно, как во многих играх и фильмах, но всё равно был более уверен, что все будут жить, или как минимум они. Ну и так для справки: в Grand Theft Auto San Andreas я играл в 2011 где-то у родственников, но я ничего почти не помню, кроме легендарной иконки кулака и чего-то того, что я бегал, на машине ездил и вроде вылетал из неё, но возможно это уже пиздёж, и в 2017 или 2018 где-то я играл в GTA 5 у друга на Xbox 360, ну буквально мы играли только открытый мир и бегали хернёй занимались, просто катались, взрывали, запрыгивали на поезд — из основного ну друг может и играл, хз. А также в Grand Theft Auto Vice City играл в году 2021 где то наверное на эмуляторе psp, но там буквально чуть поездил на мотике, нашёл стриптиз клуб и вышел так как сложно было, ничего не понял кроме как туда доехать ..." },
+            { title: "Grand Theft Auto 6", rang: "_", date: "", comment: "" },
+            { title: "Ghostrunner", rang: "_", date: "", comment: "" },
+            { title: "Ghostrunner 2", rang: "_", date: "", comment: "" },
+            { title: "Super Meat Boy", rang: "_", date: "", comment: "" },
+            { title: "Super Meat Boy Forever", rang: "_", date: "", comment: "" },
+            { title: "Metro 2033 Redux", rang: "_", date: "", comment: "" },
+            { title: "Metro Last Light Redux", rang: "_", date: "", comment: "" },
+            { title: "Metro Exodus", rang: "_", date: "", comment: "" },
+            { title: "METRO 2039", rang: "_", date: "", comment: "" },
+            { title: "Alan Wake", rang: "_", date: "", comment: "" },
+            { title: "Kingdom Rush", rang: "_", date: "", comment: "" },
+            { title: "Creepy Tale 2", rang: "_", date: "", comment: "" },
+            { title: "Creepy Tale 3", rang: "_", date: "", comment: "" },
+            { title: "Creepy Tale Some Other Place", rang: "_", date: "", comment: "" },
+            { title: "Creepy Tale Snow Child", rang: "_", date: "", comment: "" },
+            { title: "Hollow Knight", rang: "_", date: "", comment: "" },
+            { title: "Machinarium", rang: "C", date: "", comment: "" },
+            { title: "LEGO Marvel Super Heroes", rang: "B", date: "", comment: "" },
+            { title: "Biped", rang: "_", date: "", comment: "" },
+            { title: "Portal Knights", rang: "_", date: "", comment: "" },
+            { title: "The Witcher 3", rang: "_", date: "", comment: "" },
+            { title: "ARC Raiders", rang: "D", date: "", comment: "" },
+            { title: "VLADiK BRUTAL", rang: "_", date: "", comment: "" },
+            { title: "Minecraft Dungeons", rang: "_", date: "", comment: "" },
+            { title: "Afterbeat", rang: "_", date: "", comment: "" },
+            { title: "Risk of Rain 2", rang: "_", date: "", comment: "" },
+            { title: "Palworld", rang: "_", date: "", comment: "" },
+            { title: "NieR Automata", rang: "_", date: "", comment: "" },
+            { title: "Supercow", rang: "_", date: "", comment: "" },
+            { title: "Clash Of Clans", rang: "S", date: "", comment: "" },
+            { title: "Rogue Adventure", rang: "A", date: "", comment: "" },
+            { title: "Rogue Legacy 2", rang: "_", date: "", comment: "" },
+            { title: "Dead Cells", rang: "C", date: "", comment: "" },
+            { title: "Hearthstone", rang: "B", date: "", comment: "" },
+            { title: "Come in", rang: "D", date: "", comment: "" },
+            { title: "Windrose", rang: "D", date: "", comment: "" },
+            { title: "PUBG", rang: "C", date: "", comment: "" },
+            { title: "Necesse", rang: "_", date: "", comment: "" },
+            { title: "Gurei", rang: "E", date: "", comment: "" },
+            { title: "Everlasting Summer 3D", rang: "_", date: "", comment: "" },
+        ];
+
+        const tierOrder = ["S", "A", "B", "C", "D", "E", "F"];
+        let isFullscreen = false;
+        let savedScrollY = 0;
+        let modalVisibleTimer = null;
+        let currentSort = null;
+        let currentSearch = '';
+
+        function makeImageName(title) {
+            return title.toLowerCase().replace(/\s+/g, '_');
+        }
+
+        function slugify(title) {
+            return encodeURIComponent(title);
+        }
+
+        function createLazyImage(imagePath, className) {
+            const img = document.createElement('img');
+            img.className = className;
+            img.dataset.src = imagePath;
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            return img;
+        }
+
+        function getGameByTitle(title) {
+            return gamesData.find(g => g.title === title);
+        }
+
+        function renderReview(comment) {
+            const allTitles = gamesData
+                .map(g => g.title)
+                .filter(t => t.trim() !== '')
+                .sort((a, b) => b.length - a.length);
+
+            if (!comment || comment.trim() === '') return '';
+
+            let result = '';
+            let lastIndex = 0;
+            const lowerComment = comment.toLowerCase();
+
+            while (lastIndex < comment.length) {
+                let found = false;
+                let earliestMatch = null;
+
+                for (const title of allTitles) {
+                    const idx = lowerComment.indexOf(title.toLowerCase(), lastIndex);
+                    if (idx !== -1 && (earliestMatch === null || idx < earliestMatch.index)) {
+                        earliestMatch = { title, index: idx };
+                    }
+                }
+
+                if (earliestMatch === null) {
+                    result += escapeHtml(comment.slice(lastIndex));
+                    break;
+                }
+
+                if (earliestMatch.index > lastIndex) {
+                    result += escapeHtml(comment.slice(lastIndex, earliestMatch.index));
+                }
+
+                const game = getGameByTitle(earliestMatch.title);
+                const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+                const rankClass = game.rang ? `rank-${game.rang}` : '';
+                const rankDisplay = game.rang || '?';
+
+                result += `<span class="game-link" data-game-title="${escapeHtml(earliestMatch.title)}" data-game-image="${escapeHtml(imagePath)}" data-game-rank="${escapeHtml(rankDisplay)}" data-rank-class="${rankClass}" onclick="openGameFromReview('${escapeHtml(earliestMatch.title)}')">${escapeHtml(earliestMatch.title)}</span>`;
+                lastIndex = earliestMatch.index + earliestMatch.title.length;
+            }
+
+            return result;
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function openGameFromReview(title) {
+            const game = getGameByTitle(title);
+            if (!game) return;
+
+            hideHoverPreview();
+            const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+            updateURL(title);
+            showReview(game.title, game.comment, game.rang, imagePath, game.date || '');
+        }
+
+        function updateURL(title) {
+            const url = new URL(window.location);
+            if (title) {
+                url.searchParams.set('game', title);
+            } else {
+                url.searchParams.delete('game');
+            }
+            history.replaceState({ game: title || null }, '', url);
+        }
+
+        function getGameFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('game');
+        }
+
+        function parseDate(dateStr) {
+            if (!dateStr || dateStr.trim() === '') return null;
+            const parts = dateStr.split('.');
+            if (parts.length !== 3) return null;
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+            return new Date(year, month, day);
+        }
+
+        function searchGames() {
+            currentSearch = document.getElementById('searchInput').value.toLowerCase().trim();
+            displayTiers();
+        }
+
+        function toggleSort(button, sortType) {
+            if (currentSort === sortType) {
+                currentSort = null;
+            } else {
+                currentSort = sortType;
+            }
+            displayTiers();
+        }
+
+        function sortGames(games) {
+            if (!currentSort) return games;
+
+            const sorted = [...games];
+
+            switch (currentSort) {
+                case 'title-asc':
+                    sorted.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+                case 'title-desc':
+                    sorted.sort((a, b) => b.title.localeCompare(a.title));
+                    break;
+                case 'date-asc':
+                    sorted.sort((a, b) => {
+                        const da = parseDate(a.date);
+                        const db = parseDate(b.date);
+                        if (!da && !db) return 0;
+                        if (!da) return 1;
+                        if (!db) return -1;
+                        return da - db;
+                    });
+                    break;
+                case 'date-desc':
+                    sorted.sort((a, b) => {
+                        const da = parseDate(a.date);
+                        const db = parseDate(b.date);
+                        if (!da && !db) return 0;
+                        if (!da) return 1;
+                        if (!db) return -1;
+                        return db - da;
+                    });
+                    break;
+            }
+
+            return sorted;
+        }
+
+        function updateSortButtons() {
+            document.querySelectorAll('.sort-button').forEach(button => {
+                button.classList.remove('active');
+                const sortType = button.getAttribute('onclick').match(/'([^']+)'/)[1];
+                if (sortType === currentSort) {
+                    button.classList.add('active');
+                }
+            });
+        }
+
+        function buildGameCard(game, clickable = true) {
+            const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            if (clickable) {
+                card.dataset.title = game.title;
+                card.dataset.comment = game.comment;
+                card.dataset.rank = game.rang;
+                card.dataset.image = imagePath;
+                card.dataset.date = game.date || '';
+            }
+
+            const posterDiv = document.createElement('div');
+            posterDiv.className = 'game-poster';
+
+            const img = createLazyImage(imagePath, 'game-poster-img');
+            img.onload = function() {
+                this.style.opacity = '1';
+            };
+            img.onerror = function() {
+                this.style.display = 'none';
+            };
+            posterDiv.appendChild(img);
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'game-title';
+            titleDiv.textContent = game.title;
+            posterDiv.appendChild(titleDiv);
+
+            card.appendChild(posterDiv);
+            return card;
+        }
+
+        function displayTiers() {
+            const tierContainer = document.getElementById('tierContainer');
+            const plannedContainer = document.getElementById('plannedList');
+            const searchResultsContainer = document.getElementById('searchResultsContainer');
+            const searchResultsList = document.getElementById('searchResultsList');
+            const tierlistWrapper = document.getElementById('tierlistContainer');
+            const plannedWrapper = document.getElementById('plannedContainer');
+
+            tierContainer.innerHTML = '';
+            plannedContainer.innerHTML = '';
+            searchResultsList.innerHTML = '';
+
+            if (currentSearch) {
+                // Show search results, hide tierlist and planned
+                tierlistWrapper.style.display = 'none';
+                plannedWrapper.style.display = 'none';
+                searchResultsContainer.style.display = 'block';
+
+                const allGames = gamesData.filter(game =>
+                    game.title.toLowerCase().includes(currentSearch)
+                );
+
+                const sorted = sortGames(allGames);
+
+                sorted.forEach(game => {
+                    const card = buildGameCard(game, true);
+                    searchResultsList.appendChild(card);
+                });
+
+                if (allGames.length === 0) {
+                    searchResultsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">Ничего не найдено</p>';
+                }
+            } else {
+                // Show tierlist and planned, hide search results
+                searchResultsContainer.style.display = 'none';
+                tierlistWrapper.style.display = 'block';
+                plannedWrapper.style.display = 'block';
+
+                const frag = document.createDocumentFragment();
+
+                tierOrder.forEach(tier => {
+                    let gamesInTier = gamesData.filter(game => game.rang === tier);
+                    gamesInTier = sortGames(gamesInTier);
+
+                    const row = document.createElement('div');
+                    row.className = `tier-row tier-${tier}`;
+
+                    const label = document.createElement('div');
+                    label.className = 'tier-label';
+                    label.textContent = tier;
+                    row.appendChild(label);
+
+                    const gamesWrap = document.createElement('div');
+                    gamesWrap.className = 'tier-games';
+
+                    gamesInTier.forEach(game => {
+                        const card = buildGameCard(game, true);
+                        gamesWrap.appendChild(card);
+                    });
+
+                    row.appendChild(gamesWrap);
+                    frag.appendChild(row);
+                });
+
+                tierContainer.appendChild(frag);
+
+                let plannedGames = gamesData.filter(game => game.rang === "_");
+                plannedGames = sortGames(plannedGames);
+
+                const plannedFrag = document.createDocumentFragment();
+                plannedGames.forEach(game => {
+                    const card = buildGameCard(game, false);
+                    plannedFrag.appendChild(card);
+                });
+
+                plannedContainer.appendChild(plannedFrag);
+            }
+
+            updateSortButtons();
+            observeLazyImages();
+        }
+
+        function observeLazyImages() {
+            const images = document.querySelectorAll('img[data-src]');
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries, obs) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
+                            obs.unobserve(img);
+                        }
+                    });
+                }, {
+                    rootMargin: '300px 0px',
+                    threshold: 0.01
+                });
+                images.forEach(img => observer.observe(img));
+            } else {
+                images.forEach(img => {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                });
+            }
+        }
+
+        const hoverPreview = document.getElementById('globalHoverPreview');
+        const hoverPoster = document.getElementById('hoverPoster');
+        const hoverRank = document.getElementById('hoverRank');
+        let hoveredLink = null;
+
+        function positionHoverPreview(link) {
+            const rect = link.getBoundingClientRect();
+            const previewRect = hoverPreview.getBoundingClientRect();
+            const padding = 8;
+
+            let top = rect.top - previewRect.height - padding;
+            let left = rect.left + rect.width / 2 - previewRect.width / 2;
+
+            if (top < padding) {
+                top = rect.bottom + padding;
+            }
+
+            if (left < padding) {
+                left = padding;
+            } else if (left + previewRect.width > window.innerWidth - padding) {
+                left = window.innerWidth - previewRect.width - padding;
+            }
+
+            if (top + previewRect.height > window.innerHeight - padding) {
+                top = window.innerHeight - previewRect.height - padding;
+            }
+
+            hoverPreview.style.top = top + 'px';
+            hoverPreview.style.left = left + 'px';
+        }
+
+        function showHoverPreview(link) {
+            const imagePath = link.dataset.gameImage || '';
+            const rank = link.dataset.gameRank || '?';
+            const rankClass = link.dataset.rankClass || '';
+
+            hoverPoster.style.backgroundImage = `url('${imagePath}')`;
+            hoverRank.className = 'preview-rank ' + rankClass;
+            hoverRank.querySelector('span').textContent = rank;
+
+            hoverPreview.classList.add('visible');
+            positionHoverPreview(link);
+            hoveredLink = link;
+        }
+
+        function hideHoverPreview() {
+            hoverPreview.classList.remove('visible');
+            hoveredLink = null;
+        }
+
+        document.addEventListener('mouseover', function(e) {
+            const link = e.target.closest('.game-link');
+            if (!link) return;
+            showHoverPreview(link);
+        });
+
+        document.addEventListener('mouseout', function(e) {
+            const link = e.target.closest('.game-link');
+            if (!link) return;
+
+            const related = e.relatedTarget;
+            if (related && related.closest && related.closest('.game-link') === link) return;
+
+            hideHoverPreview();
+        });
+
+        document.addEventListener('mousedown', function() {
+            hideHoverPreview();
+        });
+
+        document.addEventListener('click', function() {
+            hideHoverPreview();
+        });
+
+        window.addEventListener('scroll', function() {
+            if (hoveredLink && hoverPreview.classList.contains('visible')) {
+                positionHoverPreview(hoveredLink);
+            }
+        }, { passive: true });
+
+        window.addEventListener('resize', function() {
+            if (hoveredLink && hoverPreview.classList.contains('visible')) {
+                positionHoverPreview(hoveredLink);
+            }
+        });
+
+        function showReview(title, comment, rank, imagePath, dateStr) {
+            const modal = document.getElementById('reviewModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalReview = document.getElementById('modalReview');
+            const modalRank = document.getElementById('modalRank');
+            const modalPoster = document.getElementById('modalPoster');
+            const modalContent = document.getElementById('modalContent');
+            const modalDate = document.getElementById('modalDate');
+
+            savedScrollY = window.scrollY;
+            document.body.classList.add('modal-open');
+            document.body.style.top = `-${savedScrollY}px`;
+
+            modalTitle.textContent = title;
+            modalReview.innerHTML = renderReview(comment);
+            modalRank.querySelector('span').textContent = rank;
+            modalRank.className = 'modal-rank rank-' + rank;
+
+            if (dateStr && dateStr.trim() !== '') {
+                modalDate.textContent = 'Дата написания: ' + dateStr;
+                modalDate.style.display = 'block';
+            } else {
+                modalDate.textContent = '';
+                modalDate.style.display = 'none';
+            }
+
+            modalContent.classList.remove('fullscreen');
+            isFullscreen = false;
+            updateFullscreenUI();
+
+            modalPoster.style.backgroundImage = `url('${imagePath}')`;
+
+            modal.style.display = 'flex';
+            modal.classList.remove('visible');
+
+            if (modalVisibleTimer) cancelAnimationFrame(modalVisibleTimer);
+            modalVisibleTimer = requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.add('visible');
+                });
+            });
+
+            const reviewWrap = modal.querySelector('.modal-review-wrap');
+            if (reviewWrap) reviewWrap.scrollTop = 0;
+        }
+
+        function toggleFullscreen() {
+            isFullscreen = !isFullscreen;
+            updateFullscreenUI();
+        }
+
+        function updateFullscreenUI() {
+            const modalContent = document.getElementById('modalContent');
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            
+            if (isFullscreen) {
+                modalContent.classList.add('fullscreen');
+                fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                fullscreenBtn.title = 'Свернуть';
+            } else {
+                modalContent.classList.remove('fullscreen');
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                fullscreenBtn.title = 'На весь экран';
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('reviewModal');
+            modal.classList.remove('visible');
+            updateURL(null);
+            hideHoverPreview();
+
+            setTimeout(() => {
+                modal.style.display = 'none';
+                if (isFullscreen) {
+                    isFullscreen = false;
+                    updateFullscreenUI();
+                }
+                document.body.classList.remove('modal-open');
+                document.body.style.top = '';
+                window.scrollTo(0, savedScrollY);
+            }, 200);
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('reviewModal');
+            if (event.target === modal) {
+                if (isFullscreen) {
+                    isFullscreen = false;
+                    updateFullscreenUI();
+                } else {
+                    closeModal();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('reviewModal');
+                if (modal.style.display === 'flex') {
+                    if (isFullscreen) {
+                        isFullscreen = false;
+                        updateFullscreenUI();
+                    } else {
+                        closeModal();
+                    }
+                }
+            }
+        });
+
+        document.getElementById('tierContainer').addEventListener('click', function(e) {
+            const card = e.target.closest('.game-card');
+            if (!card || !card.dataset.title) return;
+            updateURL(card.dataset.title);
+            showReview(card.dataset.title, card.dataset.comment, card.dataset.rank, card.dataset.image, card.dataset.date);
+        });
+
+        document.getElementById('searchResultsList').addEventListener('click', function(e) {
+            const card = e.target.closest('.game-card');
+            if (!card || !card.dataset.title) return;
+            updateURL(card.dataset.title);
+            showReview(card.dataset.title, card.dataset.comment, card.dataset.rank, card.dataset.image, card.dataset.date);
+        });
+
+        window.addEventListener('popstate', function(event) {
+            const modal = document.getElementById('reviewModal');
+            if (modal.style.display === 'flex') {
+                if (isFullscreen) {
+                    isFullscreen = false;
+                    updateFullscreenUI();
+                    history.pushState({ modal: true, fullscreen: false }, '');
+                } else {
+                    closeModal();
+                }
+            } else {
+                const gameTitle = getGameFromURL();
+                if (gameTitle) {
+                    const game = getGameByTitle(gameTitle);
+                    if (game) {
+                        const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+                        showReview(game.title, game.comment, game.rang, imagePath, game.date || '');
+                    }
+                }
+            }
+        });
+
+        window.onload = function() {
+            displayTiers();
+
+            const gameTitle = getGameFromURL();
+            if (gameTitle) {
+                const game = getGameByTitle(gameTitle);
+                if (game) {
+                    const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+                    showReview(game.title, game.comment, game.rang, imagePath, game.date || '');
+                    history.replaceState({ modal: true, fullscreen: false, game: gameTitle }, '', window.location.href);
+                } else {
+                    history.replaceState({ modal: false }, '', window.location.pathname);
+                }
+            } else {
+                history.replaceState({ modal: false }, '', window.location.pathname);
+            }
+        };
+    </script>
+</body>
+</html>

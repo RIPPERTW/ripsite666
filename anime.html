@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIPSITE | Аниме</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #09090f;
+            --card: #101015;
+            --accent: #c11f2b;
+            --accent-dark: #c11f2b;
+            --text: #e0e0ff;
+            --text-muted: #a0a0cc;
+            --border: #1e1e28;
+            --gradient-start: #0f0f1a;
+            --gradient-end: #09090f;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            overflow-x: hidden;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        body.modal-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        .top-section {
+            background: linear-gradient(
+                to bottom,
+                #0f0f1a 0%,
+                #0c0c16 40%,
+                #0a0a13 70%,
+                var(--bg) 100%
+            );
+            padding: 2.8rem 1rem 4.2rem;
+            text-align: center;
+            position: relative;
+        }
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3.2rem, 13vw, 8.2rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            color: #c11f2b;
+        }
+        nav {
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(230,57,70,0.10);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 1rem 1rem;
+            margin-top: -1px;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.6rem 2.8rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.08rem;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 0.4rem;
+            transition: color 0.25s ease;
+            position: relative;
+        }
+        nav a:hover,
+        nav a.active {
+            color: white;
+        }
+        nav a.active::after,
+        nav a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            width: 0;
+            height: 2.5px;
+            background: linear-gradient(to right, transparent, var(--accent), transparent);
+            transition: width 0.35s ease;
+            transform: translateX(-50%);
+        }
+        nav a:hover::after,
+        nav a.active::after {
+            width: 85%;
+        }
+        main {
+            max-width: 1480px;
+            margin: -3.2rem auto 4rem;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.6rem;
+            color: var(--accent);
+            text-align: center;
+            margin: 3.5rem 0 2rem;
+            letter-spacing: -0.03em;
+        }
+        .intro-text {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            font-size: 1.12rem;
+        }
+        .social-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.6rem;
+            margin: 2.2rem 0 3.2rem;
+            flex-wrap: wrap;
+        }
+        .social-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+            padding: 1rem 2.4rem;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.26s ease;
+            font-size: 1.1rem;
+        }
+        .social-btn:hover {
+            background: var(--accent-dark);
+            transform: translateY(-3px);
+        }
+        .search-container {
+            margin: 2.2rem 0;
+            text-align: center;
+        }
+        .search-bar {
+            width: 100%;
+            max-width: 620px;
+            padding: 1.1rem 1.8rem;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--card);
+            color: var(--text);
+            font-size: 1.08rem;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+        .search-bar:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(193,31,43,0.18);
+        }
+        .sort-container {
+            display: flex;
+            justify-content: center;
+            gap: 1.1rem;
+            margin: 1.8rem 0 3rem;
+            flex-wrap: wrap;
+        }
+        .sort-button {
+            padding: 0.85rem 1.3rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--card);
+            color: var(--text-muted);
+            font-size: 1.35rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+        }
+        .sort-button:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .sort-button.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .anime-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 2rem 1.6rem;
+            margin-bottom: 5rem;
+        }
+        .anime-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.28s ease;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            display: block;
+            contain: layout paint style;
+        }
+        .anime-item:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent);
+            box-shadow: 0 20px 48px rgba(0,0,0,0.4);
+        }
+        .anime-poster {
+            aspect-ratio: 2 / 3;
+            width: 100%;
+            position: relative;
+            background-color: #1a1a24;
+            overflow: hidden;
+        }
+        .anime-poster img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        .rating-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            border-radius: 8px;
+            padding: 0.45rem 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.98rem;
+            font-weight: 600;
+            z-index: 3;
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid transparent;
+            overflow: hidden;
+            max-width: calc(100% - 24px);
+            cursor: default;
+            white-space: nowrap;
+        }
+        .rating-badge.has-review {
+            cursor: pointer;
+        }
+        .review-hint {
+            display: inline-block;
+            max-width: 0;
+            opacity: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            margin-left: 0;
+            transition: max-width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        opacity 0.3s ease 0.05s,
+                        margin-left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            color: var(--text-muted);
+        }
+        .rating-badge.has-review:hover .review-hint {
+            max-width: 80px;
+            opacity: 1;
+            margin-left: 0.3rem;
+        }
+        .star-icon {
+            width: 20px;
+            height: 20px;
+            fill: #c11f2b;
+            flex-shrink: 0;
+        }
+        .anime-title {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 3.8rem 1.2rem 1.2rem;
+            background: linear-gradient(to top, rgba(9,9,15,0.96) 45%, transparent 100%);
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            line-height: 1.4;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.95);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(9,9,15,0.96);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            overscroll-behavior: contain;
+        }
+        .modal.open {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            max-width: 920px;
+            width: 100%;
+            height: 510px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            will-change: transform, opacity;
+        }
+        .modal:not(.visible) .modal-content {
+            opacity: 0;
+            transform: translateY(16px) scale(0.98);
+        }
+        .modal.visible .modal-content {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .modal-content.fullscreen {
+            max-width: 100%;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            border-radius: 0;
+            border: none;
+        }
+        .modal-poster {
+            width: 340px;
+            min-width: 340px;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #1a1a24;
+            position: relative;
+            flex-shrink: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            will-change: opacity, transform;
+        }
+        .modal-content.fullscreen .modal-poster {
+            width: 0;
+            min-width: 0;
+            opacity: 0;
+            transform: translateX(-20px);
+            pointer-events: none;
+        }
+        .modal-poster::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to right,
+                transparent 55%,
+                rgba(16,16,21,0.7) 85%,
+                rgba(16,16,21,1) 100%
+            );
+            pointer-events: none;
+        }
+        .modal-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            min-width: 0;
+            height: 100%;
+        }
+        .modal-actions {
+            position: absolute;
+            top: 1.2rem;
+            right: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            z-index: 20;
+        }
+        .modal-action-btn {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: color 0.2s ease, background 0.2s ease;
+            background: transparent;
+            border: none;
+            font-family: inherit;
+        }
+        .modal-action-btn:hover {
+            color: white;
+        }
+        .modal-action-btn.close-btn {
+            font-size: 2.4rem;
+            line-height: 1;
+            padding-bottom: 4px;
+        }
+        .modal-header {
+            padding: 2rem 2.8rem 1rem;
+            flex-shrink: 0;
+        }
+        .modal-rank {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: white;
+            width: 70px;
+            height: 70px;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            transition: transform 0.3s ease;
+            background: linear-gradient(135deg, #c11f2b, #6a0f17);
+        }
+        .modal-content.fullscreen .modal-rank {
+            transform: scale(1.15);
+        }
+        .modal-rank::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: rgba(16,16,21,0.85);
+            z-index: 1;
+        }
+        .modal-rank::after {
+            content: '';
+            position: absolute;
+            inset: 7px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: rgba(16,16,21,0.95);
+            z-index: 1;
+        }
+        .modal-rank > span {
+            position: relative;
+            z-index: 3;
+        }
+        .rank-10 { background: linear-gradient(135deg, #c11f2b, #6a0f17); }
+        .rank-9 { background: linear-gradient(135deg, #c11f2b, #8a1520); }
+        .rank-8 { background: linear-gradient(135deg, #8a1520, #4a0a10); }
+        .rank-7 { background: linear-gradient(135deg, #5a3a7a, #2a1a3a); }
+        .rank-6 { background: linear-gradient(135deg, #2a4a5a, #152530); }
+        .rank-5 { background: linear-gradient(135deg, #3a3a5a, #1a1a2e); }
+        .rank-4,
+        .rank-3,
+        .rank-2,
+        .rank-1 { background: linear-gradient(135deg, #2a2a3a, #151520); }
+        .modal-title {
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            margin-bottom: 0.8rem;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+        }
+        .modal-content.fullscreen .modal-title {
+            font-size: 2.2rem;
+        }
+        .modal-divider {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(to right, var(--accent), transparent);
+            border-radius: 2px;
+            margin-bottom: 0;
+            transition: width 0.3s ease;
+        }
+        .modal-content.fullscreen .modal-divider {
+            width: 100px;
+            height: 4px;
+        }
+        .modal-date {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            letter-spacing: 0.3px;
+            font-style: italic;
+        }
+        .modal-content.fullscreen .modal-date {
+            font-size: 0.95rem;
+        }
+        .modal-review-wrap {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0 2rem 2.8rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) var(--border);
+            min-height: 0;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-content.fullscreen .modal-review-wrap {
+            padding: 1.5rem 0 4rem 2.8rem;
+        }
+        .modal-review-wrap::-webkit-scrollbar {
+            width: 6px;
+        }
+        .modal-review-wrap::-webkit-scrollbar-track {
+            background: var(--border);
+            border-radius: 3px;
+        }
+        .modal-review-wrap::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+        .modal-review {
+            color: var(--text);
+            font-size: 0.88rem;
+            line-height: 1.65;
+            position: relative;
+            padding-left: 0.6rem;
+            padding-right: 2.8rem;
+            border-left: 2px solid rgba(193,31,43,0.35);
+            white-space: pre-wrap;
+        }
+        .modal-content.fullscreen .modal-review {
+            font-size: 1rem;
+            line-height: 1.75;
+        }
+        .anime-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 1px dashed rgba(193,31,43,0.5);
+            transition: color 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            display: inline;
+        }
+        .anime-link:hover {
+            color: #ff2d3d;
+            border-bottom-color: #ff2d3d;
+        }
+        .anime-hover-preview {
+            display: none;
+            position: fixed;
+            z-index: 99999;
+            background: var(--card);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.85);
+            pointer-events: none;
+            align-items: center;
+            gap: 10px;
+        }
+        .anime-hover-preview.visible {
+            display: flex;
+        }
+        .anime-hover-preview .preview-poster {
+            width: 64px;
+            height: 96px;
+            border-radius: 6px;
+            background-size: cover;
+            background-position: center;
+            background-color: #1a1a24;
+            flex-shrink: 0;
+        }
+        .anime-hover-preview .preview-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .anime-hover-preview .preview-rating {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: white;
+            width: 44px;
+            height: 44px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            position: relative;
+            background: linear-gradient(135deg, #c11f2b, #6a0f17);
+        }
+        .anime-hover-preview .preview-rating::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: rgba(16,16,21,0.85);
+            z-index: 1;
+        }
+        .anime-hover-preview .preview-rating::after {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: rgba(16,16,21,0.95);
+            z-index: 1;
+        }
+        .anime-hover-preview .preview-rating > span {
+            position: relative;
+            z-index: 3;
+        }
+        footer {
+            text-align: center;
+            padding: 4.5rem 1rem 3.5rem;
+            color: #4a4a60;
+            font-size: 0.95rem;
+            border-top: 1px solid #181822;
+        }
+        @media (max-width: 820px) {
+            main {
+                margin-top: -2.4rem;
+                padding: 0 1.2rem;
+            }
+            .top-section {
+                padding: 2.2rem 1rem 3.6rem;
+            }
+            header h1 {
+                font-size: clamp(2.8rem, 11vw, 6.2rem);
+            }
+            nav ul {
+                gap: 1rem 1.4rem;
+            }
+            .anime-list {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.4rem 1rem;
+            }
+            .anime-item {
+                border-radius: 12px;
+            }
+            .anime-title {
+                padding: 2.8rem 1rem 1rem;
+                font-size: 1rem;
+            }
+            .rating-badge {
+                top: 10px;
+                left: 10px;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.92rem;
+            }
+            .star-icon {
+                width: 18px;
+                height: 18px;
+            }
+            .section-title {
+                font-size: 2.1rem;
+                margin: 2.8rem 0 1.6rem;
+            }
+            .sort-button {
+                width: 48px;
+                height: 48px;
+                font-size: 1.25rem;
+            }
+            .modal-content {
+                height: 400px;
+            }
+            .modal-poster {
+                width: 220px;
+                min-width: 220px;
+            }
+            .modal-header {
+                padding: 1.6rem 1.8rem 0.8rem;
+            }
+            .modal-review-wrap {
+                padding: 0.8rem 0 1.6rem 1.8rem;
+            }
+            .modal-content.fullscreen .modal-review-wrap {
+                padding: 1rem 0 3rem 1.8rem;
+            }
+            .modal-rank {
+                width: 58px;
+                height: 58px;
+                font-size: 1.8rem;
+            }
+            .modal-title {
+                font-size: 1.35rem;
+            }
+            .modal-review {
+                font-size: 0.82rem;
+                padding-right: 1.8rem;
+            }
+        }
+        @media (max-width: 560px) {
+            .anime-list {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.2rem 0.9rem;
+            }
+            .anime-title {
+                font-size: 0.96rem;
+                padding: 2.4rem 0.8rem 0.8rem;
+            }
+            .social-buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .social-btn {
+                width: 100%;
+                max-width: 360px;
+                margin: 0 auto;
+            }
+            .sort-container {
+                gap: 0.9rem;
+            }
+            .modal {
+                padding: 0;
+                align-items: flex-end;
+            }
+            .modal-content {
+                flex-direction: column;
+                height: 94vh;
+                height: 94dvh;
+                max-height: 94vh;
+                max-height: 94dvh;
+                border-radius: 20px 20px 0 0;
+                overflow: hidden;
+                position: relative;
+            }
+            .modal-content.fullscreen {
+                border-radius: 0;
+                height: 100vh;
+                height: 100dvh;
+                max-height: 100vh;
+                max-height: 100dvh;
+            }
+            .modal-poster {
+                width: 100%;
+                min-width: 100%;
+                height: 38vh;
+                min-height: 38vh;
+                flex-shrink: 0;
+                background-size: cover;
+                background-position: center 20%;
+            }
+            .modal-content.fullscreen .modal-poster {
+                height: 0;
+                min-height: 0;
+            }
+            .modal-poster::after {
+                background: linear-gradient(
+                    to bottom,
+                    rgba(16,16,21,0.1) 0%,
+                    rgba(16,16,21,0.4) 50%,
+                    rgba(16,16,21,0.92) 85%,
+                    rgba(16,16,21,1) 100%
+                );
+            }
+            .modal-info {
+                flex: 1;
+                height: auto;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+                margin-top: -5vh;
+                position: relative;
+                z-index: 2;
+                background: var(--card);
+                border-radius: 20px 20px 0 0;
+                overflow: hidden;
+            }
+            .modal-content.fullscreen .modal-info {
+                margin-top: 0;
+                border-radius: 0;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                padding-top: env(safe-area-inset-top, 0px);
+            }
+            .modal-actions {
+                position: absolute;
+                top: 0.8rem;
+                right: 0.8rem;
+                gap: 0.4rem;
+                z-index: 9999;
+            }
+            .modal-content.fullscreen .modal-actions {
+                position: fixed;
+                top: calc(env(safe-area-inset-top, 0px) + 0.8rem);
+            }
+            .modal-action-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 1.8rem;
+                color: #fff;
+                background: rgba(9,9,15,0.7);
+                border-radius: 50%;
+            }
+            .modal-header {
+                padding: 1.2rem 1.4rem 0.6rem;
+                margin-top: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.6rem;
+                flex-shrink: 0;
+            }
+            .modal-rank {
+                width: 56px;
+                height: 56px;
+                font-size: 1.8rem;
+                margin-bottom: 0;
+                flex-shrink: 0;
+            }
+            .modal-content.fullscreen .modal-rank {
+                transform: scale(1.08);
+            }
+            .modal-header-text {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0.3rem;
+                width: 100%;
+            }
+            .modal-title {
+                font-size: 1.15rem;
+                margin-bottom: 0.2rem;
+                line-height: 1.2;
+                overflow: visible;
+                display: block;
+                word-break: break-word;
+                white-space: normal;
+            }
+            .modal-content.fullscreen .modal-title {
+                font-size: 1.25rem;
+            }
+            .modal-divider {
+                width: 40px;
+                height: 2px;
+                margin-top: 0;
+            }
+            .modal-date {
+                font-size: 0.75rem;
+                margin-top: 0.3rem;
+            }
+            .modal-content.fullscreen .modal-date {
+                font-size: 0.85rem;
+            }
+            .modal-review-wrap {
+                flex: 1;
+                overflow-y: auto;
+                padding: 0.8rem 0 2rem 1.4rem;
+                min-height: 0;
+                scrollbar-width: thin;
+                scrollbar-color: var(--accent) transparent;
+                -webkit-overflow-scrolling: touch;
+            }
+            .modal-content.fullscreen .modal-review-wrap {
+                padding: 0.8rem 0 4rem 1.4rem;
+                flex: 1;
+                overflow-y: auto;
+                min-height: 0;
+            }
+            .modal-review-wrap::-webkit-scrollbar {
+                width: 4px;
+            }
+            .modal-review-wrap::-webkit-scrollbar-thumb {
+                background: var(--accent);
+                border-radius: 2px;
+            }
+            .modal-review {
+                font-size: 0.75rem;
+                line-height: 1.55;
+                padding-left: 0.6rem;
+                padding-right: 1.4rem;
+                border-left: 2px solid rgba(193,31,43,0.4);
+            }
+            .modal-content.fullscreen .modal-review {
+                font-size: 0.78rem;
+                line-height: 1.6;
+            }
+        }
+        @media (max-width: 380px) {
+            .modal-poster {
+                height: 34vh;
+                min-height: 34vh;
+            }
+            .modal-rank {
+                width: 48px;
+                height: 48px;
+                font-size: 1.5rem;
+            }
+            .modal-title {
+                font-size: 1rem;
+            }
+            .modal-content.fullscreen .modal-title {
+                font-size: 1.1rem;
+            }
+            .modal-review {
+                font-size: 0.7rem;
+            }
+            .modal-content.fullscreen .modal-review {
+                font-size: 0.72rem;
+            }
+            .modal-date {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-section">
+        <header>
+            <h1>RIPSITE</h1>
+        </header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Главная</a></li>
+                <li><a href="links.html">Ссылки</a></li>
+                <li><a href="different.html">Разное</a></li>
+                <li><a href="anime.html" class="active">Аниме</a></li>
+                <li><a href="movies.html">Фильмы</a></li>
+                <li><a href="games.html">Игры</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <main>
+        <h2 class="section-title">Аниме которое я смотрел на стримах</h2>
+        <p class="intro-text">Аниме можно смотреть как на сайте, так и на других площадках:</p>
+
+        <div class="social-buttons">
+            <a href="https://t.me/ripperarchive" class="social-btn">Смотреть в Telegram</a>
+            <a href="https://boosty.to/ripper666" class="social-btn">Смотреть на Boosty</a>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-bar" placeholder="Поиск аниме..." onkeyup="searchAnime()">
+        </div>
+
+        <div class="sort-container">
+            <button class="sort-button active" onclick="toggleSort(this, 'title-asc')" title="По алфавиту (А-Я)">
+                <i class="fa-solid fa-arrow-down-a-z"></i>
+            </button>
+            <button class="sort-button" onclick="toggleSort(this, 'title-desc')" title="По алфавиту (Я-А)">
+                <i class="fa-solid fa-arrow-up-a-z"></i>
+            </button>
+            <button class="sort-button" onclick="toggleSort(this, 'rating-desc')" title="По оценке (убыв.)">
+                <i class="fa-solid fa-arrow-down-9-1"></i>
+            </button>
+            <button class="sort-button" onclick="toggleSort(this, 'rating-asc')" title="По оценке (возр.)">
+                <i class="fa-solid fa-arrow-up-1-9"></i>
+            </button>
+        </div>
+
+        <div id="searchResultsContainer" style="display: none;">
+            <h2 class="section-title">Результаты поиска</h2>
+            <div class="anime-list" id="searchResultsList"></div>
+        </div>
+
+        <div id="tierlistContainer">
+            <div id="onlineContainer">
+                <div class="anime-list" id="animeList"></div>
+            </div>
+
+            <div id="offlineContainer">
+                <h2 class="section-title">Аниме, просмотренное вне стримов</h2>
+                <div class="anime-list" id="offlineAnimeList"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="reviewModal" class="modal">
+        <div class="modal-content" id="modalContent">
+            <div class="modal-poster" id="modalPoster"></div>
+            <div class="modal-info">
+                <div class="modal-actions">
+                    <button class="modal-action-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="На весь экран">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="modal-action-btn close-btn" onclick="closeModal()" title="Закрыть">×</button>
+                </div>
+                <div class="modal-header">
+                    <div class="modal-rank" id="modalRank"><span></span></div>
+                    <div class="modal-header-text">
+                        <h2 class="modal-title" id="modalTitle"></h2>
+                        <div class="modal-divider"></div>
+                        <div class="modal-date" id="modalDate"></div>
+                    </div>
+                </div>
+                <div class="modal-review-wrap">
+                    <p class="modal-review" id="modalReview"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="globalHoverPreview" class="anime-hover-preview">
+        <span class="preview-poster" id="hoverPoster"></span>
+        <span class="preview-info">
+            <span class="preview-rating" id="hoverRating"><span></span></span>
+        </span>
+    </div>
+
+    <footer>
+        <p>© 2025–2026 RIPSITE · Все права защищены</p>
+    </footer>
+    <script src="agreement.js" defer></script>
+    <script>
+        const animeData = [
+            {
+                title: "Эта фарфоровая кукла влюбилась",
+                slug: "sono-bisque-doll-wa-koi-wo-suru",
+                rating: 10,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Старик из деревни становится Святым мечом",
+                slug: "katainaka-no-ossan-kensei-ni-naru",
+                rating: 8,
+                date: "",
+                review: ""
+            },
+            {
+                title: "История о служащем, который стал одним из четырёх Небесных Царей, когда отправился в другой мир",
+                slug: "salaryman-ga-isekai-ni-ittara-shitennou-ni-natta-hanashi",
+                rating: 9,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Ведьмак: Сирены глубин",
+                slug: "the-witcher-sirens-of-the-deep",
+                rating: 6,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Нежеланно бессмертный авантюрист",
+                slug: "nozomanu-fushi-no-boukensha",
+                rating: 9,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Этот герой чересчур осторожен, хоть и бессмертен",
+                slug: "shinchou-yuusha-kono-yuusha-ga-ore-tueee-kuse-ni-shinchou-sugiru",
+                rating: 8,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Ниндзя Камуи",
+                slug: "ninja-kamui",
+                rating: 7,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Бывший герой, которого прозвали неудачником и выгнали из дома, решил жить самостоятельно",
+                slug: "dekisokonai-to-yobareta-motoeiyuu-wa-jikka-kara-tsuihou-sareta-node-sukikatte-ni-ikiru-koto-ni-shita",
+                rating: 7,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Прощай, жизнь дракона. Здравствуй, жизнь человека",
+                slug: "sayounara-ryuusei-konnichiwa-jinsei",
+                rating: 9,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Дисквалифицирован по жизни",
+                slug: "isekai-shikkaku",
+                rating: 8,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Эта фарфоровая кукла влюбилась 2",
+                slug: "sono-bisque-doll-wa-koi-wo-suru-2",
+                rating: 10,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Благоухающий цветок расцветает с достоинством",
+                slug: "kaoru-hana-wa-rin-to-saku",
+                rating: 7,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Этот глупый свин не понимает мечту девочки-зайки",
+                slug: "seishun-buta-yarou-wa-bunny-girl-senpai-no-yume-wo-minai",
+                rating: 10,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Этот глупый свин не понимает мечту девочки-мечтательницы",
+                slug: "seishun-buta-yarou-wa-yumemiru-shoujo-no-yume-wo-minai",
+                rating: 10,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Добро пожаловать в класс превосходства",
+                slug: "youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e",
+                rating: 7,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Этот глупый свин не понимает мечту сестры на прогулке",
+                slug: "seishun-buta-yarou-wa-odekake-sister-no-yume-wo-minai",
+                rating: 10,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Этот глупый свин не понимает мечту девушки с рюкзаком",
+                slug: "seishun-buta-yarou-wa-randoseru-girl-no-yume-wo-minai",
+                rating: 10,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Королева со скальпелем",
+                slug: "gekai-elise",
+                rating: 6,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Этот глупый свин не понимает мечту Санта-Клауса",
+                slug: "seishun-buta-yarou-wa-santa-claus-no-yume-wo-minai",
+                rating: 10,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Могу я попросить ещё кое-что?",
+                slug: "saigo-ni-hitotsu-dake-onegai-shitemo-yoroshii-deshou-ka",
+                rating: 5,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Дочь моей мачехи — моя бывшая девушка",
+                slug: "mamahaha-no-tsurego-ga-motokano-datta",
+                rating: 5,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Может ли существовать дружба между мужчиной и женщиной? (Нет, это не так!)",
+                slug: "danjo-no-yuujou-wa-seiritsu-suru-iya-shinai",
+                rating: 5,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Ванпанчмен 3",
+                slug: "one-punch-man-3",
+                rating: 7,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Пластиковые воспоминания",
+                slug: "plastic-memories",
+                rating: 6,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Как и ожидалось, моя школьная романтическая жизнь не удалась",
+                slug: "yahari-ore-no-seishun-love-comedy-wa-machigatteiru",
+                rating: 6,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Человек-бензопила: Резе",
+                slug: "chainsaw-man-movie-reze-hen",
+                rating: 10,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Полуночный мотив сердца",
+                slug: "mayonaka-heart-tune",
+                rating: 9,
+                date: "",
+                review: ""
+            },
+            {
+                title: "Старик из деревни становится Святым мечом 2",
+                slug: "katainaka-no-ossan-kensei-ni-naru-ii",
+                rating: 8,
+                date: "",
+                review: ""
+            }
+        ];
+
+        const offlineAnimeData = [
+            {
+                title: "Тетрадь смерти",
+                image: "death-note",
+                rating: 8,
+                date: "12.10.2026",
+                review: "Не плохое аниме, ну 2 часть это вообще не то, от слова совсем"
+            },
+            {
+                title: "Ванпанчмен",
+                image: "one-punch-man",
+                rating: 8,
+                date: "12.10.2026",
+                review: "Норм"
+            },
+            {
+                title: "Ванпанчмен 2",
+                image: "one-punch-man-2",
+                rating: 7,
+                date: "12.10.2026",
+                review: "Норм"
+            },
+            {
+                title: "Человек-бензопила",
+                image: "chainsaw-man",
+                rating: 10,
+                date: "12.10.2026",
+                review: "Охуенчик (аниме смотрел ещё в момент выхода, в тот день когда выходило смотрел, была оценка 9, посмотрел нонстопом 7 декабря 2025 года и понял что 10)"
+            },
+            {
+                title: "Нежить и Неудача",
+                image: "undead-unluck",
+                rating: 8,
+                date: "12.10.2026",
+                review: "Стрем, но прикольно"
+            },
+            {
+                title: "Необъятный океан",
+                image: "grand-blue",
+                rating: 6,
+                date: "12.10.2026",
+                review: "Не впечатлил, стремно немного"
+            },
+            {
+                title: "Шарлотта",
+                image: "charlotte",
+                rating: 7,
+                date: "12.10.2026",
+                review: "Ну под фон норм (было посмотрено на стриме, но не с записью из-за слабого ПК, ну а точнее я тогда не задумывался сохранять просмотры свои)"
+            },
+            {
+                title: "Жизнь сорокалетнего мужчины в другом мире",
+                image: "around-40-otoko-no-isekai-tsuuhan",
+                rating: 8,
+                date: "12.10.2026",
+                review: "Норм (СПОЛЙЕР: боже как меня задолбала мелкая, если бы не она был бы кекс, а так нет(((((((((((((((((()"
+            },
+            {
+                title: "Герой, упавший в обморок, и принцессы-убийцы",
+                image: "kizetsu-yuusha-to-ansatsu-hime",
+                rating: 9,
+                date: "12.10.2026",
+                review: "Думал бубы, решил поржать, а стало интересно, потому что без этого аниме бы было не то от слова совсем"
+            },
+            {
+                title: "Моя девушка не только милая",
+                image: "kawaii-dake-ja-nai-shikimori-san",
+                rating: 7,
+                date: "12.10.2026",
+                review: "Просто хорошее аниме, посмотрел залпом и доволен."
+            },
+            {
+                title: "Я побрился. Затем привёл домой старшеклассницу",
+                image: "hige-wo-soru-soshite-joshikousei-wo-hirou",
+                rating: 9,
+                date: "12.10.2026",
+                review: "Название согласен пиздец, но всё гуд. Смотрел залпом, первые 6 серий в принципе нормально смотрел, но потом стало душнить, но думаю дело было в моей усидчивости, но сам сюжет прям реально раскрылся пизда как и прям ух. Я бы поставил 10 но аниме не моего вкуса, а так очень хорошее. Вообщем годно"
+            },
+            {
+                title: "В команде героя была милая девушка, так что я признался ей",
+                image: "yuusha-party-ni-kawaii-ko-ga-ita-node-kokuhaku-shitemita",
+                rating: 8,
+                date: "12.10.2026",
+                review: "Первая половина смотрелась нормально, потом душно стало, последние серии вроде опять норм, но концовка ... Вообщем под фон нормалек"
+            }
+        ];
+
+        const starIcon = `<svg class="star-icon" viewBox="0 -30 1235 1235" xmlns="http://www.w3.org/2000/svg"><path d="M0 449h1235l-999 726L618 0l382 1175L0 449z" fill="#c11f2b"/></svg>`;
+
+        let currentSort = null;
+        let currentSearch = '';
+        let isFullscreen = false;
+        let savedScrollY = 0;
+        let modalVisibleTimer = null;
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeAttr(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function getAllAnime() {
+            const combined = [];
+            animeData.forEach(a => combined.push({
+                title: a.title,
+                slug: a.slug,
+                image: a.slug,
+                rating: a.rating,
+                review: a.review,
+                date: a.date || '',
+                isOffline: false
+            }));
+            offlineAnimeData.forEach(a => combined.push({
+                title: a.title,
+                slug: a.image,
+                image: a.image,
+                rating: a.rating,
+                review: a.review,
+                date: a.date || '',
+                isOffline: true
+            }));
+            return combined;
+        }
+
+        function getAnimeByTitle(title) {
+            return getAllAnime().find(a => a.title === title);
+        }
+
+        function createLazyImage(imagePath, className) {
+            const img = document.createElement('img');
+            img.className = className;
+            img.dataset.src = imagePath;
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            return img;
+        }
+
+        function observeLazyImages() {
+            const images = document.querySelectorAll('img[data-src]');
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries, obs) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
+                            obs.unobserve(img);
+                        }
+                    });
+                }, {
+                    rootMargin: '300px 0px',
+                    threshold: 0.01
+                });
+                images.forEach(img => observer.observe(img));
+            } else {
+                images.forEach(img => {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                });
+            }
+        }
+
+        function renderReview(comment) {
+            const allTitles = getAllAnime()
+                .map(a => a.title)
+                .filter(t => t.trim() !== '')
+                .sort((a, b) => b.length - a.length);
+
+            if (!comment || comment.trim() === '') return '';
+
+            let result = '';
+            let lastIndex = 0;
+            const lowerComment = comment.toLowerCase();
+
+            while (lastIndex < comment.length) {
+                let found = false;
+                let earliestMatch = null;
+
+                for (const title of allTitles) {
+                    const idx = lowerComment.indexOf(title.toLowerCase(), lastIndex);
+                    if (idx !== -1 && (earliestMatch === null || idx < earliestMatch.index)) {
+                        earliestMatch = { title, index: idx };
+                    }
+                }
+
+                if (earliestMatch === null) {
+                    result += escapeHtml(comment.slice(lastIndex));
+                    break;
+                }
+
+                if (earliestMatch.index > lastIndex) {
+                    result += escapeHtml(comment.slice(lastIndex, earliestMatch.index));
+                }
+
+                const anime = getAnimeByTitle(earliestMatch.title);
+                const imagePath = `Anime/icon/${anime.image}.png`;
+
+                result += `<span class="anime-link" data-anime-title="${escapeHtml(earliestMatch.title)}" data-anime-image="${escapeHtml(imagePath)}" data-anime-rating="${anime.rating}" onclick="openAnimeFromReview('${escapeHtml(earliestMatch.title)}')">${escapeHtml(earliestMatch.title)}</span>`;
+                lastIndex = earliestMatch.index + earliestMatch.title.length;
+            }
+
+            return result;
+        }
+
+        function openAnimeFromReview(title) {
+            const anime = getAnimeByTitle(title);
+            if (!anime) return;
+
+            hideHoverPreview();
+            const imagePath = `Anime/icon/${anime.image}.png`;
+            updateURL(title);
+            openAnimeReview(anime.title, anime.review, anime.rating, imagePath, anime.date);
+        }
+
+        function updateURL(title) {
+            const url = new URL(window.location);
+            if (title) {
+                url.searchParams.set('anime', title);
+            } else {
+                url.searchParams.delete('anime');
+            }
+            history.replaceState({ anime: title || null }, '', url);
+        }
+
+        function getAnimeFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('anime');
+        }
+
+        function buildAnimeCard(anime, isOffline = false) {
+            const imagePath = `Anime/icon/${anime.image}.png`;
+            const hasReview = anime.review && anime.review.trim() !== '';
+
+            const card = document.createElement('a');
+            card.className = 'anime-item';
+            card.href = isOffline ? 'javascript:void(0)' : `Anime/${anime.slug}.html`;
+
+            const posterDiv = document.createElement('div');
+            posterDiv.className = 'anime-poster';
+
+            const img = createLazyImage(imagePath, 'anime-poster-img');
+            img.onload = function() {
+                this.style.opacity = '1';
+            };
+            img.onerror = function() {
+                this.style.display = 'none';
+            };
+            posterDiv.appendChild(img);
+
+            const badge = document.createElement('div');
+            badge.className = hasReview ? 'rating-badge has-review' : 'rating-badge';
+            badge.innerHTML = `${starIcon}<span class="rating-value">${anime.rating}</span>${hasReview ? '<span class="review-hint">Отзыв</span>' : ''}`;
+
+            if (hasReview) {
+                badge.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    updateURL(anime.title);
+                    openAnimeReview(anime.title, anime.review, anime.rating, imagePath, anime.date);
+                };
+            }
+
+            posterDiv.appendChild(badge);
+
+            if (isOffline) {
+                card.onclick = function(e) {
+                    e.preventDefault();
+                    updateURL(anime.title);
+                    openAnimeReview(anime.title, anime.review, anime.rating, imagePath, anime.date);
+                };
+            }
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'anime-title';
+            titleDiv.textContent = anime.title;
+
+            posterDiv.appendChild(titleDiv);
+            card.appendChild(posterDiv);
+            return card;
+        }
+
+        function sortAnimeArray(animeArray) {
+            if (!currentSort) return animeArray;
+
+            const sorted = [...animeArray];
+
+            switch (currentSort) {
+                case 'title-asc':
+                    sorted.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+                case 'title-desc':
+                    sorted.sort((a, b) => b.title.localeCompare(a.title));
+                    break;
+                case 'rating-asc':
+                    sorted.sort((a, b) => a.rating - b.rating);
+                    break;
+                case 'rating-desc':
+                    sorted.sort((a, b) => b.rating - a.rating);
+                    break;
+            }
+
+            return sorted;
+        }
+
+        function updateSortButtons() {
+            document.querySelectorAll('.sort-button').forEach(button => {
+                button.classList.remove('active');
+                const sortType = button.getAttribute('onclick').match(/'([^']+)'/)[1];
+                if (sortType === currentSort) {
+                    button.classList.add('active');
+                }
+            });
+        }
+
+        function displayAll() {
+            const searchResultsContainer = document.getElementById('searchResultsContainer');
+            const searchResultsList = document.getElementById('searchResultsList');
+            const tierlistContainer = document.getElementById('tierlistContainer');
+            const animeList = document.getElementById('animeList');
+            const offlineAnimeList = document.getElementById('offlineAnimeList');
+
+            animeList.innerHTML = '';
+            offlineAnimeList.innerHTML = '';
+            searchResultsList.innerHTML = '';
+
+            if (currentSearch) {
+                tierlistContainer.style.display = 'none';
+                searchResultsContainer.style.display = 'block';
+
+                const allAnime = getAllAnime();
+                const filtered = allAnime.filter(anime =>
+                    anime.title.toLowerCase().includes(currentSearch)
+                );
+
+                const sorted = sortAnimeArray(filtered);
+
+                sorted.forEach(anime => {
+                    const card = buildAnimeCard(anime, anime.isOffline);
+                    searchResultsList.appendChild(card);
+                });
+
+                if (sorted.length === 0) {
+                    searchResultsList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">Ничего не найдено</p>';
+                }
+            } else {
+                searchResultsContainer.style.display = 'none';
+                tierlistContainer.style.display = 'block';
+
+                const onlineMapped = animeData.map(a => ({
+                    title: a.title,
+                    slug: a.slug,
+                    image: a.slug,
+                    rating: a.rating,
+                    review: a.review,
+                    date: a.date || ''
+                }));
+
+                const offlineMapped = offlineAnimeData.map(a => ({
+                    title: a.title,
+                    slug: a.image,
+                    image: a.image,
+                    rating: a.rating,
+                    review: a.review,
+                    date: a.date || ''
+                }));
+
+                const sortedOnline = sortAnimeArray(onlineMapped);
+                const sortedOffline = sortAnimeArray(offlineMapped);
+
+                sortedOnline.forEach(anime => {
+                    const card = buildAnimeCard(anime, false);
+                    animeList.appendChild(card);
+                });
+
+                sortedOffline.forEach(anime => {
+                    const card = buildAnimeCard(anime, true);
+                    offlineAnimeList.appendChild(card);
+                });
+            }
+
+            updateSortButtons();
+            observeLazyImages();
+        }
+
+        function searchAnime() {
+            currentSearch = document.getElementById('searchInput').value.toLowerCase().trim();
+            displayAll();
+        }
+
+        function toggleSort(button, sortType) {
+            if (currentSort === sortType) {
+                currentSort = null;
+            } else {
+                currentSort = sortType;
+            }
+            displayAll();
+        }
+
+        function openAnimeReview(title, review, rating, imagePath, dateStr) {
+            const modal = document.getElementById('reviewModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalReview = document.getElementById('modalReview');
+            const modalRank = document.getElementById('modalRank');
+            const modalPoster = document.getElementById('modalPoster');
+            const modalContent = document.getElementById('modalContent');
+            const modalDate = document.getElementById('modalDate');
+
+            savedScrollY = window.scrollY;
+            document.body.classList.add('modal-open');
+            document.body.style.top = `-${savedScrollY}px`;
+
+            modalTitle.textContent = title;
+            modalReview.innerHTML = renderReview(review || 'Отзыв пока отсутствует.');
+            modalRank.querySelector('span').textContent = rating;
+            modalRank.className = 'modal-rank rank-' + rating;
+
+            if (dateStr && dateStr.trim() !== '') {
+                modalDate.textContent = 'Дата написания: ' + dateStr;
+                modalDate.style.display = 'block';
+            } else {
+                modalDate.textContent = '';
+                modalDate.style.display = 'none';
+            }
+
+            modalContent.classList.remove('fullscreen');
+            isFullscreen = false;
+            updateFullscreenUI();
+
+            modalPoster.style.backgroundImage = `url('${imagePath}')`;
+
+            modal.style.display = 'flex';
+            modal.classList.remove('visible');
+
+            if (modalVisibleTimer) cancelAnimationFrame(modalVisibleTimer);
+            modalVisibleTimer = requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.add('visible');
+                });
+            });
+
+            const reviewWrap = modal.querySelector('.modal-review-wrap');
+            if (reviewWrap) reviewWrap.scrollTop = 0;
+        }
+
+        function toggleFullscreen() {
+            isFullscreen = !isFullscreen;
+            updateFullscreenUI();
+        }
+
+        function updateFullscreenUI() {
+            const modalContent = document.getElementById('modalContent');
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+            if (isFullscreen) {
+                modalContent.classList.add('fullscreen');
+                fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                fullscreenBtn.title = 'Свернуть';
+            } else {
+                modalContent.classList.remove('fullscreen');
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                fullscreenBtn.title = 'На весь экран';
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('reviewModal');
+            modal.classList.remove('visible');
+            updateURL(null);
+            hideHoverPreview();
+
+            setTimeout(() => {
+                modal.style.display = 'none';
+                if (isFullscreen) {
+                    isFullscreen = false;
+                    updateFullscreenUI();
+                }
+                document.body.classList.remove('modal-open');
+                document.body.style.top = '';
+                window.scrollTo(0, savedScrollY);
+            }, 200);
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('reviewModal');
+            if (event.target === modal) {
+                if (isFullscreen) {
+                    isFullscreen = false;
+                    updateFullscreenUI();
+                } else {
+                    closeModal();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('reviewModal');
+                if (modal.style.display === 'flex') {
+                    if (isFullscreen) {
+                        isFullscreen = false;
+                        updateFullscreenUI();
+                    } else {
+                        closeModal();
+                    }
+                }
+            }
+        });
+
+        const hoverPreview = document.getElementById('globalHoverPreview');
+        const hoverPoster = document.getElementById('hoverPoster');
+        const hoverRating = document.getElementById('hoverRating');
+        let hoveredLink = null;
+
+        function positionHoverPreview(link) {
+            const rect = link.getBoundingClientRect();
+            const previewRect = hoverPreview.getBoundingClientRect();
+            const padding = 8;
+
+            let top = rect.top - previewRect.height - padding;
+            let left = rect.left + rect.width / 2 - previewRect.width / 2;
+
+            if (top < padding) {
+                top = rect.bottom + padding;
+            }
+
+            if (left < padding) {
+                left = padding;
+            } else if (left + previewRect.width > window.innerWidth - padding) {
+                left = window.innerWidth - previewRect.width - padding;
+            }
+
+            if (top + previewRect.height > window.innerHeight - padding) {
+                top = window.innerHeight - previewRect.height - padding;
+            }
+
+            hoverPreview.style.top = top + 'px';
+            hoverPreview.style.left = left + 'px';
+        }
+
+        function showHoverPreview(link) {
+            const imagePath = link.dataset.animeImage || '';
+            const rating = link.dataset.animeRating || '?';
+
+            hoverPoster.style.backgroundImage = `url('${imagePath}')`;
+            hoverRating.querySelector('span').textContent = rating;
+
+            hoverPreview.classList.add('visible');
+            positionHoverPreview(link);
+            hoveredLink = link;
+        }
+
+        function hideHoverPreview() {
+            hoverPreview.classList.remove('visible');
+            hoveredLink = null;
+        }
+
+        document.addEventListener('mouseover', function(e) {
+            const link = e.target.closest('.anime-link');
+            if (!link) return;
+            showHoverPreview(link);
+        });
+
+        document.addEventListener('mouseout', function(e) {
+            const link = e.target.closest('.anime-link');
+            if (!link) return;
+
+            const related = e.relatedTarget;
+            if (related && related.closest && related.closest('.anime-link') === link) return;
+
+            hideHoverPreview();
+        });
+
+        document.addEventListener('mousedown', function() {
+            hideHoverPreview();
+        });
+
+        document.addEventListener('click', function() {
+            hideHoverPreview();
+        });
+
+        window.addEventListener('scroll', function() {
+            if (hoveredLink && hoverPreview.classList.contains('visible')) {
+                positionHoverPreview(hoveredLink);
+            }
+        }, { passive: true });
+
+        window.addEventListener('resize', function() {
+            if (hoveredLink && hoverPreview.classList.contains('visible')) {
+                positionHoverPreview(hoveredLink);
+            }
+        });
+
+        window.addEventListener('popstate', function(event) {
+            const modal = document.getElementById('reviewModal');
+            if (modal.style.display === 'flex') {
+                if (isFullscreen) {
+                    isFullscreen = false;
+                    updateFullscreenUI();
+                    history.pushState({ modal: true, fullscreen: false }, '');
+                } else {
+                    closeModal();
+                }
+            } else {
+                const animeTitle = getAnimeFromURL();
+                if (animeTitle) {
+                    const anime = getAnimeByTitle(animeTitle);
+                    if (anime) {
+                        const imagePath = `Anime/icon/${anime.image}.png`;
+                        openAnimeReview(anime.title, anime.review, anime.rating, imagePath, anime.date);
+                    }
+                }
+            }
+        });
+
+        window.onload = function() {
+            displayAll();
+
+            const animeTitle = getAnimeFromURL();
+            if (animeTitle) {
+                const anime = getAnimeByTitle(animeTitle);
+                if (anime) {
+                    const imagePath = `Anime/icon/${anime.image}.png`;
+                    openAnimeReview(anime.title, anime.review, anime.rating, imagePath, anime.date);
+                    history.replaceState({ modal: true, fullscreen: false, anime: animeTitle }, '', window.location.href);
+                } else {
+                    history.replaceState({ modal: false }, '', window.location.pathname);
+                }
+            } else {
+                history.replaceState({ modal: false }, '', window.location.pathname);
+            }
+        };
+    </script>
+</body>
+</html>

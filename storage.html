@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIPSITE | Хранилище</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #09090f;
+            --card: #101015;
+            --accent: #c11f2b;
+            --accent-dark: #c11f2b;
+            --text: #e0e0ff;
+            --text-muted: #a0a0cc;
+            --border: #1e1e28;
+            --gradient-start: #0f0f1a;
+            --gradient-end: #09090f;
+            --modal-bg: rgba(9, 9, 15, 0.96);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .top-section {
+            background: linear-gradient(
+                to bottom,
+                #0f0f1a 0%,
+                #0c0c16 40%,
+                #0a0a13 70%,
+                var(--bg) 100%
+            );
+            padding: 2.8rem 1rem 4.2rem;
+            text-align: center;
+            position: relative;
+        }
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(3.2rem, 13vw, 8.2rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            color: #c11f2b;
+        }
+        nav {
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(230,57,70,0.10);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 1rem 1rem;
+            margin-top: -1px;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.6rem 2.8rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.08rem;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 0.4rem;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        nav a:hover,
+        nav a.active {
+            color: white;
+        }
+        nav a.active::after,
+        nav a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            width: 0;
+            height: 2.5px;
+            background: linear-gradient(to right, transparent, var(--accent), transparent);
+            transition: width 0.35s ease;
+            transform: translateX(-50%);
+        }
+        nav a:hover::after,
+        nav a.active::after {
+            width: 85%;
+        }
+        main {
+            max-width: 1480px;
+            margin: -3.2rem auto 4rem;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.6rem;
+            color: var(--accent);
+            text-align: center;
+            margin: 3.5rem 0 2rem;
+            letter-spacing: -0.03em;
+        }
+        .intro-text {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            font-size: 1.12rem;
+        }
+        .subsection-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: var(--accent);
+            text-align: center;
+            margin: 3rem 0 1.5rem;
+            letter-spacing: -0.02em;
+        }
+        .subsection-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            margin: 2rem 0 1.5rem 0;
+        }
+        .subsection-subtitle:first-child {
+            margin-top: 0;
+        }
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.6rem;
+            margin-top: 0;
+        }
+        .media-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: all 0.28s ease;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+        }
+        .media-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+        }
+        .media-preview {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            background: #0d0d14;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .media-preview img,
+        .media-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .media-preview .placeholder-icon {
+            font-size: 3.2rem;
+            color: var(--accent);
+            opacity: 0.7;
+        }
+        .media-info {
+            padding: 1.1rem 1.2rem 1.3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .media-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.05rem;
+            color: var(--text);
+            font-weight: 600;
+        }
+        .media-desc {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.45;
+        }
+        .music-player-container {
+            max-width: 620px;
+            margin: 2rem auto 1rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+        }
+        .vinyl-wrapper {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 2.5rem auto 1.5rem;
+        }
+        .vinyl {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: url('Files/Music/Она%20курит%20папиросы.png') center/cover;
+            box-shadow: 
+                0 0 0 12px #1a1a22,
+                0 0 0 18px #111116,
+                inset 0 0 40px rgba(0,0,0,0.8);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: spin 25s linear infinite paused;
+        }
+        .vinyl.playing {
+            animation-play-state: running;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .track-info {
+            text-align: center;
+            padding: 0 2rem 1.5rem;
+        }
+        .track-title {
+            font-size: 1.65rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+            color: white;
+        }
+        .track-artist {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+        .progress-container {
+            padding: 0 2rem 1.5rem;
+        }
+        .progress-bar {
+            height: 6px;
+            background: #1e1e28;
+            border-radius: 9999px;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, var(--accent), #ff4d5c);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2.2rem;
+            padding: 1rem 2rem 2.5rem;
+        }
+        .control-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .control-btn:hover {
+            color: white;
+            transform: scale(1.15);
+        }
+        .play-btn {
+            background: #1e1e28; 
+            color: #e0e0ff;
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            border: 3px solid #1e1e28; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.1rem;
+            box-shadow: none;          
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .play-btn:hover {
+            transform: scale(1.08);
+        }
+        .download-section {
+            padding: 1.8rem 2rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+        }
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: #1e1e28;
+            color: var(--text);
+            padding: 1rem 2.2rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .download-btn:hover {
+            background: var(--accent);
+            color: white;
+            transform: translateY(-3px);
+        }
+        .video-section {
+            max-width: 1100px;
+            margin: 0 auto 2rem;
+        }
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            margin: 1rem 0 2rem;
+            background: var(--card);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .episodes-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1.2rem;
+        }
+        .episode-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.28s ease;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 1.05rem;
+        }
+        .episode-item:hover, .episode-item.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(193,31,43,0.25);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--modal-bg);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            position: relative;
+            width: 100%;
+            max-width: 1280px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gallery-image {
+            max-width: 100%;
+            max-height: 92vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.75);
+            font-size: 4.5rem;
+            font-weight: 300;
+            cursor: pointer;
+            padding: 20px 15px;
+            line-height: 1;
+            transition: all 0.2s ease;
+            z-index: 10;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.7);
+            display: none;
+        }
+        .nav-btn:hover {
+            color: white;
+            transform: translateY(-50%) scale(1.15);
+        }
+        .nav-btn.left { left: 10px; }
+        .nav-btn.right { right: 10px; }
+        .close-btn {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.8);
+            font-size: 2.8rem;
+            cursor: pointer;
+            z-index: 20;
+            line-height: 1;
+            padding: 5px 12px;
+            transition: color 0.2s;
+        }
+        .close-btn:hover {
+            color: #ff4d4d;
+        }
+        .image-counter {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.7);
+            font-size: 1rem;
+            background: rgba(0,0,0,0.5);
+            padding: 6px 18px;
+            border-radius: 30px;
+        }
+        footer {
+            text-align: center;
+            padding: 4.5rem 1rem 3.5rem;
+            color: #4a4a60;
+            font-size: 0.95rem;
+            border-top: 1px solid #181822;
+        }
+        @media (max-width: 820px) {
+            main {
+                margin-top: -2.4rem;
+                padding: 0 1.2rem;
+            }
+            .top-section {
+                padding: 2.2rem 1rem 3.6rem;
+            }
+            header h1 {
+                font-size: clamp(2.8rem, 11vw, 6.2rem);
+            }
+            nav ul {
+                gap: 1rem 1.4rem;
+            }
+            .section-title {
+                font-size: 2.1rem;
+                margin: 2.8rem 0 1.6rem;
+            }
+            .subsection-title {
+                font-size: 1.7rem;
+                margin: 2.2rem 0 1.4rem;
+            }
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 1.2rem;
+            }
+            .vinyl-wrapper {
+                width: 240px;
+                height: 240px;
+            }
+            .track-title {
+                font-size: 1.45rem;
+            }
+            .episodes-container {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 1rem;
+            }
+            .episode-item {
+                padding: 1rem;
+                font-size: 1rem;
+            }
+            .nav-btn {
+                font-size: 3.2rem;
+                padding: 15px 10px;
+            }
+            .close-btn {
+                top: 18px;
+                right: 20px;
+                font-size: 2.4rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 1.8rem;
+            }
+            .subsection-title {
+                font-size: 1.5rem;
+            }
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+            .episodes-container {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 0.9rem;
+            }
+            .episode-item {
+                padding: 0.9rem;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-section">
+        <header>
+            <h1>RIPSITE</h1>
+        </header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Главная</a></li>
+                <li><a href="links.html">Ссылки</a></li>
+                <li><a href="different.html">Разное</a></li>
+                <li><a href="anime.html">Аниме</a></li>
+                <li><a href="movies.html">Фильмы</a></li>
+                <li><a href="games.html">Игры</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <main>
+        <h2 class="section-title">Хранилище</h2>
+        <p class="intro-text">Видео, картинки, треки и прочий мусор</p>
+
+        <h3 class="subsection-title">Фото</h3>
+        <div id="photoSections"></div>
+
+        <h3 class="subsection-title">Видео</h3>
+        <div id="videoSections"></div>
+
+        <h3 class="subsection-title">Музыка</h3>
+        <div id="musicSections"></div>
+    </main>
+
+    <div id="galleryModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeGallery()">×</button>
+            <button class="nav-btn left" id="leftBtn" onclick="prevImage()">‹</button>
+            <img id="modalImage" class="gallery-image" src="" alt="">
+            <button class="nav-btn right" id="rightBtn" onclick="nextImage()">›</button>
+            <div id="imageCounter" class="image-counter"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025–2026 RIPSITE · Все права защищены</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const photoSections = [
+                {
+                    subtitle: "Мои 3D работы",
+                    projects: [
+                        {
+                            title: "Интерьер спальни",
+                            desc: "Современный дизайн спальной комнаты в тёплых тонах",
+                            cover: "Bedroominterior.png",
+                            images: ["Bedroominterior.png"]
+                        },
+                        {
+                            title: "Метро",
+                            desc: "Четыре варианта интерьера станции метро",
+                            cover: "Metro1.png",
+                            images: ["Metro1.png", "Metro2.png", "Metro3.png", "Metro4.png"]
+                        }
+                    ]
+                }
+            ];
+            const photoBasePath = "images/creations/";
+
+            const videoSections = [
+                {
+                    subtitle: "ЧСВ ЗАПИСИ",
+                    episodes: [
+                        { title: "ЧСВ ЗАПИСЬ 1", dzen: "okkbajoMOAAA" },
+                        { title: "ЧСВ ЗАПИСЬ 2", dzen: "okkZej4MOAAA" },
+                        { title: "ЧСВ ЗАПИСЬ 3", dzen: "okkaU4YUOAAA" },
+                        { title: "ЧСВ ЗАПИСЬ 4", dzen: "okkbnbIoOAAA" }
+                    ]
+                }
+            ];
+
+            const musicSections = [
+                {
+                    subtitle: "Мои треки",
+                    tracks: [
+                        {
+                            title: "Она курит папиросы",
+                            artist: "RIPPER",
+                            cover: "Files/Music/Она%20курит%20папиросы.png",
+                            src: "Files/Music/Она%20курит%20папиросы.mp3",
+                            downloadName: "Она курит папиросы.mp3"
+                        }
+                    ]
+                }
+            ];
+
+            const photoSectionsEl = document.getElementById('photoSections');
+            const videoSectionsEl = document.getElementById('videoSections');
+            const musicSectionsEl = document.getElementById('musicSections');
+
+            let allPhotoProjects = [];
+
+            photoSections.forEach((section) => {
+                const subtitleEl = document.createElement('p');
+                subtitleEl.className = 'subsection-subtitle';
+                subtitleEl.textContent = section.subtitle;
+                photoSectionsEl.appendChild(subtitleEl);
+
+                const galleryEl = document.createElement('div');
+                galleryEl.className = 'gallery';
+
+                section.projects.forEach((proj) => {
+                    const globalIdx = allPhotoProjects.length;
+                    allPhotoProjects.push(proj);
+
+                    const card = document.createElement('div');
+                    card.className = 'media-card';
+                    card.addEventListener('click', () => openPhotoGallery(globalIdx));
+
+                    const preview = document.createElement('div');
+                    preview.className = 'media-preview';
+
+                    const img = document.createElement('img');
+                    img.src = photoBasePath + proj.cover;
+                    img.alt = proj.title;
+                    img.decoding = 'async';
+
+                    img.addEventListener('error', function () {
+                        preview.innerHTML = '<i class="fa-solid fa-photo-film placeholder-icon"></i>';
+                    });
+
+                    preview.appendChild(img);
+
+                    const info = document.createElement('div');
+                    info.className = 'media-info';
+                    info.innerHTML = `
+                        <div class="media-title">${proj.title}</div>
+                        <div class="media-desc">${proj.desc}</div>
+                    `;
+
+                    card.appendChild(preview);
+                    card.appendChild(info);
+                    galleryEl.appendChild(card);
+                });
+
+                photoSectionsEl.appendChild(galleryEl);
+            });
+
+            let currentPhotoProject = 0;
+            let currentPhotoIndex = 0;
+
+            const photoModal = document.getElementById('galleryModal');
+            const modalImage = document.getElementById('modalImage');
+            const imageCounter = document.getElementById('imageCounter');
+            const leftBtn = document.getElementById('leftBtn');
+            const rightBtn = document.getElementById('rightBtn');
+
+            function openPhotoGallery(projectIndex) {
+                currentPhotoProject = projectIndex;
+                currentPhotoIndex = 0;
+                updatePhotoModal();
+                photoModal.style.display = 'flex';
+            }
+
+            function updatePhotoModal() {
+                const project = allPhotoProjects[currentPhotoProject];
+                modalImage.src = photoBasePath + project.images[currentPhotoIndex];
+                const hasMultiple = project.images.length > 1;
+                if (hasMultiple) {
+                    leftBtn.style.display = 'block';
+                    rightBtn.style.display = 'block';
+                    imageCounter.textContent = `${currentPhotoIndex + 1} / ${project.images.length}`;
+                    imageCounter.style.display = 'block';
+                } else {
+                    leftBtn.style.display = 'none';
+                    rightBtn.style.display = 'none';
+                    imageCounter.style.display = 'none';
+                }
+            }
+
+            window.closeGallery = function () {
+                photoModal.style.display = 'none';
+            };
+
+            window.nextImage = function () {
+                const project = allPhotoProjects[currentPhotoProject];
+                if (project.images.length > 1) {
+                    currentPhotoIndex = (currentPhotoIndex + 1) % project.images.length;
+                    updatePhotoModal();
+                }
+            };
+
+            window.prevImage = function () {
+                const project = allPhotoProjects[currentPhotoProject];
+                if (project.images.length > 1) {
+                    currentPhotoIndex = (currentPhotoIndex - 1 + project.images.length) % project.images.length;
+                    updatePhotoModal();
+                }
+            };
+
+            window.openPhotoGallery = openPhotoGallery;
+
+            photoModal.addEventListener('click', function (e) {
+                if (e.target === photoModal) closeGallery();
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (photoModal.style.display !== 'flex') return;
+                if (e.key === 'Escape') closeGallery();
+                if (e.key === 'ArrowRight') nextImage();
+                if (e.key === 'ArrowLeft') prevImage();
+            });
+
+            videoSections.forEach((section) => {
+                const subtitleEl = document.createElement('p');
+                subtitleEl.className = 'subsection-subtitle';
+                subtitleEl.textContent = section.subtitle;
+                videoSectionsEl.appendChild(subtitleEl);
+
+                const videoSection = document.createElement('div');
+                videoSection.className = 'video-section';
+
+                const videoWrapper = document.createElement('div');
+                videoWrapper.className = 'video-wrapper';
+
+                const iframe = document.createElement('iframe');
+                iframe.title = 'Video player';
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+                iframe.allowFullscreen = true;
+                videoWrapper.appendChild(iframe);
+
+                const episodesContainer = document.createElement('div');
+                episodesContainer.className = 'episodes-container';
+
+                section.episodes.forEach((ep, idx) => {
+                    const el = document.createElement('div');
+                    el.className = 'episode-item' + (idx === 0 ? ' active' : '');
+                    el.textContent = ep.title;
+
+                    el.addEventListener('click', function () {
+                        episodesContainer.querySelectorAll('.episode-item').forEach(e => e.classList.remove('active'));
+                        this.classList.add('active');
+                        if (ep.dzen) {
+                            iframe.src = `https://dzen.ru/embed/${ep.dzen}`;
+                        } else {
+                            iframe.src = '';
+                        }
+                    });
+
+                    episodesContainer.appendChild(el);
+                });
+
+                if (section.episodes.length > 0 && section.episodes[0].dzen) {
+                    iframe.src = `https://dzen.ru/embed/${section.episodes[0].dzen}`;
+                }
+
+                videoSection.appendChild(videoWrapper);
+                videoSection.appendChild(episodesContainer);
+                videoSectionsEl.appendChild(videoSection);
+            });
+
+            musicSections.forEach((section) => {
+                const subtitleEl = document.createElement('p');
+                subtitleEl.className = 'subsection-subtitle';
+                subtitleEl.textContent = section.subtitle;
+                musicSectionsEl.appendChild(subtitleEl);
+
+                const playerContainer = document.createElement('div');
+                playerContainer.className = 'music-player-container';
+
+                const vinylWrapper = document.createElement('div');
+                vinylWrapper.className = 'vinyl-wrapper';
+
+                const vinyl = document.createElement('div');
+                vinyl.className = 'vinyl';
+                vinylWrapper.appendChild(vinyl);
+
+                const trackInfo = document.createElement('div');
+                trackInfo.className = 'track-info';
+
+                const trackTitle = document.createElement('div');
+                trackTitle.className = 'track-title';
+
+                const trackArtist = document.createElement('div');
+                trackArtist.className = 'track-artist';
+
+                trackInfo.appendChild(trackTitle);
+                trackInfo.appendChild(trackArtist);
+
+                const audio = document.createElement('audio');
+                audio.style.display = 'none';
+
+                const progressContainer = document.createElement('div');
+                progressContainer.className = 'progress-container';
+
+                const progressBar = document.createElement('div');
+                progressBar.className = 'progress-bar';
+
+                const progress = document.createElement('div');
+                progress.className = 'progress';
+
+                progressBar.appendChild(progress);
+
+                const timeInfo = document.createElement('div');
+                timeInfo.className = 'time-info';
+
+                const currentTimeEl = document.createElement('span');
+                currentTimeEl.textContent = '0:00';
+
+                const durationEl = document.createElement('span');
+                durationEl.textContent = '0:00';
+
+                timeInfo.appendChild(currentTimeEl);
+                timeInfo.appendChild(durationEl);
+
+                progressContainer.appendChild(progressBar);
+                progressContainer.appendChild(timeInfo);
+
+                const controls = document.createElement('div');
+                controls.className = 'controls';
+
+                const skipBackBtn = document.createElement('button');
+                skipBackBtn.className = 'control-btn';
+                skipBackBtn.innerHTML = '<i class="fa-solid fa-backward-step"></i>';
+                skipBackBtn.addEventListener('click', () => {
+                    audio.currentTime = Math.max(0, audio.currentTime - 15);
+                });
+
+                const playBtn = document.createElement('button');
+                playBtn.className = 'play-btn';
+
+                const playIcon = document.createElement('i');
+                playIcon.className = 'fa-solid fa-play';
+
+                playBtn.appendChild(playIcon);
+
+                const skipForwardBtn = document.createElement('button');
+                skipForwardBtn.className = 'control-btn';
+                skipForwardBtn.innerHTML = '<i class="fa-solid fa-forward-step"></i>';
+                skipForwardBtn.addEventListener('click', () => {
+                    audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 15);
+                });
+
+                controls.appendChild(skipBackBtn);
+                controls.appendChild(playBtn);
+                controls.appendChild(skipForwardBtn);
+
+                const downloadSection = document.createElement('div');
+                downloadSection.className = 'download-section';
+
+                const downloadLink = document.createElement('a');
+                downloadLink.className = 'download-btn';
+                downloadLink.href = '#';
+                downloadLink.innerHTML = '<i class="fa-solid fa-download"></i> Скачать трек';
+
+                downloadSection.appendChild(downloadLink);
+
+                playerContainer.appendChild(vinylWrapper);
+                playerContainer.appendChild(trackInfo);
+                playerContainer.appendChild(audio);
+                playerContainer.appendChild(progressContainer);
+                playerContainer.appendChild(controls);
+                playerContainer.appendChild(downloadSection);
+
+                musicSectionsEl.appendChild(playerContainer);
+
+                const track = section.tracks[0];
+                if (track) {
+                    trackTitle.textContent = track.title;
+                    trackArtist.textContent = track.artist;
+                    vinyl.style.background = `url('${track.cover}') center/cover`;
+                    audio.src = track.src;
+                    downloadLink.href = track.src;
+                    downloadLink.setAttribute('download', track.downloadName);
+                }
+
+                let isPlaying = false;
+
+                playBtn.addEventListener('click', () => {
+                    if (isPlaying) {
+                        audio.pause();
+                        vinyl.classList.remove('playing');
+                        playIcon.classList.remove('fa-pause');
+                        playIcon.classList.add('fa-play');
+                    } else {
+                        audio.play().catch(e => console.log(e));
+                        vinyl.classList.add('playing');
+                        playIcon.classList.remove('fa-play');
+                        playIcon.classList.add('fa-pause');
+                    }
+                    isPlaying = !isPlaying;
+                });
+
+                function formatTime(seconds) {
+                    const min = Math.floor(seconds / 60);
+                    const sec = Math.floor(seconds % 60);
+                    return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+                }
+
+                audio.addEventListener('timeupdate', () => {
+                    if (audio.duration) {
+                        const progressPercent = (audio.currentTime / audio.duration) * 100;
+                        progress.style.width = `${progressPercent}%`;
+                        currentTimeEl.textContent = formatTime(audio.currentTime);
+                    }
+                });
+
+                audio.addEventListener('loadedmetadata', () => {
+                    durationEl.textContent = formatTime(audio.duration);
+                });
+
+                audio.addEventListener('ended', () => {
+                    isPlaying = false;
+                    vinyl.classList.remove('playing');
+                    playIcon.classList.remove('fa-pause');
+                    playIcon.classList.add('fa-play');
+                    progress.style.width = '0%';
+                });
+
+                progressBar.addEventListener('click', (e) => {
+                    const rect = progressBar.getBoundingClientRect();
+                    const offsetX = e.clientX - rect.left;
+                    const width = rect.width;
+                    if (audio.duration) {
+                        audio.currentTime = (offsetX / width) * audio.duration;
+                    }
+                });
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && photoModal.style.display !== 'flex') {
+                    const tag = document.activeElement.tagName;
+                    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                    e.preventDefault();
+                    document.querySelectorAll('.play-btn').forEach(btn => {
+                        btn.click();
+                    });
+                }
+            });
+        });
+    </script>
+    <script src="agreement.js" defer></script>
+</body>
+</html>
