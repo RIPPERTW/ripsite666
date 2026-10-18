@@ -39,6 +39,18 @@ jobs:
               mv -- "$f" "$d/$l"
             done
 
+      - name: Lowercase html filenames
+        run: |
+          cd dist
+          find . -type f -iname '*.html' | while read -r f; do
+            d=$(dirname "$f"); b=$(basename "$f"); l=$(echo "$b" | tr '[:upper:]' '[:lower:]')
+            [ "$b" = "$l" ] && continue
+            if [ -e "$d/$l" ]; then
+              echo "COLLISION: $f vs $d/$l"; exit 1
+            fi
+            mv -- "$f" "$d/$l"
+          done
+
       - name: Lowercase references in html/css/js
         run: node scripts/fix-links.mjs dist
 
