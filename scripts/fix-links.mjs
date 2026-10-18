@@ -3,35 +3,51 @@ import { join, extname } from 'node:path';
 
 const root = process.argv[2] ?? '.';
 const EXTS = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.jsx', '.tsx', '.vue', '.svelte']);
-const IMG_RE = /\.(png|jpe?g|gif|svg|webp|avif|ico)(\?.*)?(#.*)?$/i;
+const IMG_EXT = '(?:png|jpe?g|gif|svg|webp|avif|ico)';
 
-const toLowerPath = (url) => {
-  if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('#')) return null;
-  if (!IMG_RE.test(url)) return null;
-  const m = url.match(/^([^?#]+)([?#].*)?$/);
-  return m[1].toLowerCase() + (m[2] ?? '');
+const ATTR_RE = /\b(src|href|data-src|data-bg|data-image|poster|content|xlink:href|background)\s*=\s*(["'])([^"']+)\2/gi;
+const URL_RE = /url\(\s*(["']?)([^"')]+)\1\s*\)/gi;
+const SRCSET_RE = /\bsrcset\s*=\s*(["'])([^"']+)\1/gi;
+const STR_RE = new RegExp(`(["'\`])([^"'\`]*?\\.${IMG_EXT})([?#][^"'\`]*)?\\1`, 'gi');
+
+const isExternal = (u) => /^(https?:)?\/\//i.test(u) || u.startsWith('data:') || u.startsWith('#') || u.startsWith('mailto:') || u.startsWith('tel:');
+
+const lowerUrl = (u) => {
+  if (isExternal(u)) return null;
+  if (!new RegExp(`\\.${IMG_EXT}([?#]|$)`, 'i').test(u)) return null;
+  const m = u.match(/^([^?#]+)([?#].*)?$/);
+  const lower = m[1].toLowerCase() + (m[2] ?? '');
+  return lower === u ? null : lower;
 };
 
 const fixContent = (src) => {
   let out = src;
 
-  out = out.replace(/\b(src|href)\s*=\s*(["'])([^"']+)\2/gi, (m, attr, q, val) => {
-    const nv = toLowerPath(val);
+  out = out.replace(ATTR_RE, (m, attr, q, val) => {
+    const nv = lowerUrl(val);
     return nv ? `${attr}=${q}${nv}${q}` : m;
   });
 
-  out = out.replace(/url\(\s*(["']?)([^"')]+)\1\s*\)/gi, (m, q, val) => {
-    const nv = toLowerPath(val);
+  out = out.replace(URL_RE, (m, q, val) => {
+    const nv = lowerUrl(val);
     return nv ? `url(${q}${nv}${q})` : m;
   });
 
-  out = out.replace(/\bsrcset\s*=\s*(["'])([^"']+)\1/gi, (m, q, val) => {
+  out = out.replace(SRCSET_RE, (m, q, val) => {
+    let changed = false;
     const parts = val.split(',').map(part => {
       const [url, ...rest] = part.trim().split(/\s+/);
-      const nv = toLowerPath(url);
+      const nv = lowerUrl(url);
+      if (nv) changed = true;
       return [nv ?? url, ...rest].join(' ');
     });
-    return `srcset=${q}${parts.join(', ')}${q}`;
+    return changed ? `srcset=${q}${parts.join(', ')}${q}` : m;
+  });
+
+  out = out.replace(STR_RE, (m, q, path, tail) => {
+    const full = path + (tail ?? '');
+    const nv = lowerUrl(full);
+    return nv ? `${q}${nv}${q}` : m;
   });
 
   return out;
