@@ -1,0 +1,76 @@
+name: Deploy with normalized assets
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare dist
+        run: |
+          mkdir -p dist
+          rsync -a --exclude='.git' --exclude='node_modules' --exclude='scripts' \
+                --exclude='.github' --exclude='dist' ./ dist/
+
+      - name: Fix references to real filenames
+        run: node scripts/fix-links.mjs dist
+
+      - name: Sanity check
+        run: |
+          node - <<'EOF'
+          const fs = require('fs'), path = require('path');
+          const EXTS = new Set(['.html','.htm','.css','.js']);
+          const IMG_RE = /\.(png|jpe?g|gif|svg|webp|avif|ico)(\?[^"')\s]*)?(#\S*)?$/i;
+          const hasDynamic = (u) => u.includes('${') || u.includes('%') || /[^\x00-\x7F]/.test(u);
+          let bad = 0;
+          const walk = (d) => {
+            for (const e of fs.readdirSync(d, {withFileTypes:true})) {
+              const p = path.join(d, e.name);
+              if (e.isDirectory()) { walk(p); continue; }
+              if (!EXTS.has(path.extname(e.name).toLowerCase())) continue;
+              const src = fs.readFileSync(p, 'utf8');
+              const refs = [];
+              for (const m of src.matchAll(/\b(?:src|href)\s*=\s*(["'])([^"']+)\1/gi)) refs.push(m[2]);
+              for (const m of src.matchAll(/url\(\s*(["']?)([^"')]+)\1\s*\)/gi)) refs.push(m[2]);
+              for (const m of src.matchAll(/\bsrcset\s*=\s*(["'])([^"']+)\1/gi))
+                for (const part of m[2].split(',')) refs.push(part.trim().split(/\s+/)[0]);
+              for (const url of refs) {
+                if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('#')) continue;
+                if (!IMG_RE.test(url)) continue;
+                if (hasDynamic(url)) continue;
+                const clean = url.split(/[?#]/)[0];
+                if (/[A-Z]/.test(clean)) { console.log('WARN uppercase:', p, '->', url); }
+              }
+            }
+          };
+          walk('dist');
+          console.log('Sanity check done');
+          EOF
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
