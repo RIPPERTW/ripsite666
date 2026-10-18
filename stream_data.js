@@ -430,4 +430,61 @@ streamData = {
     ["Just Chatting", "0:20:25"],
     ["Servant of the Lake", "3:23:00"],
   ],
+  "2026-09-05": [
+    ["Just Chatting", "0:17:51"],
+    ["Sally Face", "2:23:00"],
+  ],
+  "2026-09-06": [
+    ["Just Chatting", "0:34:48"],
+    ["Plants vs. Zombies 2: It's About Time", "0:18:54"],
+    ["Sally Face", "1:50:00"],
+  ],
+  "2026-09-12": [
+    ["Just Chatting", "0:45:00"],
+    ["Sally Face", "1:59:30"],
+    ["The Binding of Isaac: Repentance", "1:03:00"],
+  ],
+  "2026-09-20": [
+    ["Just Chatting", "0:42:28"],
+    ["Sally Face", "1:16:00"],
+    ["Counter-Strike", "0:34:42"],
+  ],
+  "2026-09-27": [
+    ["Just Chatting", "1:07:15"],
+    ["Machinarium", "1:09:00"],
+  ],
+  "2026-09-29": [
+    ["The Binding of Isaac: Repentance", "2:48:21"],
+  ],
+  "2026-09-30": [
+    ["The Binding of Isaac: Repentance", "2:39:55"],
+  ],
+  "2026-10-01": [
+    ["The Binding of Isaac: Repentance", "1:58:24"],
+  ],
+  "2026-10-02": [
+    ["Minecraft Dungeons", "2:36:04"],
+  ],
+  "2026-10-03": [
+    ["Just Chatting", "1:34:52"],
+  ],
+  "2026-10-06": [
+    ["Minecraft Dungeons", "3:27:32"],
+  ],
+  "2026-10-08": [
+    ["Minecraft Dungeons", "3:26:50"],
+  ],
+  "2026-10-09": [
+    ["Just Chatting", "1:45:38"],
+    ["Counter-Strike", "0:09:25"],
+    ["Machinarium", "1:29:00"],
+    ["Afterbeat", "1:06:00"],
+  ],
+  "2026-10-17": [
+    ["Just Chatting", "4:05:22"],
+    ["Supercow", "0:54:44"],
+  ],
+  "2026-10-18": [
+    ["Just Chatting", "1:37:39"],
+  ],
 };
