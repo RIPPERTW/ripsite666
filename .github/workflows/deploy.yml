@@ -26,32 +26,7 @@ jobs:
           rsync -a --exclude='.git' --exclude='node_modules' --exclude='scripts' \
                 --exclude='.github' --exclude='dist' ./ dist/
 
-      - name: Lowercase image filenames
-        run: |
-          cd dist
-          find . -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
-            -o -iname '*.gif' -o -iname '*.svg' -o -iname '*.webp' \) | while read -r f; do
-              d=$(dirname "$f"); b=$(basename "$f"); l=$(echo "$b" | tr '[:upper:]' '[:lower:]')
-              [ "$b" = "$l" ] && continue
-              if [ -e "$d/$l" ]; then
-                echo "COLLISION: $f vs $d/$l"; exit 1
-              fi
-              mv -- "$f" "$d/$l"
-            done
-
-      - name: Lowercase html filenames
-        run: |
-          cd dist
-          find . -type f -iname '*.html' | while read -r f; do
-            d=$(dirname "$f"); b=$(basename "$f"); l=$(echo "$b" | tr '[:upper:]' '[:lower:]')
-            [ "$b" = "$l" ] && continue
-            if [ -e "$d/$l" ]; then
-              echo "COLLISION: $f vs $d/$l"; exit 1
-            fi
-            mv -- "$f" "$d/$l"
-          done
-
-      - name: Lowercase references in html/css/js
+      - name: Fix references to real filenames
         run: node scripts/fix-links.mjs dist
 
       - name: Sanity check
@@ -78,13 +53,12 @@ jobs:
                 if (!IMG_RE.test(url)) continue;
                 if (hasDynamic(url)) continue;
                 const clean = url.split(/[?#]/)[0];
-                if (/[A-Z]/.test(clean)) { console.log('BAD:', p, '->', url); bad++; }
+                if (/[A-Z]/.test(clean)) { console.log('WARN uppercase:', p, '->', url); }
               }
             }
           };
           walk('dist');
-          if (bad) { console.error('Uppercase in image paths: ' + bad); process.exit(1); }
-          console.log('OK: all static image refs lowercase');
+          console.log('Sanity check done');
           EOF
 
       - uses: actions/upload-pages-artifact@v3
