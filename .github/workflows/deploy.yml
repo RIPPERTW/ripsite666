@@ -47,32 +47,35 @@ jobs:
           node - <<'EOF'
           const fs = require('fs'), path = require('path');
           const EXTS = new Set(['.html','.htm','.css','.js']);
-          const IMG_EXT = '(?:png|jpe?g|gif|svg|webp|avif|ico)';
-          const ATTR_RE = /\b(src|href|data-src|data-bg|data-image|poster|content|xlink:href|background)\s*=\s*(["'])([^"']+)\2/gi;
-          const URL_RE = /url\(\s*(["']?)([^"')]+)\1\s*\)/gi;
-          const STR_RE = new RegExp(`(["'\`])([^"'\`]*?\\.${IMG_EXT})([?#][^"'\`]*)?\\1`, 'gi');
-          const isExternal = (u) => /^(https?:)?\/\//i.test(u) || u.startsWith('data:') || u.startsWith('#') || u.startsWith('mailto:') || u.startsWith('tel:');
-          let bad = 0;
-          const check = (p, url) => {
-            if (isExternal(url)) return;
-            if (!new RegExp(`\\.${IMG_EXT}([?#]|$)`, 'i').test(url)) return;
-            const clean = url.split(/[?#]/)[0];
-            if (/[A-Z]/.test(clean)) { console.log('BAD:', p, '->', url); bad++; }
-          };
+          const IMG_RE = /\.(png|jpe?g|gif|svg|webp|avif|ico)(\?[^"')\s]*)?(#\S*)?$/i;
+          let bad = 0, missing = 0;
+          const exists = (p) => { try { fs.accessSync(p); return true; } catch { return false; } };
           const walk = (d) => {
             for (const e of fs.readdirSync(d, {withFileTypes:true})) {
               const p = path.join(d, e.name);
               if (e.isDirectory()) { walk(p); continue; }
               if (!EXTS.has(path.extname(e.name).toLowerCase())) continue;
               const src = fs.readFileSync(p, 'utf8');
-              for (const m of src.matchAll(ATTR_RE)) check(p, m[3]);
-              for (const m of src.matchAll(URL_RE)) check(p, m[2]);
-              for (const m of src.matchAll(STR_RE)) check(p, m[2] + (m[3] ?? ''));
+              const refs = [];
+              for (const m of src.matchAll(/\b(?:src|href)\s*=\s*(["'])([^"']+)\1/gi)) refs.push(m[2]);
+              for (const m of src.matchAll(/url\(\s*(["']?)([^"')]+)\1\s*\)/gi)) refs.push(m[2]);
+              for (const m of src.matchAll(/\bsrcset\s*=\s*(["'])([^"']+)\1/gi))
+                for (const part of m[2].split(',')) refs.push(part.trim().split(/\s+/)[0]);
+              for (const url of refs) {
+                if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('#')) continue;
+                if (!IMG_RE.test(url)) continue;
+                const clean = url.split(/[?#]/)[0];
+                if (/[A-Z]/.test(clean)) { console.log('BAD:', p, '->', url); bad++; }
+                const abs = path.resolve(path.dirname(p), clean.replace(/^\//, ''));
+                if (!exists(abs)) { console.log('MISSING:', p, '->', url, '(looked at', abs + ')'); missing++; }
+              }
             }
           };
           walk('dist');
-          if (bad) { console.error(`Uppercase in image paths: ${bad}`); process.exit(1); }
-          console.log('OK: all image refs lowercase');
+          if (bad) { console.error('Uppercase in image paths: ' + bad); }
+          if (missing) { console.error('Missing image files: ' + missing); }
+          if (bad || missing) process.exit(1);
+          console.log('OK: all image refs lowercase and exist');
           EOF
 
       - uses: actions/upload-pages-artifact@v3
