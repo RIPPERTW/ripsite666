@@ -1,0 +1,34 @@
+name: Deploy with normalized assets
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase image filenames
+        run: |
+          find . -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
+            -o -iname '*.gif' -o -iname '*.svg' -o -iname '*.webp' \) \
+            -not -path './.git/*' | while read -r f; do
+              d=$(dirname "$f"); b=$(basename "$f"); l=$(echo "$b" | tr '[:upper:]' '[:lower:]')
+              [ "$b" != "$l" ] && mv -- "$f" "$d/$l"
+            done
+
+      - name: Lowercase references in html/css/js
+        run: node scripts/fix-links.mjs   # скрипт из прошлого ответа
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    permissions: { pages: write, id-token: write }
+    environment: github-pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/deploy-pages@v4
