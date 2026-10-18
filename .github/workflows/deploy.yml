@@ -1,55 +1,64 @@
-import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { join, extname } from 'node:path';
+name: Deploy with normalized assets
 
-const root = process.argv[2] ?? '.';
-const EXTS = new Set(['.html', '.htm', '.css', '.js', '.mjs', '.jsx', '.tsx', '.vue', '.svelte']);
-const IMG_RE = /\.(png|jpe?g|gif|svg|webp|avif|ico)(\?.*)?(#.*)?$/i;
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
 
-const toLowerPath = (url) => {
-  if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('#')) return null;
-  if (!IMG_RE.test(url)) return null;
-  const m = url.match(/^([^?#]+)([?#].*)?$/);
-  return m[1].toLowerCase() + (m[2] ?? '');
-};
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
-const fixContent = (src) => {
-  let out = src;
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
-  out = out.replace(/\b(src|href)\s*=\s*(["'])([^"']+)\2/gi, (m, attr, q, val) => {
-    const nv = toLowerPath(val);
-    return nv ? `${attr}=${q}${nv}${q}` : m;
-  });
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-  out = out.replace(/url\(\s*(["']?)([^"')]+)\1\s*\)/gi, (m, q, val) => {
-    const nv = toLowerPath(val);
-    return nv ? `url(${q}${nv}${q})` : m;
-  });
+      - name: Prepare dist
+        run: |
+          mkdir -p dist
+          rsync -a --exclude='.git' --exclude='node_modules' --exclude='scripts' \
+                --exclude='.github' --exclude='dist' ./ dist/
 
-  out = out.replace(/\bsrcset\s*=\s*(["'])([^"']+)\1/gi, (m, q, val) => {
-    const parts = val.split(',').map(part => {
-      const [url, ...rest] = part.trim().split(/\s+/);
-      const nv = toLowerPath(url);
-      return [nv ?? url, ...rest].join(' ');
-    });
-    return `srcset=${q}${parts.join(', ')}${q}`;
-  });
+      - name: Lowercase image filenames
+        run: |
+          cd dist
+          find . -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
+            -o -iname '*.gif' -o -iname '*.svg' -o -iname '*.webp' \) | while read -r f; do
+              d=$(dirname "$f"); b=$(basename "$f"); l=$(echo "$b" | tr '[:upper:]' '[:lower:]')
+              [ "$b" = "$l" ] && continue
+              if [ -e "$d/$l" ]; then
+                echo "COLLISION: $f vs $d/$l"; exit 1
+              fi
+              mv -- "$f" "$d/$l"
+            done
 
-  return out;
-};
+      - name: Lowercase references in html/css/js
+        run: node scripts/fix-links.mjs dist
 
-const walk = async (dir) => {
-  for (const e of await readdir(dir, { withFileTypes: true })) {
-    if (e.name === '.git' || e.name === 'node_modules' || e.name === 'dist') continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) { await walk(p); continue; }
-    if (!EXTS.has(extname(e.name).toLowerCase())) continue;
-    const src = await readFile(p, 'utf8');
-    const fixed = fixContent(src);
-    if (fixed !== src) {
-      await writeFile(p, fixed, 'utf8');
-      console.log('fixed:', p);
-    }
-  }
-};
+      - name: Sanity check
+        run: |
+          if grep -rEn '\.(png|jpe?g|gif|svg|webp)' dist --include='*.html' --include='*.css' --include='*.js' \
+             | grep -E '[A-Z]' ; then
+            echo "Uppercase image refs left"; exit 1
+          fi
 
-await walk(root);
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
