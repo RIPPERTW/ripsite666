@@ -1,16 +1,22 @@
 // ==UserScript==
 // @name         RIPMORE
 // @namespace    https://ripsite666.netlify.app/
-// @version      0.2
+// @version      0.3
 // @description  RIPMORE - скрипт который служит улучшением для пользователей RIPSITE
 // @author       RIPPER
 // @match        https://dzen.ru/*
 // @match        https://store.steampowered.com/app/*
 // @match        https://shikimori.io/*
 // @match        https://shikimori.one/*
+// @match        https://ripsite666.netlify.app/*
+// @match        https://rippertw.github.io/*
 // @icon         https://ripsite666.netlify.app/Files/Other/RIPMORE.png
 // @grant        GM_xmlhttpRequest
+// @grant        GM_getValue
+// @grant        GM_setValue
 // @connect      ripsite666.netlify.app
+// @connect      rippertw.github.io
+// @connect      steamcommunity.com
 // @downloadURL  https://ripsite666.netlify.app/Files/Other/ripmore.user.js
 // @updateURL    https://ripsite666.netlify.app/Files/Other/ripmore.user.js
 // @run-at       document-start
@@ -22,12 +28,345 @@
     const IS_DZEN = /dzen\.ru/.test(location.hostname);
     const IS_STEAM = /store\.steampowered\.com/.test(location.hostname);
     const IS_SHIKIMORI = /shikimori\.(io|one)/.test(location.hostname);
+    const IS_RIPSITE = /ripsite666\.netlify\.app|rippertw\.github\.io/.test(location.hostname);
+
+    const SETTINGS_KEY = 'ripmore_settings';
+
+    const DEFAULT_SETTINGS = {
+        global: true,
+        custom_player: true,
+        site_info: true,
+        steam_review: true,
+        shikimori_review: true,
+        steam_widget: true,
+        mirror_data: false
+    };
+
+    function getSettings() {
+        try {
+            const raw = GM_getValue(SETTINGS_KEY, null);
+            if (!raw) return { ...DEFAULT_SETTINGS };
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            return { ...DEFAULT_SETTINGS, ...parsed };
+        } catch (e) {
+            return { ...DEFAULT_SETTINGS };
+        }
+    }
+
+    function saveSettings(settings) {
+        try {
+            GM_setValue(SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {}
+    }
+
+    function setSetting(key, value) {
+        const s = getSettings();
+        s[key] = value;
+        saveSettings(s);
+    }
+
+    function isEnabled(key) {
+        const s = getSettings();
+        if (!s.global) return false;
+        return s[key] !== false;
+    }
+
+    function isSiteInfoEnabled() {
+        return isEnabled('site_info');
+    }
+
+    const PRIMARY_BASE = 'https://ripsite666.netlify.app';
+    const MIRROR_BASE = 'https://rippertw.github.io/ripsite666';
+
+    function getBaseUrl() {
+        const s = getSettings();
+        if (s.mirror_data) return MIRROR_BASE;
+        return PRIMARY_BASE;
+    }
+
+    const DB_TIMEOUT_MS = 10000;
+
+    function gmFetchJson(url, timeoutMs) {
+        return new Promise((resolve, reject) => {
+            let finished = false;
+            let timer = null;
+            let req = null;
+            try {
+                req = GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: url,
+                    timeout: timeoutMs,
+                    onload: (response) => {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) clearTimeout(timer);
+                        if (response.status >= 200 && response.status < 300) {
+                            try {
+                                const data = JSON.parse(response.responseText);
+                                resolve(data);
+                            } catch (e) {
+                                reject(new Error('JSON parse error'));
+                            }
+                        } else {
+                            reject(new Error('HTTP ' + response.status));
+                        }
+                    },
+                    onerror: () => {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) clearTimeout(timer);
+                        reject(new Error('Network error'));
+                    },
+                    ontimeout: () => {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) clearTimeout(timer);
+                        reject(new Error('Timeout'));
+                    },
+                    onabort: () => {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) clearTimeout(timer);
+                        reject(new Error('Aborted'));
+                    }
+                });
+            } catch (e) {
+                reject(e);
+                return;
+            }
+
+            if (timeoutMs && timeoutMs > 0) {
+                timer = setTimeout(() => {
+                    if (finished) return;
+                    finished = true;
+                    try {
+                        if (req && typeof req.abort === 'function') req.abort();
+                    } catch (e) {}
+                    reject(new Error('Timeout'));
+                }, timeoutMs + 200);
+            }
+        });
+    }
+
+    function buildOfferViewer(kind) {
+        const id = kind === 'game' ? 'ripper-mirror-offer-game' : 'ripper-mirror-offer-anime';
+        const existing = document.getElementById(id);
+        if (existing) return existing;
+
+        const THEME = {
+            bg: '#09090f',
+            card: '#101015',
+            accent: '#c11f2b',
+            accentHover: '#d4232f',
+            text: '#e0e0ff',
+            textMuted: '#a0a0cc',
+            border: '#1e1e28'
+        };
+        const FONT = "'Inter', system-ui, -apple-system, sans-serif";
+        const FONT_TITLE = "'Orbitron', 'Inter', sans-serif";
+
+        if (!document.getElementById('ripper-mirror-offer-styles')) {
+            const style = document.createElement('style');
+            style.id = 'ripper-mirror-offer-styles';
+            style.textContent = `
+                .ripper-mirror-offer {
+                    font-family: ${FONT};
+                    background: ${THEME.card};
+                    border: 1px solid ${THEME.border};
+                    border-radius: 18px;
+                    padding: 0;
+                    margin: 24px 0;
+                    color: ${THEME.text};
+                    box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+                    overflow: hidden;
+                    line-height: 1.6;
+                    box-sizing: border-box;
+                    width: 100%;
+                    max-width: 100%;
+                    animation: rmoFadeIn 0.4s ease-out;
+                }
+                .ripper-mirror-offer * { box-sizing: border-box; }
+                @keyframes rmoFadeIn {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .ripper-mirror-offer .rmo-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    padding: 20px 24px 16px;
+                    border-bottom: 1px solid ${THEME.border};
+                    background: ${THEME.bg};
+                }
+                .ripper-mirror-offer .rmo-name {
+                    font-family: ${FONT_TITLE};
+                    font-weight: 700;
+                    font-size: 1.1rem;
+                    letter-spacing: 0.8px;
+                    color: white;
+                    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+                    line-height: 1.2;
+                }
+                .ripper-mirror-offer .rmo-status {
+                    display: inline-flex;
+                    align-items: center;
+                    font-family: ${FONT_TITLE};
+                    font-weight: 700;
+                    font-size: 0.72rem;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    color: ${THEME.textMuted};
+                    line-height: 1;
+                    margin-top: 3px;
+                }
+                .ripper-mirror-offer .rmo-body {
+                    padding: 20px 24px 22px;
+                }
+                .ripper-mirror-offer .rmo-text {
+                    font-size: 0.95rem;
+                    line-height: 1.7;
+                    color: ${THEME.text};
+                    word-break: break-word;
+                }
+                .ripper-mirror-offer .rmo-text strong { color: white; font-weight: 600; }
+                .ripper-mirror-offer .rmo-error {
+                    margin-top: 10px;
+                    font-size: 0.85rem;
+                    color: #e5534b;
+                    word-break: break-word;
+                }
+                .ripper-mirror-offer .rmo-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    gap: 10px;
+                    padding: 14px 24px 18px;
+                    border-top: 1px solid ${THEME.border};
+                    background: ${THEME.bg};
+                    flex-wrap: wrap;
+                }
+                .ripper-mirror-offer .rmo-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    font-family: ${FONT_TITLE};
+                    font-weight: 700;
+                    font-size: 0.78rem;
+                    letter-spacing: 1px;
+                    text-transform: uppercase;
+                    color: white;
+                    text-decoration: none;
+                    padding: 10px 18px;
+                    border-radius: 10px;
+                    background: ${THEME.accent};
+                    box-shadow: 0 4px 14px rgba(193,31,43,0.3);
+                    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+                    border: none;
+                    cursor: pointer;
+                }
+                .ripper-mirror-offer .rmo-btn:hover {
+                    background: ${THEME.accentHover};
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(193,31,43,0.45);
+                    color: white;
+                }
+                .ripper-mirror-offer .rmo-btn.rmo-outline {
+                    background: transparent;
+                    color: ${THEME.textMuted};
+                    border: 1px solid ${THEME.border};
+                    box-shadow: none;
+                }
+                .ripper-mirror-offer .rmo-btn.rmo-outline:hover {
+                    color: white;
+                    border-color: ${THEME.accent};
+                    background: rgba(193,31,43,0.12);
+                    transform: translateY(-1px);
+                    box-shadow: none;
+                }
+                @media (max-width: 640px) {
+                    .ripper-mirror-offer .rmo-header { padding: 16px 16px 14px; }
+                    .ripper-mirror-offer .rmo-name { font-size: 1rem; }
+                    .ripper-mirror-offer .rmo-body { padding: 16px 16px 18px; }
+                    .ripper-mirror-offer .rmo-footer {
+                        padding: 12px 16px 16px;
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+                    .ripper-mirror-offer .rmo-btn { width: 100%; }
+                }
+            `;
+            (document.head || document.documentElement).appendChild(style);
+        }
+
+        const block = document.createElement('div');
+        block.id = id;
+        block.className = 'ripper-mirror-offer';
+
+        const title = kind === 'game' ? 'RIPSITE · Steam' : 'RIPSITE · Shikimori';
+        const statusLabel = kind === 'game' ? 'Данные не загрузились' : 'Данные не загрузились';
+        const what = kind === 'game' ? 'база игр' : 'база аниме';
+
+        block.innerHTML = `
+            <div class="rmo-header">
+                <div>
+                    <div class="rmo-name">RIPSITE</div>
+                    <div class="rmo-status"><span>${statusLabel}</span></div>
+                </div>
+            </div>
+            <div class="rmo-body">
+                <div class="rmo-text">
+                    Основной источник не ответил. Можно попробовать загрузить данные с <strong>зеркала</strong>.
+                </div>
+                <div class="rmo-error" id="${id}-error"></div>
+            </div>
+            <div class="rmo-footer">
+                <button type="button" class="rmo-btn rmo-outline" data-action="retry">
+                    Повторить запрос
+                </button>
+                <button type="button" class="rmo-btn" data-action="mirror">
+                    Загрузить с зеркала
+                </button>
+            </div>
+        `;
+
+        const retryBtn = block.querySelector('[data-action="retry"]');
+        const mirrorBtn = block.querySelector('[data-action="mirror"]');
+
+        retryBtn.addEventListener('click', () => {
+            if (typeof block._onRetry === 'function') block._onRetry();
+        });
+
+        mirrorBtn.addEventListener('click', () => {
+            setSetting('mirror_data', true);
+            if (typeof block._onMirror === 'function') block._onMirror();
+        });
+
+        return block;
+    }
+
+    function showMirrorOffer(kind, container, onRetry, onMirror, errorText) {
+        if (!container || !container.parentNode) return null;
+        const offer = buildOfferViewer(kind);
+        const errEl = offer.querySelector('#' + offer.id + '-error');
+        if (errEl) errEl.textContent = errorText || '';
+        offer._onRetry = onRetry;
+        offer._onMirror = onMirror;
+
+        const existing = container.parentNode.querySelector('#' + offer.id);
+        if (existing) {
+            existing.replaceWith(offer);
+        } else {
+            container.parentNode.insertBefore(offer, container.nextSibling);
+        }
+        return offer;
+    }
 
     /* =========================================================================
        ЧАСТЬ 1
        ========================================================================= */
 
-    if (IS_DZEN) {
+    if (IS_DZEN && isEnabled('custom_player')) {
         (function initDzen() {
             const WATERMARK_SELECTORS = [
                 '[data-testid="video-controls-watermark"]',
@@ -1310,9 +1649,8 @@
        ЧАСТЬ 2
        ========================================================================= */
 
-    if (IS_STEAM) {
+    if (IS_STEAM && isSiteInfoEnabled() && isEnabled('steam_review')) {
         (function initSteam() {
-            const DB_URL = 'https://ripsite666.netlify.app/BD/game_database.json';
             const SITE_URL = 'https://ripsite666.netlify.app';
             const THEME = {
                 bg:          '#09090f',
@@ -1325,8 +1663,6 @@
             };
             const FONT = "'Inter', system-ui, -apple-system, sans-serif";
             const FONT_TITLE = "'Orbitron', 'Inter', sans-serif";
-
-            let dbCache = null;
 
             function injectStyles() {
                 if (document.getElementById('ripper-steam-styles')) return;
@@ -2225,26 +2561,9 @@
             }
 
             function fetchDatabase() {
-                return new Promise((resolve, reject) => {
-                    if (dbCache) return resolve(dbCache);
-                    GM_xmlhttpRequest({
-                        method: 'GET',
-                        url: DB_URL,
-                        onload: (response) => {
-                            if (response.status >= 200 && response.status < 300) {
-                                try {
-                                    dbCache = JSON.parse(response.responseText);
-                                    resolve(dbCache);
-                                } catch (e) {
-                                    reject(new Error('JSON parse error'));
-                                }
-                            } else {
-                                reject(new Error('HTTP ' + response.status));
-                            }
-                        },
-                        onerror: () => reject(new Error('Network error'))
-                    });
-                });
+                const base = getBaseUrl();
+                const url = base + '/BD/game_database.json';
+                return gmFetchJson(url, DB_TIMEOUT_MS);
             }
 
             function removeAll() {
@@ -2252,6 +2571,14 @@
                     const el = document.getElementById(id);
                     if (el) el.remove();
                 });
+                const offer = document.getElementById('ripper-mirror-offer-game');
+                if (offer) offer.remove();
+            }
+
+            function insertOffer(kind, skeleton, onRetry, onMirror, errorText) {
+                const host = skeleton && skeleton.parentNode ? skeleton : findInsertTarget();
+                if (!host || !host.parentNode) return null;
+                return showMirrorOffer(kind, host, onRetry, onMirror, errorText);
             }
 
             async function init() {
@@ -2274,6 +2601,30 @@
                             document.body.insertBefore(skeleton, document.body.firstChild);
                         });
                 }
+
+                const requestMirror = (errText) => {
+                    const offer = insertOffer(
+                        'game',
+                        skeleton,
+                        () => {
+                            const o = document.getElementById('ripper-mirror-offer-game');
+                            if (o) o.remove();
+                            removeAll();
+                            init();
+                        },
+                        () => {
+                            const o = document.getElementById('ripper-mirror-offer-game');
+                            if (o) o.remove();
+                            removeAll();
+                            init();
+                        },
+                        errText
+                    );
+                    if (offer) {
+                        const sk = document.getElementById('ripper-game-skeleton');
+                        if (sk) sk.remove();
+                    }
+                };
 
                 try {
                     const db = await fetchDatabase();
@@ -2323,8 +2674,8 @@
                     }
                 } catch (e) {
                     console.warn('RIPMORE Steam:', e);
-                    const sk = document.getElementById('ripper-game-skeleton');
-                    if (sk) sk.remove();
+                    const errText = (e && e.message) ? e.message : 'Ошибка загрузки данных';
+                    requestMirror(errText);
                 }
             }
 
@@ -2338,7 +2689,6 @@
             new MutationObserver(() => {
                 if (location.href !== lastUrl) {
                     lastUrl = location.href;
-                    dbCache = null;
                     removeAll();
                     setTimeout(init, 600);
                 }
@@ -2350,9 +2700,8 @@
        ЧАСТЬ 3
        ========================================================================= */
 
-    if (IS_SHIKIMORI) {
+    if (IS_SHIKIMORI && isSiteInfoEnabled() && isEnabled('shikimori_review')) {
         (function initShikimori() {
-            const DB_URL = 'https://ripsite666.netlify.app/BD/anime_database.json';
             const SITE_URL = 'https://ripsite666.netlify.app';
             const THEME = {
                 bg:          '#09090f',
@@ -2365,8 +2714,6 @@
             };
             const FONT = "'Inter', system-ui, -apple-system, sans-serif";
             const FONT_TITLE = "'Orbitron', 'Inter', sans-serif";
-
-            let dbCache = null;
 
             function injectStyles() {
                 if (document.getElementById('ripper-anime-styles')) return;
@@ -3273,26 +3620,9 @@
             }
 
             function fetchDatabase() {
-                return new Promise((resolve, reject) => {
-                    if (dbCache) return resolve(dbCache);
-                    GM_xmlhttpRequest({
-                        method: 'GET',
-                        url: DB_URL,
-                        onload: (response) => {
-                            if (response.status >= 200 && response.status < 300) {
-                                try {
-                                    dbCache = JSON.parse(response.responseText);
-                                    resolve(dbCache);
-                                } catch (e) {
-                                    reject(new Error('JSON parse error'));
-                                }
-                            } else {
-                                reject(new Error('HTTP ' + response.status));
-                            }
-                        },
-                        onerror: () => reject(new Error('Network error'))
-                    });
-                });
+                const base = getBaseUrl();
+                const url = base + '/BD/anime_database.json';
+                return gmFetchJson(url, DB_TIMEOUT_MS);
             }
 
             function removeAll() {
@@ -3300,6 +3630,8 @@
                     const el = document.getElementById(id);
                     if (el) el.remove();
                 });
+                const offer = document.getElementById('ripper-mirror-offer-anime');
+                if (offer) offer.remove();
             }
 
             function getAllAnime(db) {
@@ -3336,6 +3668,12 @@
                 return result;
             }
 
+            function insertOffer(skeleton, onRetry, onMirror, errorText) {
+                const host = skeleton && skeleton.parentNode ? skeleton : findInsertTarget();
+                if (!host || !host.parentNode) return null;
+                return showMirrorOffer('anime', host, onRetry, onMirror, errorText);
+            }
+
             async function init() {
                 injectStyles();
                 removeAll();
@@ -3354,6 +3692,29 @@
                         .then(() => insertBlock(skeleton))
                         .catch(() => {});
                 }
+
+                const requestMirror = (errText) => {
+                    const offer = insertOffer(
+                        skeleton,
+                        () => {
+                            const o = document.getElementById('ripper-mirror-offer-anime');
+                            if (o) o.remove();
+                            removeAll();
+                            init();
+                        },
+                        () => {
+                            const o = document.getElementById('ripper-mirror-offer-anime');
+                            if (o) o.remove();
+                            removeAll();
+                            init();
+                        },
+                        errText
+                    );
+                    if (offer) {
+                        const sk = document.getElementById('ripper-anime-skeleton');
+                        if (sk) sk.remove();
+                    }
+                };
 
                 try {
                     const db = await fetchDatabase();
@@ -3405,8 +3766,8 @@
                     }
                 } catch (e) {
                     console.warn('RIPMORE Anime:', e);
-                    const sk = document.getElementById('ripper-anime-skeleton');
-                    if (sk) sk.remove();
+                    const errText = (e && e.message) ? e.message : 'Ошибка загрузки данных';
+                    requestMirror(errText);
                 }
             }
 
@@ -3420,11 +3781,728 @@
             new MutationObserver(() => {
                 if (location.href !== lastUrl) {
                     lastUrl = location.href;
-                    dbCache = null;
                     removeAll();
                     setTimeout(init, 600);
                 }
             }).observe(document, { subtree: true, childList: true });
+        })();
+    }
+
+    /* =========================================================================
+       ЧАСТЬ 4
+       ========================================================================= */
+
+    if (IS_RIPSITE) {
+        (function initRipsite() {
+            const PROFILE_URL = 'https://steamcommunity.com/id/ripper_cmertanoc/';
+            const AVATAR_URL = 'https://ripsite666.netlify.app/Files/Other/RIPPERSQUARE.png';
+            const THEME = {
+                bg:          '#09090f',
+                card:        '#101015',
+                accent:      '#c11f2b',
+                accentHover: '#d4232f',
+                text:        '#e0e0ff',
+                textMuted:   '#a0a0cc',
+                border:      '#1e1e28'
+            };
+            const FONT = "'Inter', system-ui, -apple-system, sans-serif";
+            const FONT_TITLE = "'Orbitron', 'Inter', sans-serif";
+
+            const IS_RIPMORE_PAGE = /\/ripmore(\.html)?$/i.test(location.pathname);
+
+            if (!IS_RIPMORE_PAGE && isEnabled('steam_widget')) {
+                (function initSteamWidget() {
+                    function injectEarlyHide() {
+                        if (document.getElementById('ripper-steam-early-hide')) return;
+                        const style = document.createElement('style');
+                        style.id = 'ripper-steam-early-hide';
+                        style.textContent = `
+                            body:not(.ripper-ready) .steam-widget-section,
+                            body:not(.ripper-ready) .steam-widget-section * {
+                                visibility: hidden !important;
+                            }
+                        `;
+                        (document.head || document.documentElement).appendChild(style);
+                    }
+
+                    function markReady() {
+                        if (document.body) {
+                            document.body.classList.add('ripper-ready');
+                        } else {
+                            document.addEventListener('DOMContentLoaded', function() {
+                                document.body.classList.add('ripper-ready');
+                            }, { once: true });
+                        }
+                    }
+
+                    function injectStyles() {
+                        if (document.getElementById('ripper-steam-profile-styles')) return;
+                        const style = document.createElement('style');
+                        style.id = 'ripper-steam-profile-styles';
+                        style.textContent = `
+                            .ripper-steam-profile {
+                                font-family: ${FONT};
+                                background: ${THEME.card};
+                                border: 1px solid ${THEME.border};
+                                border-radius: 18px;
+                                padding: 0;
+                                margin: 0.5rem auto 2rem;
+                                color: ${THEME.text};
+                                box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(193,31,43,0.08);
+                                position: relative;
+                                overflow: hidden;
+                                line-height: 1.6;
+                                isolation: isolate;
+                                box-sizing: border-box;
+                                width: 100%;
+                                max-width: 900px;
+                                animation: rspFadeIn 0.5s ease-out;
+                            }
+
+                            .ripper-steam-profile * {
+                                box-sizing: border-box;
+                            }
+
+                            @keyframes rspFadeIn {
+                                from { opacity: 0; transform: translateY(10px); }
+                                to   { opacity: 1; transform: translateY(0); }
+                            }
+
+                            .ripper-steam-profile-header {
+                                display: flex;
+                                align-items: center;
+                                gap: 18px;
+                                padding: 22px 28px 18px;
+                                border-bottom: 1px solid ${THEME.border};
+                                background: ${THEME.bg};
+                                position: relative;
+                            }
+
+                            .ripper-steam-avatar-wrap {
+                                position: relative;
+                                flex-shrink: 0;
+                                width: 72px;
+                                height: 72px;
+                                border-radius: 50%;
+                                border: 3px solid ${THEME.accent};
+                                box-shadow: 0 0 0 3px ${THEME.bg}, 0 0 20px rgba(193,31,43,0.4);
+                                overflow: hidden;
+                                background: ${THEME.border};
+                            }
+
+                            .ripper-steam-avatar {
+                                width: 100%;
+                                height: 100%;
+                                object-fit: cover;
+                                display: block;
+                            }
+
+                            .ripper-steam-info {
+                                display: flex;
+                                flex-direction: column;
+                                gap: 6px;
+                                min-width: 0;
+                                flex: 1;
+                            }
+
+                            .ripper-steam-name {
+                                font-family: ${FONT_TITLE};
+                                font-weight: 700;
+                                font-size: 1.35rem;
+                                letter-spacing: 0.8px;
+                                color: white;
+                                text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+                                line-height: 1.2;
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                flex-wrap: wrap;
+                            }
+
+                            .ripper-steam-name a {
+                                color: white;
+                                text-decoration: none;
+                                transition: color 0.2s ease;
+                            }
+
+                            .ripper-steam-name a:hover {
+                                color: ${THEME.accent};
+                            }
+
+                            .ripper-steam-status-row {
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                flex-wrap: wrap;
+                            }
+
+                            .ripper-steam-status-badge {
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 8px;
+                                font-family: ${FONT_TITLE};
+                                font-weight: 700;
+                                font-size: 0.75rem;
+                                letter-spacing: 1px;
+                                text-transform: uppercase;
+                                color: ${THEME.textMuted};
+                                padding: 5px 14px;
+                                border-radius: 20px;
+                                background: ${THEME.border};
+                                border: 1px solid ${THEME.border};
+                                transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+                            }
+
+                            .ripper-steam-status-dot {
+                                width: 10px;
+                                height: 10px;
+                                border-radius: 50%;
+                                flex-shrink: 0;
+                                background: #898989;
+                                box-shadow: 0 0 6px rgba(137, 137, 137, 0.5);
+                            }
+
+                            .ripper-steam-status-badge.online .ripper-steam-status-dot {
+                                background: #57cbde;
+                                box-shadow: 0 0 8px rgba(87, 203, 222, 0.8);
+                            }
+
+                            .ripper-steam-status-badge.offline .ripper-steam-status-dot {
+                                background: #898989;
+                                box-shadow: 0 0 6px rgba(137, 137, 137, 0.5);
+                            }
+
+                            .ripper-steam-status-badge.in-game .ripper-steam-status-dot {
+                                background: #90ba3c;
+                                box-shadow: 0 0 8px rgba(144, 186, 60, 0.8);
+                            }
+
+                            .ripper-steam-status-badge.online {
+                                color: #57cbde;
+                                border-color: rgba(87, 203, 222, 0.3);
+                                background: rgba(87, 203, 222, 0.08);
+                            }
+
+                            .ripper-steam-status-badge.offline {
+                                color: #898989;
+                                border-color: rgba(137, 137, 137, 0.2);
+                                background: rgba(137, 137, 137, 0.05);
+                            }
+
+                            .ripper-steam-status-badge.in-game {
+                                color: #90ba3c;
+                                border-color: rgba(144, 186, 60, 0.3);
+                                background: rgba(144, 186, 60, 0.08);
+                            }
+
+                            .ripper-steam-status-sep {
+                                opacity: 0.5;
+                                font-weight: 400;
+                                margin: 0 2px;
+                            }
+
+                            .ripper-steam-profile-footer {
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;
+                                gap: 12px;
+                                padding: 16px 28px 20px;
+                                border-top: 1px solid ${THEME.border};
+                                background: ${THEME.bg};
+                                flex-wrap: wrap;
+                            }
+
+                            .ripper-steam-profile-footer-text {
+                                font-size: 0.82rem;
+                                color: ${THEME.textMuted};
+                                font-style: italic;
+                                letter-spacing: 0.3px;
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                            }
+
+                            .ripper-steam-profile-footer-text svg {
+                                width: 14px;
+                                height: 14px;
+                                fill: currentColor;
+                                opacity: 0.7;
+                            }
+
+                            .ripper-steam-link {
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 8px;
+                                font-family: ${FONT_TITLE};
+                                font-weight: 700;
+                                font-size: 0.78rem;
+                                letter-spacing: 1px;
+                                text-transform: uppercase;
+                                color: white;
+                                text-decoration: none;
+                                padding: 10px 20px;
+                                border-radius: 10px;
+                                background: ${THEME.accent};
+                                box-shadow: 0 4px 14px rgba(193,31,43,0.3);
+                                transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+                                border: none;
+                                cursor: pointer;
+                            }
+
+                            .ripper-steam-link:hover {
+                                background: ${THEME.accentHover};
+                                transform: translateY(-1px);
+                                box-shadow: 0 6px 20px rgba(193,31,43,0.45);
+                                color: white;
+                                text-decoration: none;
+                            }
+
+                            .ripper-steam-link svg {
+                                width: 14px;
+                                height: 14px;
+                                fill: currentColor;
+                            }
+
+                            @media (max-width: 640px) {
+                                .ripper-steam-profile-header {
+                                    padding: 16px 16px 14px;
+                                    gap: 12px;
+                                }
+                                .ripper-steam-avatar-wrap {
+                                    width: 56px;
+                                    height: 56px;
+                                    border-width: 2px;
+                                }
+                                .ripper-steam-name {
+                                    font-size: 1.05rem;
+                                }
+                                .ripper-steam-status-badge {
+                                    font-size: 0.68rem;
+                                    padding: 4px 10px;
+                                }
+                                .ripper-steam-profile-footer {
+                                    padding: 12px 16px 16px;
+                                    flex-direction: column;
+                                    align-items: stretch;
+                                }
+                                .ripper-steam-link {
+                                    justify-content: center;
+                                    width: 100%;
+                                }
+                                .ripper-steam-profile-footer-text {
+                                    justify-content: center;
+                                }
+                            }
+                        `;
+                        (document.head || document.documentElement).appendChild(style);
+                    }
+
+                    function getStatusInfo(statusText, inGameText, lastOnlineText) {
+                        const status = (statusText || '').toLowerCase().trim();
+                        const game = (inGameText || '').trim();
+                        const last = (lastOnlineText || '').trim();
+
+                        if (status.includes('не в сети') || status.includes('offline')) {
+                            return { text: 'Не в сети', extra: last, class: 'offline' };
+                        }
+
+                        if (status.includes('в сети') || status.includes('online')) {
+                            if (game !== '') {
+                                return { text: game, extra: '', class: 'in-game' };
+                            }
+                            return { text: 'В сети', extra: '', class: 'online' };
+                        }
+
+                        if (game !== '') {
+                            return { text: game, extra: '', class: 'in-game' };
+                        }
+
+                        return { text: 'Не в сети', extra: last, class: 'offline' };
+                    }
+
+                    function buildProfileBlock(data) {
+                        const block = document.createElement('div');
+                        block.className = 'ripper-steam-profile';
+
+                        const status = getStatusInfo(data.statusText, data.inGameText, data.lastOnlineText);
+
+                        const badgeContent = status.extra
+                            ? `<span>${status.text}</span><span class="ripper-steam-status-sep">•</span><span>${status.extra}</span>`
+                            : `<span>${status.text}</span>`;
+
+                        block.innerHTML = `
+                            <div class="ripper-steam-profile-header">
+                                <div class="ripper-steam-avatar-wrap">
+                                    <img class="ripper-steam-avatar" src="${AVATAR_URL}" alt="RIPPER" onerror="this.style.display='none'">
+                                </div>
+                                <div class="ripper-steam-info">
+                                    <div class="ripper-steam-name">
+                                        <a href="${PROFILE_URL}" target="_blank" rel="noopener noreferrer">${data.personaName || 'RIPPER'}</a>
+                                    </div>
+                                    <div class="ripper-steam-status-row">
+                                        <div class="ripper-steam-status-badge ${status.class}">
+                                            <span class="ripper-steam-status-dot"></span>
+                                            ${badgeContent}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ripper-steam-profile-footer">
+                                <div class="ripper-steam-profile-footer-text">
+                                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                                    Steam профиль
+                                </div>
+                                <a class="ripper-steam-link" href="${PROFILE_URL}" target="_blank" rel="noopener noreferrer">
+                                    <svg viewBox="0 0 24 24"><path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zM19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/></svg>
+                                    Открыть профиль
+                                </a>
+                            </div>
+                        `;
+
+                        return block;
+                    }
+
+                    function parseSteamProfile(html) {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+
+                        let personaName = '';
+                        const nameEl = doc.querySelector('.actual_persona_name, .profile_header .actual_persona_name');
+                        if (nameEl) personaName = nameEl.textContent.trim();
+
+                        let statusText = '';
+                        let inGameText = '';
+                        let lastOnlineText = '';
+
+                        const statusInfoEl = doc.querySelector('.responsive_status_info');
+                        if (statusInfoEl) {
+                            const headerEl = statusInfoEl.querySelector('.profile_in_game_header');
+                            if (headerEl) statusText = headerEl.textContent.trim();
+
+                            const gameBlock = statusInfoEl.querySelector('.profile_in_game');
+                            if (gameBlock) {
+                                const isOffline = gameBlock.classList.contains('offline');
+                                const nameEl = gameBlock.querySelector('.profile_in_game_name');
+                                if (nameEl) {
+                                    const txt = nameEl.textContent.trim();
+                                    if (isOffline) {
+                                        lastOnlineText = txt.replace(/^В сети:\s*/i, '').replace(/^Last Online:\s*/i, '');
+                                    } else {
+                                        inGameText = txt;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!statusText) {
+                            const onlineEl = doc.querySelector('.responsive_status_info .persona.online');
+                            if (onlineEl) statusText = 'В сети';
+                        }
+
+                        if (!personaName) {
+                            const titleMatch = doc.title.match(/Steam.*?::\s*(.+)/);
+                            if (titleMatch) personaName = titleMatch[1].trim();
+                        }
+
+                        return { avatar: '', personaName, statusText, inGameText, lastOnlineText };
+                    }
+
+                    let state = 'idle';
+
+                    function tryReplace() {
+                        if (state !== 'idle') return;
+
+                        const widget = document.querySelector('.steam-widget-section');
+                        if (!widget) return;
+
+                        if (widget.querySelector('.ripper-steam-profile')) {
+                            state = 'done';
+                            markReady();
+                            return;
+                        }
+
+                        state = 'loading';
+
+                        GM_xmlhttpRequest({
+                            method: 'GET',
+                            url: PROFILE_URL,
+                            onload: function(response) {
+                                try {
+                                    const data = parseSteamProfile(response.responseText);
+                                    const block = buildProfileBlock(data);
+                                    const w = document.querySelector('.steam-widget-section');
+                                    if (w) {
+                                        w.innerHTML = '';
+                                        w.appendChild(block);
+                                        state = 'done';
+                                    } else {
+                                        state = 'idle';
+                                    }
+                                } catch (e) {
+                                    console.warn('RIPMORE Steam Profile:', e);
+                                    state = 'idle';
+                                }
+                                markReady();
+                            },
+                            onerror: function() {
+                                state = 'idle';
+                                markReady();
+                            }
+                        });
+                    }
+
+                    function init() {
+                        injectEarlyHide();
+                        injectStyles();
+
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', tryReplace);
+                        } else {
+                            tryReplace();
+                        }
+
+                        const observer = new MutationObserver(function() {
+                            if (state === 'done') {
+                                const widget = document.querySelector('.steam-widget-section');
+                                if (widget && !widget.querySelector('.ripper-steam-profile')) {
+                                    state = 'idle';
+                                } else {
+                                    return;
+                                }
+                            }
+                            tryReplace();
+                        });
+
+                        const startObserving = function() {
+                            observer.observe(document.body, { childList: true, subtree: true });
+                        };
+
+                        if (document.body) {
+                            startObserving();
+                        } else {
+                            document.addEventListener('DOMContentLoaded', startObserving, { once: true });
+                        }
+                    }
+
+                    init();
+                })();
+            }
+
+            if (IS_RIPMORE_PAGE) {
+                (function initRipmorePage() {
+                    const PAGE_THEME = {
+                        bg: '#09090f',
+                        card: '#101015',
+                        accent: '#c11f2b',
+                        accentHover: '#d4232f',
+                        text: '#e0e0ff',
+                        textMuted: '#a0a0cc',
+                        border: '#1e1e28',
+                        ok: '#3fb950',
+                        fail: '#e5534b'
+                    };
+
+                    function renderPage() {
+                        const statusCard = document.getElementById('statusCard');
+                        const installCard = document.getElementById('installCard');
+                        if (!statusCard && !installCard) return;
+
+                        if (statusCard && !document.getElementById('ripmoreStatusContent')) {
+                            statusCard.innerHTML = `
+                                <h3>Статус расширения</h3>
+                                <div id="ripmoreStatusContent"></div>
+                            `;
+                        }
+
+                        if (installCard && !document.getElementById('ripmoreSettingsContent')) {
+                            installCard.innerHTML = `
+                                <h3>Настройки RIPMORE</h3>
+                                <div id="ripmoreSettingsContent"></div>
+                            `;
+                        }
+
+                        const statusContent = document.getElementById('ripmoreStatusContent');
+                        if (statusContent) {
+                            const s = getSettings();
+                            const globalOk = s.global;
+                            statusContent.innerHTML = `
+                                <div class="status-badge ${globalOk ? 'ok' : 'fail'}">
+                                    <span class="dot"></span>
+                                    <span>${globalOk ? 'Расширение активно' : 'Расширение отключено'}</span>
+                                </div>
+                                <p style="color:var(--text-muted);font-size:0.95rem;margin-top:0.6rem;">
+                                    ${globalOk
+                                        ? 'Скрипт работает. Ниже можно включить или отключить отдельные функции.'
+                                        : 'Все функции отключены. Включите общий переключатель, чтобы активировать скрипт.'}
+                                </p>
+                            `;
+                        }
+
+                        const settingsContent = document.getElementById('ripmoreSettingsContent');
+                        if (settingsContent) {
+                            const s = getSettings();
+                            const siteInfoOn = s.global && s.site_info !== false;
+                            const globalOn = s.global;
+
+                            const rows = [
+                                {
+                                    key: 'global',
+                                    label: 'Общий переключатель',
+                                    desc: 'Включает или выключает все функции RIPMORE',
+                                    disabled: false,
+                                    dimmed: false
+                                },
+                                {
+                                    key: 'custom_player',
+                                    label: 'Кастомный плеер',
+                                    desc: 'Изменяет интерфейс видеоплеера на сайте',
+                                    disabled: !globalOn,
+                                    dimmed: !globalOn
+                                },
+                                {
+                                    key: 'site_info',
+                                    label: 'Информация на страницах',
+                                    desc: 'Общий переключатель для блоков отзывов на Steam и Shikimori',
+                                    disabled: !globalOn,
+                                    dimmed: !globalOn
+                                },
+                                {
+                                    key: 'steam_review',
+                                    label: 'Отзыв на Steam',
+                                    desc: 'Добавляет блок с отзывом и оценкой на странице игры в Steam',
+                                    disabled: !siteInfoOn,
+                                    dimmed: !siteInfoOn,
+                                    dependsOn: 'Информация на страницах'
+                                },
+                                {
+                                    key: 'shikimori_review',
+                                    label: 'Отзыв на Shikimori',
+                                    desc: 'Добавляет блок с отзывом и оценкой на странице аниме',
+                                    disabled: !siteInfoOn,
+                                    dimmed: !siteInfoOn,
+                                    dependsOn: 'Информация на страницах'
+                                },
+                                {
+                                    key: 'steam_widget',
+                                    label: 'Кастомный виджет Steam',
+                                    desc: 'Заменяет стандартный виджет на сайте на странице с играми',
+                                    disabled: !globalOn,
+                                    dimmed: !globalOn
+                                },
+                                {
+                                    key: 'mirror_data',
+                                    label: 'Загружать данные с зеркала',
+                                    desc: 'Использовать зеркало rippertw.github.io для загрузки баз игр и аниме',
+                                    disabled: !globalOn,
+                                    dimmed: !globalOn
+                                }
+                            ];
+
+                            let html = '<div style="display:flex;flex-direction:column;gap:0.8rem;">';
+
+                            rows.forEach(row => {
+                                const checked = s[row.key] !== false;
+                                const disabledAttr = row.disabled ? ' disabled' : '';
+                                const dimmedStyle = row.dimmed ? 'opacity:0.45;' : '';
+                                const dependNote = row.dependsOn
+                                    ? `<div style="font-size:0.78rem;color:#e5534b;margin-top:0.3rem;">Зависит от «${row.dependsOn}»</div>`
+                                    : '';
+                                html += `
+                                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:1rem 1.2rem;background:var(--bg);border:1px solid var(--border);border-radius:12px;${dimmedStyle}">
+                                        <div style="flex:1;min-width:0;">
+                                            <div style="font-weight:600;color:var(--text);margin-bottom:0.2rem;">${row.label}</div>
+                                            <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.4;">${row.desc}</div>
+                                            ${dependNote}
+                                        </div>
+                                        <label style="position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;cursor:${row.disabled ? 'not-allowed' : 'pointer'};margin-top:0.2rem;">
+                                            <input type="checkbox" data-setting="${row.key}" ${checked ? 'checked' : ''}${disabledAttr}
+                                                style="opacity:0;width:0;height:0;position:absolute;">
+                                            <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:${checked && !row.disabled ? PAGE_THEME.accent : '#2a2a38'};border-radius:26px;transition:0.25s;display:block;"></span>
+                                            <span style="position:absolute;top:3px;left:${checked ? '23px' : '3px'};width:20px;height:20px;background:#fff;border-radius:50%;transition:0.25s;display:block;box-shadow:0 2px 4px rgba(0,0,0,0.3);${row.disabled ? 'opacity:0.6;' : ''}"></span>
+                                        </label>
+                                    </div>
+                                `;
+                            });
+
+                            html += '</div>';
+
+                            html += `
+                                <div style="margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--border);">
+                                    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.8rem;">
+                                        После изменения настроек обновите страницу, чтобы применить их.
+                                    </p>
+                                    <div class="buttons" style="margin-top:0;">
+                                        <a href="Files/Other/ripmore.user.js" class="btn" target="_blank" rel="noopener" style="background:var(--accent);">Установить RIPMORE</a>
+                                        <a href="https://www.tampermonkey.net/" class="btn btn-outline" target="_blank" rel="noopener">Скачать Tampermonkey</a>
+                                    </div>
+                                    <p style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">
+                                        Если Tampermonkey уже установлен — просто нажми «Установить RIPMORE», откроется окно установки.
+                                    </p>
+                                </div>
+                            `;
+
+                            settingsContent.innerHTML = html;
+
+                            settingsContent.querySelectorAll('input[data-setting]').forEach(input => {
+                                input.addEventListener('change', function() {
+                                    const key = this.getAttribute('data-setting');
+                                    const s = getSettings();
+                                    s[key] = this.checked;
+                                    saveSettings(s);
+                                    renderPage();
+                                });
+                            });
+                        }
+                    }
+
+                    function injectToggleStyles() {
+                        if (document.getElementById('ripmore-toggle-styles')) return;
+                        const style = document.createElement('style');
+                        style.id = 'ripmore-toggle-styles';
+                        style.textContent = `
+                            #ripmoreSettingsContent label input[type="checkbox"]:checked + span:first-of-type {
+                                background: ${PAGE_THEME.accent} !important;
+                            }
+                            #ripmoreSettingsContent label input[type="checkbox"] + span:first-of-type {
+                                background: #2a2a38;
+                            }
+                            #ripmoreSettingsContent label input[type="checkbox"]:disabled + span:first-of-type {
+                                background: #2a2a38 !important;
+                            }
+                        `;
+                        (document.head || document.documentElement).appendChild(style);
+                    }
+
+                    function start() {
+                        injectToggleStyles();
+                        renderPage();
+
+                        const observer = new MutationObserver(function(mutations) {
+                            let shouldRender = false;
+                            for (const m of mutations) {
+                                if (m.target.id === 'statusCard' || m.target.id === 'installCard') {
+                                    shouldRender = true;
+                                    break;
+                                }
+                            }
+                            if (shouldRender) {
+                                renderPage();
+                            }
+                        });
+
+                        const statusCard = document.getElementById('statusCard');
+                        const installCard = document.getElementById('installCard');
+                        if (statusCard) observer.observe(statusCard, { childList: true, subtree: true });
+                        if (installCard) observer.observe(installCard, { childList: true, subtree: true });
+                    }
+
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', start);
+                    } else {
+                        start();
+                    }
+                })();
+            }
         })();
     }
 })();

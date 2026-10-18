@@ -125,14 +125,7 @@
             border-radius: 16px;
             padding: 2.4rem 3rem;
             margin-bottom: 2.2rem;
-            transition: all 0.28s ease;
             backdrop-filter: blur(4px);
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: #2a2a35;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.4);
         }
 
         .card h3 {
@@ -147,75 +140,6 @@
         .highlight {
             color: #c11f2b;
             font-weight: 600;
-        }
-
-        .toggle-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1.5rem;
-            padding: 1.2rem 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .toggle-row:last-child {
-            border-bottom: none;
-        }
-
-        .toggle-label {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: var(--text);
-        }
-
-        .toggle-desc {
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            margin-top: 0.3rem;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 56px;
-            height: 30px;
-            flex-shrink: 0;
-            cursor: pointer;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
-            position: absolute;
-            inset: 0;
-            background: #2a2a38;
-            border-radius: 30px;
-            transition: background 0.3s ease;
-        }
-
-        .toggle-slider::before {
-            content: '';
-            position: absolute;
-            width: 22px;
-            height: 22px;
-            left: 4px;
-            bottom: 4px;
-            background: #a0a0cc;
-            border-radius: 50%;
-            transition: transform 0.3s ease, background 0.3s ease;
-        }
-
-        .toggle-switch input:checked + .toggle-slider {
-            background: rgba(193, 31, 43, 0.35);
-        }
-
-        .toggle-switch input:checked + .toggle-slider::before {
-            transform: translateX(26px);
-            background: var(--accent);
-            box-shadow: 0 0 12px rgba(193, 31, 43, 0.6);
         }
 
         .status-badge {
@@ -289,10 +213,6 @@
             margin-top: 2.2rem;
         }
 
-        .hidden {
-            display: none !important;
-        }
-
         .install-info {
             margin-top: 1.6rem;
             font-size: 0.95rem;
@@ -346,11 +266,6 @@
             .btn {
                 padding: 1rem 1.8rem;
             }
-            .toggle-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.8rem;
-            }
         }
     </style>
     <meta name="zen-verification" content="TlZOoOlTCJIUrvK6Z1dVgIuUa7bnoHB8BXUj6K3MJ07xqtdlryPEtckWWd96f3fB" />
@@ -380,23 +295,9 @@
             <h3>Статус расширения</h3>
             <div id="statusBadge" class="status-badge">
                 <span class="dot"></span>
-                <span id="statusText">Проверка...</span>
+                <span id="statusText">Расширение не установлено, либо не работает</span>
             </div>
             <p id="statusDesc" style="color: var(--text-muted); font-size: 0.95rem;"></p>
-        </div>
-
-        <div id="settingsCard" class="card hidden">
-            <h3>Настройки</h3>
-            <div class="toggle-row">
-                <div>
-                    <div class="toggle-label">Кастомный плеер</div>
-                    <div class="toggle-desc">Заменяет стандартный плеер Dzen на стилизованный под RIPSITE</div>
-                </div>
-                <label class="toggle-switch" id="toggleWrap">
-                    <input type="checkbox" id="customPlayerToggle">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
         </div>
 
         <div id="installCard" class="card">
