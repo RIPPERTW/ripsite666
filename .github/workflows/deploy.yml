@@ -44,10 +44,34 @@ jobs:
 
       - name: Sanity check
         run: |
-          if grep -rEn '\.(png|jpe?g|gif|svg|webp)' dist --include='*.html' --include='*.css' --include='*.js' \
-             | grep -E '[A-Z]' ; then
-            echo "Uppercase image refs left"; exit 1
-          fi
+          node - <<'EOF'
+          const fs = require('fs'), path = require('path');
+          const EXTS = new Set(['.html','.htm','.css','.js']);
+          const IMG_RE = /\.(png|jpe?g|gif|svg|webp|avif|ico)(\?[^"')\s]*)?(#\S*)?$/i;
+          let bad = 0;
+          const walk = (d) => {
+            for (const e of fs.readdirSync(d, {withFileTypes:true})) {
+              const p = path.join(d, e.name);
+              if (e.isDirectory()) { walk(p); continue; }
+              if (!EXTS.has(path.extname(e.name).toLowerCase())) continue;
+              const src = fs.readFileSync(p, 'utf8');
+              const refs = [];
+              for (const m of src.matchAll(/\b(?:src|href)\s*=\s*(["'])([^"']+)\1/gi)) refs.push(m[2]);
+              for (const m of src.matchAll(/url\(\s*(["']?)([^"')]+)\1\s*\)/gi)) refs.push(m[2]);
+              for (const m of src.matchAll(/\bsrcset\s*=\s*(["'])([^"']+)\1/gi))
+                for (const part of m[2].split(',')) refs.push(part.trim().split(/\s+/)[0]);
+              for (const url of refs) {
+                if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('#')) continue;
+                if (!IMG_RE.test(url)) continue;
+                const clean = url.split(/[?#]/)[0];
+                if (/[A-Z]/.test(clean)) { console.log('BAD:', p, '->', url); bad++; }
+              }
+            }
+          };
+          walk('dist');
+          if (bad) { console.error(`Uppercase in image paths: ${bad}`); process.exit(1); }
+          console.log('OK: all image refs lowercase');
+          EOF
 
       - uses: actions/upload-pages-artifact@v3
         with:
