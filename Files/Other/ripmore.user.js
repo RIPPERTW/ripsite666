@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RIPMORE
 // @namespace    https://ripsite666.netlify.app/
-// @version      0.3
+// @version      0.5
 // @description  RIPMORE - скрипт который служит улучшением для пользователей RIPSITE
 // @author       RIPPER
 // @match        https://dzen.ru/*
@@ -10,13 +10,20 @@
 // @match        https://shikimori.one/*
 // @match        https://ripsite666.netlify.app/*
 // @match        https://rippertw.github.io/*
+// @match        https://www.twitch.tv/*
+// @match        https://www.kinopoisk.ru/film/*
+// @match        https://www.kinopoisk.ru/series/*
+// @match        https://anivox.fun/*
 // @icon         https://ripsite666.netlify.app/Files/Other/RIPMORE.png
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        GM_info
 // @connect      ripsite666.netlify.app
 // @connect      rippertw.github.io
 // @connect      steamcommunity.com
+// @connect      kinopoisk.ru
+// @connect      anivox.fun
 // @downloadURL  https://ripsite666.netlify.app/Files/Other/ripmore.user.js
 // @updateURL    https://ripsite666.netlify.app/Files/Other/ripmore.user.js
 // @run-at       document-start
@@ -29,6 +36,9 @@
     const IS_STEAM = /store\.steampowered\.com/.test(location.hostname);
     const IS_SHIKIMORI = /shikimori\.(io|one)/.test(location.hostname);
     const IS_RIPSITE = /ripsite666\.netlify\.app|rippertw\.github\.io/.test(location.hostname);
+    const IS_TWITCH = /twitch\.tv$/.test(location.hostname);
+    const IS_KINOPOISK = /kinopoisk\.ru$/.test(location.hostname);
+    const IS_ANIVOX = /anivox\.fun$/.test(location.hostname);
 
     const SETTINGS_KEY = 'ripmore_settings';
 
@@ -39,7 +49,12 @@
         steam_review: true,
         shikimori_review: true,
         steam_widget: true,
-        mirror_data: false
+        twitch_badges: true,
+        twitch_leaderboard: true,
+        mirror_data: false,
+        mirror_pages: false,
+        kinopoisk_review: true,
+        anivox_review: true
     };
 
     function getSettings() {
@@ -82,6 +97,14 @@
         const s = getSettings();
         if (s.mirror_data) return MIRROR_BASE;
         return PRIMARY_BASE;
+    }
+
+    function getPageUrl(path) {
+        const s = getSettings();
+        if (s.mirror_pages) {
+            return MIRROR_BASE + path;
+        }
+        return PRIMARY_BASE + path;
     }
 
     const DB_TIMEOUT_MS = 10000;
@@ -148,8 +171,74 @@
         });
     }
 
+    function gmFetchText(url, timeoutMs) {
+        return new Promise((resolve, reject) => {
+            let finished = false;
+            let timer = null;
+            let req = null;
+            try {
+                req = GM_xmlhttpRequest({
+                    method: 'GET',
+                    url: url,
+                    timeout: timeoutMs,
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    },
+                    onload: (response) => {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) clearTimeout(timer);
+                        if (response.status >= 200 && response.status < 300) {
+                            resolve(response.responseText);
+                        } else {
+                            reject(new Error('HTTP ' + response.status));
+                        }
+                    },
+                    onerror: () => {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) clearTimeout(timer);
+                        reject(new Error('Network error'));
+                    },
+                    ontimeout: () => {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) clearTimeout(timer);
+                        reject(new Error('Timeout'));
+                    },
+                    onabort: () => {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) clearTimeout(timer);
+                        reject(new Error('Aborted'));
+                    }
+                });
+            } catch (e) {
+                reject(e);
+                return;
+            }
+
+            if (timeoutMs && timeoutMs > 0) {
+                timer = setTimeout(() => {
+                    if (finished) return;
+                    finished = true;
+                    try {
+                        if (req && typeof req.abort === 'function') req.abort();
+                    } catch (e) {}
+                    reject(new Error('Timeout'));
+                }, timeoutMs + 200);
+            }
+        });
+    }
+
+    /* =========================================================================
+       MIRROR OFFER
+       ========================================================================= */
+
     function buildOfferViewer(kind) {
-        const id = kind === 'game' ? 'ripper-mirror-offer-game' : 'ripper-mirror-offer-anime';
+        const id = kind === 'game' ? 'ripper-mirror-offer-game' : (kind === 'anime' ? 'ripper-mirror-offer-anime' : 'ripper-mirror-offer-twitch');
         const existing = document.getElementById(id);
         if (existing) return existing;
 
@@ -303,9 +392,7 @@
         block.id = id;
         block.className = 'ripper-mirror-offer';
 
-        const title = kind === 'game' ? 'RIPSITE · Steam' : 'RIPSITE · Shikimori';
-        const statusLabel = kind === 'game' ? 'Данные не загрузились' : 'Данные не загрузились';
-        const what = kind === 'game' ? 'база игр' : 'база аниме';
+        const statusLabel = 'Данные не загрузились';
 
         block.innerHTML = `
             <div class="rmo-header">
@@ -1646,12 +1733,11 @@
     }
 
     /* =========================================================================
-       ЧАСТЬ 2
+       ЧАСТЬ 2 - STEAM
        ========================================================================= */
 
     if (IS_STEAM && isSiteInfoEnabled() && isEnabled('steam_review')) {
         (function initSteam() {
-            const SITE_URL = 'https://ripsite666.netlify.app';
             const THEME = {
                 bg:          '#09090f',
                 card:        '#101015',
@@ -2475,7 +2561,7 @@
                         </div>`
                     : '<div></div>';
 
-                const reviewUrl = `${SITE_URL}/games.html?game=${slugify(game.title)}`;
+                const reviewUrl = getPageUrl('/games.html') + '?game=' + slugify(game.title);
 
                 const backBtnHtml = onBack
                     ? `<button class="rgp-back" type="button">
@@ -2697,12 +2783,11 @@
     }
 
     /* =========================================================================
-       ЧАСТЬ 3
+       ЧАСТЬ 3 - SHIKIMORI
        ========================================================================= */
 
     if (IS_SHIKIMORI && isSiteInfoEnabled() && isEnabled('shikimori_review')) {
         (function initShikimori() {
-            const SITE_URL = 'https://ripsite666.netlify.app';
             const THEME = {
                 bg:          '#09090f',
                 card:        '#101015',
@@ -3545,7 +3630,7 @@
                         </div>`
                     : '<div></div>';
 
-                const reviewUrl = `${SITE_URL}/anime.html?anime=${slugify(anime.slug || anime.title)}`;
+                const reviewUrl = getPageUrl('/anime.html') + '?anime=' + slugify(anime.slug || anime.title);
 
                 const backBtnHtml = onBack
                     ? `<button class="rap-back" type="button">
@@ -3789,7 +3874,7 @@
     }
 
     /* =========================================================================
-       ЧАСТЬ 4
+       ЧАСТЬ 4 - RIPSITE
        ========================================================================= */
 
     if (IS_RIPSITE) {
@@ -4362,7 +4447,7 @@
                                 {
                                     key: 'site_info',
                                     label: 'Информация на страницах',
-                                    desc: 'Общий переключатель для блоков отзывов на Steam и Shikimori',
+                                    desc: 'Общий переключатель для блоков отзывов на Steam, Shikimori, Кинопоиске и Anivox',
                                     disabled: !globalOn,
                                     dimmed: !globalOn
                                 },
@@ -4383,6 +4468,22 @@
                                     dependsOn: 'Информация на страницах'
                                 },
                                 {
+                                    key: 'kinopoisk_review',
+                                    label: 'Отзыв на Кинопоиске',
+                                    desc: 'Добавляет блок с отзывом и оценкой на странице фильма или сериала',
+                                    disabled: !siteInfoOn,
+                                    dimmed: !siteInfoOn,
+                                    dependsOn: 'Информация на страницах'
+                                },
+                                {
+                                    key: 'anivox_review',
+                                    label: 'Отзыв на Anivox',
+                                    desc: 'Добавляет блок с отзывом и оценкой на странице аниме Anivox',
+                                    disabled: !siteInfoOn,
+                                    dimmed: !siteInfoOn,
+                                    dependsOn: 'Информация на страницах'
+                                },
+                                {
                                     key: 'steam_widget',
                                     label: 'Кастомный виджет Steam',
                                     desc: 'Заменяет стандартный виджет на сайте на странице с играми',
@@ -4390,9 +4491,30 @@
                                     dimmed: !globalOn
                                 },
                                 {
+                                    key: 'twitch_badges',
+                                    label: 'Бейджи зрителей Twitch',
+                                    desc: 'Показывает бейджи с рангом и минутами просмотра в чате и карточках зрителей Twitch',
+                                    disabled: !globalOn,
+                                    dimmed: !globalOn
+                                },
+                                {
+                                    key: 'twitch_leaderboard',
+                                    label: 'Таблица лидеров Twitch',
+                                    desc: 'Заменяет панель лидерборда Twitch на кастомную с полными данными',
+                                    disabled: !globalOn,
+                                    dimmed: !globalOn
+                                },
+                                {
                                     key: 'mirror_data',
                                     label: 'Загружать данные с зеркала',
-                                    desc: 'Использовать зеркало rippertw.github.io для загрузки баз игр и аниме',
+                                    desc: 'Использовать зеркало rippertw.github.io для загрузки баз игр, аниме и Twitch',
+                                    disabled: !globalOn,
+                                    dimmed: !globalOn
+                                },
+                                {
+                                    key: 'mirror_pages',
+                                    label: 'Открывать страницы на зеркале',
+                                    desc: 'Ссылки «Открыть на RIPSITE» будут вести на rippertw.github.io вместо основного сайта',
                                     disabled: !globalOn,
                                     dimmed: !globalOn
                                 }
@@ -4432,7 +4554,7 @@
                                         После изменения настроек обновите страницу, чтобы применить их.
                                     </p>
                                     <div class="buttons" style="margin-top:0;">
-                                        <a href="Files/Other/ripmore.user.js" class="btn" target="_blank" rel="noopener" style="background:var(--accent);">Установить RIPMORE</a>
+                                        <a href="${getPageUrl('/Files/Other/ripmore.user.js')}" class="btn" target="_blank" rel="noopener" style="background:var(--accent);">Установить RIPMORE</a>
                                         <a href="https://www.tampermonkey.net/" class="btn btn-outline" target="_blank" rel="noopener">Скачать Tampermonkey</a>
                                     </div>
                                     <p style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">
@@ -4502,6 +4624,2561 @@
                         start();
                     }
                 })();
+            }
+        })();
+    }
+
+    /* =========================================================================
+       ЧАСТЬ 5 - TWITCH
+       ========================================================================= */
+
+    if (IS_TWITCH) {
+        (function initTwitch() {
+            const DB_PATH = '/BD/twitch_database.json';
+
+            const THEME = {
+                gold:   '#f5c518',
+                silver: '#c0c0c0',
+                bronze: '#cd7f32',
+                red:    '#c11f2b',
+                bg:     '#000000',
+                card:   '#0e0e10',
+                text:   '#ffffff',
+                textMuted: '#adadb8',
+                border: '#2a2a32'
+            };
+
+            const FONT = "'Inter', system-ui, -apple-system, sans-serif";
+            const FONT_TITLE = "'Roobert', 'Inter', sans-serif";
+
+            const DATA_SINCE_TEXT = 'Данные просмотра берутся с 06.10.2026';
+            const MAX_VISIBLE_ROWS = 10;
+            const ROW_HEIGHT_PX = 34;
+            const ROW_GAP_PX = 4;
+            const LIST_PADDING_PX = 8;
+
+            let DB = null;
+            let DB_DATE = null;
+            let DB_LOADING = false;
+            let RANK_MAP = null;
+
+            function fetchDatabase() {
+                const base = getBaseUrl();
+                return gmFetchJson(base + DB_PATH, DB_TIMEOUT_MS).catch((err) => {
+                    if (base === PRIMARY_BASE) {
+                        return gmFetchJson(MIRROR_BASE + DB_PATH, DB_TIMEOUT_MS);
+                    }
+                    throw err;
+                });
+            }
+
+            function extractEntries(data) {
+                if (Array.isArray(data)) return { entries: data, date: null };
+                if (data && data.leaderboard) {
+                    const entries = Array.isArray(data.leaderboard.data) ? data.leaderboard.data : [];
+                    return { entries: entries, date: data.leaderboard.date || null };
+                }
+                return { entries: [], date: null };
+            }
+
+            function getColorByPosition(pos) {
+                if (pos === 1) return THEME.gold;
+                if (pos === 2) return THEME.silver;
+                if (pos === 3) return THEME.bronze;
+                return THEME.red;
+            }
+
+            function buildRankMap() {
+                const map = new Map();
+                if (!DB) return map;
+
+                const sorted = DB.slice().sort((a, b) => b.minutes - a.minutes);
+                sorted.forEach((entry, idx) => {
+                    const pos = idx + 1;
+                    map.set(entry.username, {
+                        minutes: entry.minutes,
+                        color: getColorByPosition(pos),
+                        position: pos
+                    });
+                });
+                return map;
+            }
+
+            function loadDatabase() {
+                if (DB_LOADING || DB) return;
+                DB_LOADING = true;
+                fetchDatabase()
+                    .then((data) => {
+                        const { entries, date } = extractEntries(data);
+                        DB_DATE = date;
+                        DB = entries
+                            .filter(x => x && typeof x.username === 'string')
+                            .map(x => ({
+                                username: x.username.toLowerCase(),
+                                displayUsername: x.username,
+                                minutes: Number(x.minutes) || 0
+                            }));
+                        RANK_MAP = buildRankMap();
+                        DB_LOADING = false;
+                        scanAndApply();
+                        if (isEnabled('twitch_leaderboard')) {
+                            replaceLeaderboardPanels();
+                        }
+                    })
+                    .catch((e) => {
+                        DB_LOADING = false;
+                        DB = [];
+                        RANK_MAP = new Map();
+                        console.warn('RIPMORE Twitch: db load failed', e);
+                        if (isEnabled('twitch_leaderboard')) {
+                            showMirrorOfferFallback();
+                        }
+                    });
+            }
+
+            function showMirrorOfferFallback() {
+                const panels = document.querySelectorAll('.extension-panel');
+                for (const panel of panels) {
+                    if (isLeaderboardPanel(panel)) {
+                        const iframeContainer = panel.querySelector('[data-selector="iframe_container_selector"]') ||
+                                                panel.querySelector('[data-test-selector="iframe_container_selector"]');
+                        if (iframeContainer && !iframeContainer.querySelector('.ripper-mirror-offer')) {
+                            const offer = buildOfferViewer('twitch');
+                            offer._onRetry = () => {
+                                const o = document.getElementById(offer.id);
+                                if (o) o.remove();
+                                DB = null;
+                                RANK_MAP = null;
+                                loadDatabase();
+                            };
+                            offer._onMirror = () => {
+                                const o = document.getElementById(offer.id);
+                                if (o) o.remove();
+                                DB = null;
+                                RANK_MAP = null;
+                                loadDatabase();
+                            };
+                            while (iframeContainer.firstChild) {
+                                iframeContainer.removeChild(iframeContainer.firstChild);
+                            }
+                            iframeContainer.appendChild(offer);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            function injectStyles() {
+                if (document.getElementById('ripper-twitch-styles')) return;
+                const style = document.createElement('style');
+                style.id = 'ripper-twitch-styles';
+                style.textContent = `
+                    .ripper-rank-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 18px;
+                        height: 18px;
+                        min-width: 18px;
+                        margin-right: 5px;
+                        border-radius: 4px;
+                        background: ${THEME.bg};
+                        color: #ffffff;
+                        font-family: ${FONT};
+                        font-weight: 800;
+                        font-size: 12px;
+                        line-height: 1;
+                        vertical-align: middle;
+                        position: relative;
+                        cursor: default;
+                        user-select: none;
+                        box-shadow: inset 0 0 0 1.5px currentColor;
+                        z-index: 1;
+                    }
+                    .ripper-rank-tooltip {
+                        position: fixed;
+                        z-index: 2147483647;
+                        background: ${THEME.bg};
+                        color: ${THEME.text};
+                        font-family: ${FONT};
+                        font-size: 12px;
+                        font-weight: 600;
+                        line-height: 1.3;
+                        padding: 6px 10px;
+                        border-radius: 8px;
+                        box-shadow: 0 6px 24px rgba(0,0,0,0.7);
+                        pointer-events: none;
+                        white-space: nowrap;
+                        opacity: 0;
+                        transition: opacity 0.12s ease;
+                    }
+                    .ripper-rank-tooltip.visible {
+                        opacity: 1;
+                    }
+                    .ripper-rank-tooltip .rr-minutes {
+                        color: ${THEME.gold};
+                        font-weight: 800;
+                    }
+                    .ripper-leaderboard {
+                        font-family: ${FONT};
+                        background: ${THEME.bg};
+                        color: ${THEME.text};
+                        display: flex;
+                        flex-direction: column;
+                        height: 100%;
+                        width: 100%;
+                        box-sizing: border-box;
+                        overflow: hidden;
+                    }
+                    .ripper-leaderboard * {
+                        box-sizing: border-box;
+                    }
+                    .ripper-leaderboard-header {
+                        padding: 14px 16px 10px;
+                        border-bottom: 1px solid ${THEME.border};
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+                        flex-shrink: 0;
+                    }
+                    .ripper-leaderboard-title {
+                        font-family: ${FONT_TITLE};
+                        font-weight: 700;
+                        font-size: 15px;
+                        letter-spacing: 0.5px;
+                        color: ${THEME.text};
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+                    .ripper-leaderboard-title .rl-accent {
+                        display: inline-block;
+                        width: 4px;
+                        height: 16px;
+                        background: ${THEME.red};
+                        border-radius: 2px;
+                    }
+                    .ripper-leaderboard-date {
+                        font-size: 11.5px;
+                        color: ${THEME.textMuted};
+                        letter-spacing: 0.3px;
+                        font-weight: 500;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                    }
+                    .ripper-leaderboard-date > span {
+                        color: ${THEME.text};
+                        font-weight: 600;
+                    }
+                    .ripper-help-icon {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 14px;
+                        height: 14px;
+                        min-width: 14px;
+                        border-radius: 50%;
+                        background: ${THEME.border};
+                        color: ${THEME.textMuted};
+                        font-size: 10px;
+                        font-weight: 800;
+                        font-family: ${FONT};
+                        cursor: help;
+                        user-select: none;
+                        line-height: 1;
+                    }
+                    .ripper-leaderboard-list {
+                        flex: 1;
+                        overflow-y: auto;
+                        padding: 8px 8px 12px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: ${ROW_GAP_PX}px;
+                        scrollbar-width: thin;
+                        scrollbar-color: ${THEME.border} transparent;
+                    }
+                    .ripper-leaderboard-list::-webkit-scrollbar {
+                        width: 6px;
+                    }
+                    .ripper-leaderboard-list::-webkit-scrollbar-thumb {
+                        background: ${THEME.border};
+                        border-radius: 3px;
+                    }
+                    .ripper-leaderboard-list::-webkit-scrollbar-track {
+                        background: transparent;
+                    }
+                    .ripper-leaderboard-row {
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        padding: 8px 10px;
+                        border-radius: 6px;
+                        background: ${THEME.card};
+                        flex-shrink: 0;
+                    }
+                    .ripper-leaderboard-place {
+                        width: 22px;
+                        flex-shrink: 0;
+                        font-family: ${FONT_TITLE};
+                        font-weight: 800;
+                        font-size: 12px;
+                        text-align: center;
+                        color: ${THEME.textMuted};
+                    }
+                    .ripper-leaderboard-place.top1 { color: ${THEME.gold}; }
+                    .ripper-leaderboard-place.top2 { color: ${THEME.silver}; }
+                    .ripper-leaderboard-place.top3 { color: ${THEME.bronze}; }
+                    .ripper-leaderboard-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 18px;
+                        height: 18px;
+                        min-width: 18px;
+                        border-radius: 4px;
+                        background: ${THEME.bg};
+                        font-family: ${FONT};
+                        font-weight: 800;
+                        font-size: 12px;
+                        line-height: 1;
+                        flex-shrink: 0;
+                        box-shadow: inset 0 0 0 1.5px currentColor;
+                    }
+                    .ripper-leaderboard-name {
+                        flex: 1;
+                        min-width: 0;
+                        font-size: 13px;
+                        font-weight: 600;
+                        color: ${THEME.text};
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+                    .ripper-leaderboard-minutes {
+                        font-size: 12px;
+                        font-weight: 700;
+                        color: ${THEME.textMuted};
+                        flex-shrink: 0;
+                        font-variant-numeric: tabular-nums;
+                    }
+                    .ripper-leaderboard-minutes span {
+                        color: ${THEME.text};
+                    }
+                    .ripper-leaderboard-empty {
+                        padding: 30px 16px;
+                        text-align: center;
+                        color: ${THEME.textMuted};
+                        font-size: 12px;
+                        font-style: italic;
+                    }
+                `;
+                (document.head || document.documentElement).appendChild(style);
+            }
+
+            let tooltipEl = null;
+
+            function ensureTooltip() {
+                if (!tooltipEl) {
+                    tooltipEl = document.createElement('div');
+                    tooltipEl.className = 'ripper-rank-tooltip';
+                    document.body.appendChild(tooltipEl);
+                }
+                return tooltipEl;
+            }
+
+            function positionTooltip(target) {
+                const rect = target.getBoundingClientRect();
+                const tipRect = tooltipEl.getBoundingClientRect();
+                let left = rect.left + rect.width / 2 - tipRect.width / 2;
+                let top = rect.top - tipRect.height - 8;
+                if (top < 4) top = rect.bottom + 8;
+                if (left < 4) left = 4;
+                if (left + tipRect.width > window.innerWidth - 4) {
+                    left = window.innerWidth - tipRect.width - 4;
+                }
+                tooltipEl.style.left = left + 'px';
+                tooltipEl.style.top = top + 'px';
+            }
+
+            function showTooltip(badge, html) {
+                ensureTooltip();
+                tooltipEl.innerHTML = html;
+                tooltipEl.classList.add('visible');
+                positionTooltip(badge);
+            }
+
+            function hideTooltip() {
+                if (tooltipEl) tooltipEl.classList.remove('visible');
+            }
+
+            function makeBadge(color, minutes) {
+                const b = document.createElement('span');
+                b.className = 'ripper-rank-badge';
+                b.style.color = color;
+                b.textContent = 'R';
+                b.addEventListener('mouseenter', () => {
+                    showTooltip(b, `Просмотрено: <span class="rr-minutes">${minutes}</span> мин.`);
+                });
+                b.addEventListener('mouseleave', hideTooltip);
+                return b;
+            }
+
+            function ensureBadgeBeforeUsername(usernameEl, rankMap) {
+                if (!usernameEl) return;
+                const username = (usernameEl.getAttribute('data-a-user') || usernameEl.textContent || '').trim().toLowerCase();
+                if (!username) return;
+
+                const parent = usernameEl.parentElement;
+                if (!parent) return;
+
+                const existing = parent.querySelector('.ripper-rank-badge');
+                const info = rankMap.get(username);
+
+                if (!info) {
+                    if (existing) existing.remove();
+                    return;
+                }
+
+                if (existing) {
+                    if (existing.dataset.minutes !== String(info.minutes) ||
+                        existing.style.color !== info.color) {
+                        existing.remove();
+                    } else {
+                        return;
+                    }
+                }
+
+                const badge = makeBadge(info.color, info.minutes);
+                badge.dataset.minutes = String(info.minutes);
+
+                parent.insertBefore(badge, parent.firstChild);
+            }
+
+            function processChatLine(line) {
+                if (!line || !RANK_MAP) return;
+                line.querySelectorAll('span.chat-author__display-name[data-a-user]').forEach(el => {
+                    ensureBadgeBeforeUsername(el, RANK_MAP);
+                });
+            }
+
+            function processViewerCard(card) {
+                if (!card || !RANK_MAP) return;
+                const nameLink = card.querySelector('a.tw-link[href^="/"]');
+                if (!nameLink) return;
+                const username = (nameLink.getAttribute('href') || '').replace(/^\//, '').split('/')[0].toLowerCase();
+                if (!username) return;
+
+                const header = card.querySelector('.viewer-card-header__display-name') || card;
+                const existing = header.querySelector('.ripper-rank-badge');
+                const info = RANK_MAP.get(username);
+
+                if (!info) {
+                    if (existing) existing.remove();
+                    return;
+                }
+
+                if (existing) {
+                    if (existing.dataset.minutes !== String(info.minutes) ||
+                        existing.style.color !== info.color) {
+                        existing.remove();
+                    } else {
+                        return;
+                    }
+                }
+
+                const badge = makeBadge(info.color, info.minutes);
+                badge.dataset.minutes = String(info.minutes);
+
+                const h4 = header.querySelector('h4');
+                if (h4) {
+                    h4.insertBefore(badge, h4.firstChild);
+                } else {
+                    const target = nameLink.parentElement;
+                    if (target) target.insertBefore(badge, target.firstChild);
+                }
+            }
+
+            function getPlaceClass(pos) {
+                if (pos === 1) return 'top1';
+                if (pos === 2) return 'top2';
+                if (pos === 3) return 'top3';
+                return '';
+            }
+
+            function buildLeaderboard() {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'ripper-leaderboard';
+
+                const sorted = (DB || []).slice().sort((a, b) => b.minutes - a.minutes);
+
+                const header = document.createElement('div');
+                header.className = 'ripper-leaderboard-header';
+                header.innerHTML = `
+                    <div class="ripper-leaderboard-title">
+                        <span class="rl-accent"></span>
+                        Топ зрителей
+                    </div>
+                    <div class="ripper-leaderboard-date">
+                        <span>Данные на: ${DB_DATE || '—'}</span>
+                        <span class="ripper-help-icon" data-ripper-help="1">?</span>
+                    </div>
+                `;
+                wrapper.appendChild(header);
+
+                const helpIcon = header.querySelector('.ripper-help-icon');
+                if (helpIcon) {
+                    helpIcon.addEventListener('mouseenter', () => {
+                        showTooltip(helpIcon, DATA_SINCE_TEXT);
+                    });
+                    helpIcon.addEventListener('mouseleave', hideTooltip);
+                }
+
+                const list = document.createElement('div');
+                list.className = 'ripper-leaderboard-list';
+                list.style.maxHeight = (MAX_VISIBLE_ROWS * ROW_HEIGHT_PX + (MAX_VISIBLE_ROWS - 1) * ROW_GAP_PX + LIST_PADDING_PX * 2) + 'px';
+
+                if (sorted.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'ripper-leaderboard-empty';
+                    empty.textContent = 'Нет данных';
+                    list.appendChild(empty);
+                } else {
+                    sorted.forEach((entry, idx) => {
+                        const pos = idx + 1;
+                        const color = getColorByPosition(pos);
+                        const row = document.createElement('div');
+                        row.className = 'ripper-leaderboard-row';
+                        row.style.height = ROW_HEIGHT_PX + 'px';
+
+                        const place = document.createElement('div');
+                        place.className = 'ripper-leaderboard-place ' + getPlaceClass(pos);
+                        place.textContent = pos;
+
+                        const badge = document.createElement('span');
+                        badge.className = 'ripper-leaderboard-badge';
+                        badge.style.color = color;
+                        badge.textContent = 'R';
+
+                        const name = document.createElement('div');
+                        name.className = 'ripper-leaderboard-name';
+                        name.textContent = entry.displayUsername || entry.username;
+
+                        const minutes = document.createElement('div');
+                        minutes.className = 'ripper-leaderboard-minutes';
+                        minutes.innerHTML = `<span>${entry.minutes}</span> мин.`;
+
+                        row.appendChild(place);
+                        row.appendChild(badge);
+                        row.appendChild(name);
+                        row.appendChild(minutes);
+
+                        list.appendChild(row);
+                    });
+                }
+
+                wrapper.appendChild(list);
+                return wrapper;
+            }
+
+            function isLeaderboardPanel(panel) {
+                if (!panel) return false;
+                if (panel.querySelector('.ripper-leaderboard')) return true;
+                const link = panel.querySelector('a.tw-link[href*="extension_panel"]');
+                if (!link) return false;
+                const text = (link.textContent || '').toLowerCase();
+                const href = (link.getAttribute('href') || '').toLowerCase();
+                return text.includes('leaderboard')
+                    || text.includes('streamelements')
+                    || href.includes('leaderboard')
+                    || href.includes('streamelements');
+            }
+
+            function hidePanelChrome(panel) {
+                if (!panel) return;
+                if (!isLeaderboardPanel(panel)) return;
+
+                panel.querySelectorAll('a.tw-link[href*="extension_panel"]').forEach(a => {
+                    const wrap = a.closest('.Layout-sc-1xcs6mc-0') || a;
+                    wrap.style.display = 'none';
+                });
+
+                panel.querySelectorAll('[data-test-selector="popout_button_selector"]').forEach(btn => {
+                    const wrap = btn.closest('.InjectLayout-sc-1i43xsx-0') || btn.closest('span') || btn;
+                    if (wrap) wrap.style.display = 'none';
+                });
+
+                panel.querySelectorAll('button[aria-label="Подробнее"]').forEach(btn => {
+                    const wrap = btn.closest('.InjectLayout-sc-1i43xsx-0') || btn.closest('span') || btn;
+                    if (wrap) wrap.remove();
+                });
+
+                panel.querySelectorAll('.foyuou').forEach(el => {
+                    el.remove();
+                });
+
+                panel.querySelectorAll('.extension-panel iframe, .extension-panel-extension-frame').forEach(iframe => {
+                    iframe.style.display = 'none';
+                });
+            }
+
+            function replaceLeaderboardPanels() {
+                if (!DB || !isEnabled('twitch_leaderboard')) return;
+
+                document.querySelectorAll('.extension-panel').forEach(panel => {
+                    if (!isLeaderboardPanel(panel)) return;
+
+                    const iframeContainer = panel.querySelector('[data-test-selector="iframe_container_selector"]');
+                    if (!iframeContainer) return;
+
+                    if (iframeContainer.querySelector('.ripper-leaderboard')) {
+                        hidePanelChrome(panel);
+                        return;
+                    }
+
+                    while (iframeContainer.firstChild) {
+                        iframeContainer.removeChild(iframeContainer.firstChild);
+                    }
+
+                    const board = buildLeaderboard();
+                    iframeContainer.appendChild(board);
+                    iframeContainer.style.height = '';
+                    iframeContainer.style.overflow = 'hidden';
+
+                    hidePanelChrome(panel);
+                });
+            }
+
+            function scanAndApply() {
+                if (!RANK_MAP || !isEnabled('twitch_badges')) return;
+                document.querySelectorAll('.chat-line__message').forEach(processChatLine);
+                document.querySelectorAll('.viewer-card').forEach(processViewerCard);
+            }
+
+            function startObserver() {
+                const observer = new MutationObserver((mutations) => {
+                    if (!RANK_MAP) return;
+                    let chatTouched = false;
+                    let viewerTouched = false;
+                    let extTouched = false;
+
+                    for (const m of mutations) {
+                        for (const node of m.addedNodes) {
+                            if (node.nodeType !== 1) continue;
+                            if (node.matches && (node.matches('.chat-line__message') || node.querySelector('.chat-line__message'))) {
+                                chatTouched = true;
+                            }
+                            if (node.matches && (node.matches('.viewer-card') || node.querySelector('.viewer-card'))) {
+                                viewerTouched = true;
+                            }
+                            if (node.matches && (node.matches('.extension-panel') || node.querySelector('.extension-panel'))) {
+                                extTouched = true;
+                            }
+                        }
+                    }
+
+                    if (chatTouched && isEnabled('twitch_badges')) {
+                        document.querySelectorAll('.chat-line__message').forEach(processChatLine);
+                    }
+                    if (viewerTouched && isEnabled('twitch_badges')) {
+                        document.querySelectorAll('.viewer-card').forEach(processViewerCard);
+                    }
+                    if (extTouched && isEnabled('twitch_leaderboard')) {
+                        replaceLeaderboardPanels();
+                    }
+                });
+
+                observer.observe(document.documentElement, { childList: true, subtree: true });
+            }
+
+            function init() {
+                if (!isEnabled('twitch_badges') && !isEnabled('twitch_leaderboard')) return;
+
+                injectStyles();
+                loadDatabase();
+                startObserver();
+                scanAndApply();
+                setInterval(scanAndApply, 4000);
+                if (isEnabled('twitch_leaderboard')) {
+                    setInterval(replaceLeaderboardPanels, 3000);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    }
+
+    /* =========================================================================
+       ЧАСТЬ 6 - KINOPOISK
+       ========================================================================= */
+
+if (IS_KINOPOISK && isEnabled('kinopoisk_review') && isSiteInfoEnabled()) {
+        (function initKinopoisk() {
+            const DB_PATH = '/BD/movie_database.json';
+            const HOST_IDS = {
+                block:    'ripper-movie-block-host',
+                skeleton: 'ripper-movie-skeleton-host',
+                suggest:  'ripper-movie-suggest-host'
+            };
+
+            let DB_CACHE = null;
+            let DB_PROMISE = null;
+            let CURRENT_TITLE = '';
+
+            const THEME = {
+                bg:          '#09090f',
+                card:        '#101015',
+                accent:      '#c11f2b',
+                accentHover: '#d4232f',
+                text:        '#e0e0ff',
+                textMuted:   '#a0a0cc',
+                border:      '#1e1e28'
+            };
+            const FONT = "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+            const FONT_TITLE = "'Orbitron', 'Inter', system-ui, -apple-system, sans-serif";
+
+            const SHARED_CSS = `
+                :host {
+                    display: block;
+                    width: 100%;
+                    font-family: ${FONT} !important;
+                    font-size: 15px !important;
+                    font-weight: 400 !important;
+                    font-style: normal !important;
+                    line-height: 1.6 !important;
+                    letter-spacing: normal !important;
+                    text-transform: none !important;
+                    text-align: left !important;
+                    color: ${THEME.text} !important;
+                    -webkit-font-smoothing: antialiased !important;
+                    -moz-osx-font-smoothing: grayscale !important;
+                    text-rendering: optimizeLegibility !important;
+                    font-variant-ligatures: none !important;
+                    font-feature-settings: normal !important;
+                }
+                *, *::before, *::after {
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 0;
+                    font-family: inherit;
+                    font-weight: inherit;
+                    font-style: inherit;
+                    line-height: inherit;
+                    letter-spacing: inherit;
+                    text-transform: inherit;
+                    text-align: inherit;
+                    color: inherit;
+                    -webkit-font-smoothing: inherit;
+                    -moz-osx-font-smoothing: inherit;
+                }
+            `;
+
+            const CARD_CSS = SHARED_CSS + `
+                .card {
+                    background: ${THEME.card};
+                    border: 1px solid ${THEME.border};
+                    border-radius: 18px;
+                    overflow: hidden;
+                    line-height: 1.6;
+                    box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+                    width: 100%;
+                    animation: fadeIn 0.4s ease-out;
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+
+                .header {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    padding: 20px 24px 16px;
+                    border-bottom: 1px solid ${THEME.border};
+                    background: ${THEME.bg};
+                }
+                .info {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                    min-width: 0;
+                    flex: 1;
+                }
+                .name {
+                    font-family: ${FONT_TITLE} !important;
+                    font-weight: 700 !important;
+                    font-size: 17px !important;
+                    letter-spacing: 0.8px !important;
+                    color: #ffffff !important;
+                    line-height: 1.2 !important;
+                    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+                }
+                .status {
+                    font-family: ${FONT_TITLE} !important;
+                    font-weight: 700 !important;
+                    font-size: 11.5px !important;
+                    letter-spacing: 1px !important;
+                    text-transform: uppercase !important;
+                    color: ${THEME.textMuted} !important;
+                    line-height: 1 !important;
+                }
+
+                .rank {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: ${FONT_TITLE} !important;
+                    font-size: 24px !important;
+                    font-weight: 900 !important;
+                    color: #ffffff !important;
+                    width: 54px;
+                    height: 54px;
+                    letter-spacing: normal !important;
+                    text-shadow: 0 3px 12px rgba(0,0,0,0.7);
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    position: relative;
+                    flex-shrink: 0;
+                    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+                }
+                .rank::before,
+                .rank::after {
+                    content: '';
+                    position: absolute;
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    z-index: 1;
+                }
+                .rank::before { inset: 4px; background: rgba(16,16,21,0.9); }
+                .rank::after  { inset: 7px; background: rgba(16,16,21,0.98); }
+                .rank > span {
+                    position: relative;
+                    z-index: 3;
+                    line-height: 1;
+                    font-family: ${FONT_TITLE} !important;
+                    font-weight: 900 !important;
+                    color: #ffffff !important;
+                }
+                .rank.rank-10 { background: linear-gradient(135deg, #c11f2b, #6a0f17); }
+                .rank.rank-9  { background: linear-gradient(135deg, #c11f2b, #8a1520); }
+                .rank.rank-8  { background: linear-gradient(135deg, #8a1520, #4a0a10); }
+                .rank.rank-7  { background: linear-gradient(135deg, #5a3a7a, #2a1a3a); }
+                .rank.rank-6  { background: linear-gradient(135deg, #2a4a5a, #152530); }
+                .rank.rank-5  { background: linear-gradient(135deg, #3a3a5a, #1a1a2e); }
+                .rank.rank-4  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .rank.rank-3  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .rank.rank-2  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .rank.rank-1  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .rank.rank-_  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+
+                .body {
+                    padding: 20px 24px 22px;
+                    background: ${THEME.card};
+                }
+                .quote {
+                    font-family: ${FONT} !important;
+                    font-size: 15px !important;
+                    font-weight: 400 !important;
+                    font-style: normal !important;
+                    line-height: 1.7 !important;
+                    letter-spacing: normal !important;
+                    color: ${THEME.text} !important;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                    border-left: 2px solid rgba(193,31,43,0.35);
+                    padding-left: 14px;
+                    max-height: 360px;
+                    overflow-y: auto;
+                    scrollbar-width: thin;
+                    scrollbar-color: ${THEME.accent} ${THEME.border};
+                }
+                .quote::-webkit-scrollbar { width: 6px; }
+                .quote::-webkit-scrollbar-track { background: ${THEME.border}; border-radius: 3px; }
+                .quote::-webkit-scrollbar-thumb { background: ${THEME.accent}; border-radius: 3px; }
+
+                .footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    padding: 14px 24px 18px;
+                    border-top: 1px solid ${THEME.border};
+                    background: ${THEME.bg};
+                    flex-wrap: wrap;
+                }
+                .date {
+                    font-family: ${FONT} !important;
+                    font-size: 13px !important;
+                    font-weight: 400 !important;
+                    font-style: italic !important;
+                    letter-spacing: 0.3px !important;
+                    color: ${THEME.textMuted} !important;
+                    line-height: 1.4 !important;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .date svg { width: 14px; height: 14px; fill: currentColor; opacity: 0.7; }
+
+                .footer-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
+
+                .link,
+                .back {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    font-family: ${FONT_TITLE} !important;
+                    font-weight: 700 !important;
+                    font-size: 12.5px !important;
+                    letter-spacing: 1px !important;
+                    line-height: 1 !important;
+                    text-transform: uppercase !important;
+                    padding: 9px 18px;
+                    border-radius: 10px;
+                    border: 1px solid transparent;
+                    cursor: pointer;
+                    text-decoration: none;
+                    white-space: nowrap;
+                }
+                .link {
+                    color: #ffffff !important;
+                    background: ${THEME.accent};
+                    box-shadow: 0 4px 14px rgba(193,31,43,0.3);
+                    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+                }
+                .link:hover {
+                    background: ${THEME.accentHover};
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(193,31,43,0.45);
+                    color: #ffffff !important;
+                }
+                .link svg { width: 13px; height: 13px; fill: currentColor; }
+
+                .back {
+                    color: ${THEME.textMuted} !important;
+                    background: transparent;
+                    border-color: ${THEME.border};
+                    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+                }
+                .back:hover {
+                    color: #ffffff !important;
+                    border-color: ${THEME.accent};
+                    background: rgba(193,31,43,0.12);
+                }
+                .back svg { width: 13px; height: 13px; fill: currentColor; }
+
+                @media (max-width: 640px) {
+                    .header { padding: 16px 16px 14px; gap: 12px; }
+                    .name { font-size: 16px !important; }
+                    .rank { width: 46px; height: 46px; font-size: 20px !important; }
+                    .body { padding: 16px 16px 18px; }
+                    .quote { font-size: 14px !important; max-height: 280px; }
+                    .footer {
+                        padding: 12px 16px 16px;
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+                    .footer-actions {
+                        flex-direction: column;
+                        align-items: stretch;
+                        width: 100%;
+                    }
+                    .link, .back { width: 100%; }
+                }
+            `;
+
+            const SKELETON_CSS = SHARED_CSS + `
+                .card {
+                    background: ${THEME.card};
+                    border: 1px solid ${THEME.border};
+                    border-radius: 18px;
+                    overflow: hidden;
+                    box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+                    width: 100%;
+                }
+                @keyframes shimmer {
+                    0%   { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
+                .sk-line, .sk-rank, .sk-date, .sk-btn {
+                    background: linear-gradient(90deg, ${THEME.border} 0%, #2a2a38 50%, ${THEME.border} 100%);
+                    background-size: 200% 100%;
+                    animation: shimmer 1.4s ease-in-out infinite;
+                }
+                .sk-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    padding: 20px 24px 16px;
+                    border-bottom: 1px solid ${THEME.border};
+                    background: ${THEME.bg};
+                }
+                .sk-info { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+                .sk-line { border-radius: 6px; }
+                .sk-name { height: 18px; width: 100px; }
+                .sk-status { height: 11px; width: 140px; opacity: 0.7; }
+                .sk-rank {
+                    width: 54px; height: 54px; flex-shrink: 0;
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                }
+                .sk-body { padding: 20px 24px 22px; display: flex; flex-direction: column; gap: 10px; }
+                .sk-text { height: 12px; width: 100%; }
+                .sk-text.short-1 { width: 92%; }
+                .sk-text.short-2 { width: 78%; }
+                .sk-text.short-3 { width: 60%; }
+                .sk-footer {
+                    display: flex; align-items: center; justify-content: space-between;
+                    gap: 12px; padding: 14px 24px 18px;
+                    border-top: 1px solid ${THEME.border};
+                    background: ${THEME.bg};
+                    flex-wrap: wrap;
+                }
+                .sk-date { height: 12px; width: 90px; border-radius: 6px; }
+                .sk-btn { height: 34px; width: 170px; border-radius: 10px; }
+                @media (max-width: 640px) {
+                    .sk-header { padding: 16px 16px 14px; gap: 12px; }
+                    .sk-rank { width: 46px; height: 46px; }
+                    .sk-body { padding: 16px 16px 18px; }
+                    .sk-footer {
+                        padding: 12px 16px 16px;
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+                    .sk-btn { width: 100%; }
+                }
+            `;
+
+            const SUGGEST_CSS = SHARED_CSS + `
+                .card {
+                    background: ${THEME.card};
+                    border: 1px solid ${THEME.border};
+                    border-radius: 18px;
+                    overflow: hidden;
+                    line-height: 1.6;
+                    box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+                    width: 100%;
+                    animation: fadeIn 0.4s ease-out;
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to   { opacity: 1; transform: translateY(0); }
+                }
+                .header {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    padding: 20px 24px 16px;
+                    border-bottom: 1px solid ${THEME.border};
+                    background: ${THEME.bg};
+                }
+                .info {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                    min-width: 0;
+                    flex: 1;
+                }
+                .name {
+                    font-family: ${FONT_TITLE} !important;
+                    font-weight: 700 !important;
+                    font-size: 17px !important;
+                    letter-spacing: 0.8px !important;
+                    color: #ffffff !important;
+                    line-height: 1.2 !important;
+                    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+                }
+                .status {
+                    font-family: ${FONT_TITLE} !important;
+                    font-weight: 700 !important;
+                    font-size: 11.5px !important;
+                    letter-spacing: 1px !important;
+                    text-transform: uppercase !important;
+                    color: ${THEME.textMuted} !important;
+                    line-height: 1 !important;
+                }
+                .body {
+                    padding: 20px 24px 22px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 14px;
+                    overflow: hidden;
+                }
+                .text {
+                    font-family: ${FONT} !important;
+                    font-size: 15px !important;
+                    font-weight: 400 !important;
+                    font-style: normal !important;
+                    line-height: 1.6 !important;
+                    letter-spacing: normal !important;
+                    color: ${THEME.text} !important;
+                    word-break: break-word;
+                }
+                .text strong {
+                    color: #ffffff !important;
+                    font-weight: 600 !important;
+                }
+                .search { position: relative; width: 100%; }
+                .search-input {
+                    width: 100%;
+                    padding: 12px 16px 12px 42px;
+                    background: ${THEME.bg};
+                    border: 1px solid ${THEME.border};
+                    border-radius: 12px;
+                    color: ${THEME.text} !important;
+                    font-family: ${FONT} !important;
+                    font-size: 14.5px !important;
+                    font-weight: 400 !important;
+                    line-height: 1.4 !important;
+                    letter-spacing: normal !important;
+                    outline: none;
+                    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+                }
+                .search-input::placeholder { color: ${THEME.textMuted}; opacity: 0.7; }
+                .search-input:focus {
+                    border-color: ${THEME.accent};
+                    box-shadow: 0 0 0 3px rgba(193,31,43,0.18);
+                }
+                .search-icon {
+                    position: absolute;
+                    left: 14px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 16px;
+                    height: 16px;
+                    fill: ${THEME.textMuted};
+                    pointer-events: none;
+                    opacity: 0.7;
+                }
+                .list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    max-height: 320px;
+                    overflow-y: auto;
+                    padding-right: 4px;
+                    scrollbar-width: thin;
+                    scrollbar-color: ${THEME.accent} ${THEME.border};
+                }
+                .list::-webkit-scrollbar { width: 6px; }
+                .list::-webkit-scrollbar-track { background: ${THEME.border}; border-radius: 3px; }
+                .list::-webkit-scrollbar-thumb { background: ${THEME.accent}; border-radius: 3px; }
+
+                .item {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    padding: 12px 16px;
+                    background: ${THEME.bg};
+                    border: 1px solid ${THEME.border};
+                    border-radius: 12px;
+                    cursor: pointer;
+                    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+                    user-select: none;
+                    width: 100%;
+                }
+                .item:hover {
+                    background: rgba(193,31,43,0.12);
+                    border-color: ${THEME.accent};
+                    transform: translateY(-1px);
+                }
+                .item-title {
+                    flex: 1;
+                    font-family: ${FONT} !important;
+                    font-size: 15px !important;
+                    font-weight: 600 !important;
+                    line-height: 1.4 !important;
+                    letter-spacing: normal !important;
+                    color: ${THEME.text} !important;
+                    min-width: 0;
+                    word-break: break-word;
+                }
+                .item-rank {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: ${FONT_TITLE} !important;
+                    font-size: 15px !important;
+                    font-weight: 900 !important;
+                    color: #ffffff !important;
+                    width: 34px;
+                    height: 34px;
+                    letter-spacing: normal !important;
+                    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    position: relative;
+                    flex-shrink: 0;
+                }
+                .item-rank::before,
+                .item-rank::after {
+                    content: '';
+                    position: absolute;
+                    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                    z-index: 1;
+                }
+                .item-rank::before { inset: 3px; background: rgba(16,16,21,0.9); }
+                .item-rank::after  { inset: 5px; background: rgba(16,16,21,0.98); }
+                .item-rank > span {
+                    position: relative;
+                    z-index: 3;
+                    line-height: 1;
+                    font-family: ${FONT_TITLE} !important;
+                    font-weight: 900 !important;
+                    color: #ffffff !important;
+                }
+                .item-rank.rank-10 { background: linear-gradient(135deg, #c11f2b, #6a0f17); }
+                .item-rank.rank-9  { background: linear-gradient(135deg, #c11f2b, #8a1520); }
+                .item-rank.rank-8  { background: linear-gradient(135deg, #8a1520, #4a0a10); }
+                .item-rank.rank-7  { background: linear-gradient(135deg, #5a3a7a, #2a1a3a); }
+                .item-rank.rank-6  { background: linear-gradient(135deg, #2a4a5a, #152530); }
+                .item-rank.rank-5  { background: linear-gradient(135deg, #3a3a5a, #1a1a2e); }
+                .item-rank.rank-4  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .item-rank.rank-3  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .item-rank.rank-2  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .item-rank.rank-1  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .item-rank.rank-_  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+
+                .empty {
+                    padding: 20px 16px;
+                    text-align: center;
+                    color: ${THEME.textMuted} !important;
+                    font-family: ${FONT} !important;
+                    font-size: 14.5px !important;
+                    font-style: italic !important;
+                    line-height: 1.5 !important;
+                }
+                @media (max-width: 640px) {
+                    .header { padding: 16px 16px 14px; gap: 12px; }
+                    .name { font-size: 16px !important; }
+                    .body { padding: 16px 16px 18px; }
+                }
+            `;
+
+            function gmFetchJson(url, timeoutMs) {
+                return new Promise((resolve, reject) => {
+                    let finished = false;
+                    let timer = null;
+                    let req = null;
+                    function finish(fn, value) {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) { clearTimeout(timer); timer = null; }
+                        fn(value);
+                    }
+                    try {
+                        req = GM_xmlhttpRequest({
+                            method: 'GET',
+                            url: url,
+                            timeout: timeoutMs,
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache',
+                                'Expires': '0'
+                            },
+                            onload: (response) => {
+                                if (finished) return;
+                                if (response.status >= 200 && response.status < 300) {
+                                    try { finish(resolve, JSON.parse(response.responseText)); }
+                                    catch (e) { finish(reject, new Error('JSON parse error')); }
+                                } else if (response.status === 0 && response.responseText) {
+                                    try { finish(resolve, JSON.parse(response.responseText)); }
+                                    catch (e) { finish(reject, new Error('JSON parse error')); }
+                                } else {
+                                    finish(reject, new Error('HTTP ' + response.status));
+                                }
+                            },
+                            onerror: () => finish(reject, new Error('Network error')),
+                            ontimeout: () => finish(reject, new Error('Timeout')),
+                            onabort: () => finish(reject, new Error('Aborted'))
+                        });
+                    } catch (e) {
+                        finish(reject, e);
+                        return;
+                    }
+                    if (timeoutMs && timeoutMs > 0) {
+                        timer = setTimeout(() => {
+                            if (finished) return;
+                            try { if (req && typeof req.abort === 'function') req.abort(); } catch (e) {}
+                            finish(reject, new Error('Timeout'));
+                        }, timeoutMs);
+                    }
+                });
+            }
+
+            function fetchDatabase() {
+                if (DB_CACHE) return Promise.resolve(DB_CACHE);
+                if (DB_PROMISE) return DB_PROMISE;
+                const base = getBaseUrl();
+                DB_PROMISE = gmFetchJson(base + DB_PATH, DB_TIMEOUT_MS)
+                    .catch(() => gmFetchJson(MIRROR_BASE + DB_PATH, DB_TIMEOUT_MS))
+                    .then((data) => {
+                        if (!Array.isArray(data)) throw new Error('Invalid DB');
+                        DB_CACHE = data;
+                        return data;
+                    })
+                    .catch((e) => {
+                        DB_PROMISE = null;
+                        throw e;
+                    });
+                return DB_PROMISE;
+            }
+
+            function normalizeTitle(title) {
+                return String(title || '')
+                    .toLowerCase()
+                    .replace(/[™®©]/g, '')
+                    .replace(/[:\-–—]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text == null ? '' : String(text);
+                return div.innerHTML;
+            }
+
+            function parseRating(value) {
+                if (!value) return null;
+                const m = String(value).match(/(\d+)\s*(?:\/\s*10)?/);
+                if (!m) return null;
+                const n = parseInt(m[1], 10);
+                if (isNaN(n) || n < 1 || n > 10) return null;
+                return n;
+            }
+
+            function getKinopoiskTitle() {
+                const candidates = [
+                    'h1[data-tid="f22e0093"]',
+                    '[data-tid="f22e0093"]',
+                    'h1[class*="styles_title"]',
+                    'h1'
+                ];
+                for (const sel of candidates) {
+                    const el = document.querySelector(sel);
+                    if (el && el.textContent.trim()) {
+                        let t = el.textContent.trim();
+                        t = t.replace(/\s*\(\d{4}\)\s*$/, '').trim();
+                        return t;
+                    }
+                }
+                const og = document.querySelector('meta[property="og:title"]');
+                if (og) {
+                    let t = og.content.replace(/\s*\(\d{4}\)\s*$/, '').replace(/\s*—\s*Кинопоиск.*$/, '').trim();
+                    if (t) return t;
+                }
+                return document.title.replace(/\s*\(\d{4}\)\s*.*$/, '').replace(/\s*—\s*Кинопоиск.*$/, '').trim();
+            }
+
+            function scoreMatch(kpTitle, dbTitle) {
+                const normKp = normalizeTitle(kpTitle);
+                const normDb = normalizeTitle(dbTitle);
+                if (!normKp || !normDb) return 0;
+                if (normDb === normKp) return 100;
+                const kpWords = normKp.split(' ').filter(w => w.length > 1);
+                const dbWords = normDb.split(' ').filter(w => w.length > 1);
+                if (kpWords.length === 0 || dbWords.length === 0) return 0;
+                let score = 0;
+                for (const sw of kpWords) {
+                    for (const dw of dbWords) {
+                        if (sw === dw) score += 2;
+                        else if (sw.length > 3 && dw.length > 3 && (sw.startsWith(dw) || dw.startsWith(sw))) score += 1.2;
+                        else if (sw.length > 3 && dw.length > 3 && (sw.includes(dw) || dw.includes(sw))) score += 0.8;
+                    }
+                }
+                const maxLen = Math.max(kpWords.length, dbWords.length);
+                return (score / maxLen) * 100;
+            }
+
+            function findSuggestions(kpTitle, db) {
+                const scored = [];
+                for (const item of db) {
+                    const s = scoreMatch(kpTitle, item.title);
+                    if (s >= 30) scored.push({ item, score: s });
+                }
+                scored.sort((a, b) => b.score - a.score);
+                return scored.slice(0, 10).map(s => s.item);
+            }
+
+            function filterByQuery(query, db) {
+                const q = normalizeTitle(query);
+                if (!q) return [];
+                const words = q.split(' ').filter(w => w.length > 0);
+                const scored = [];
+                for (const item of db) {
+                    const normDb = normalizeTitle(item.title);
+                    let score = 0;
+                    let allMatch = true;
+                    for (const w of words) {
+                        if (normDb.includes(w)) score += 2;
+                        else if (w.length > 2) {
+                            const dbWords = normDb.split(' ');
+                            let partial = false;
+                            for (const dw of dbWords) {
+                                if (dw.startsWith(w) || w.startsWith(dw)) { partial = true; break; }
+                            }
+                            if (partial) score += 1;
+                            else allMatch = false;
+                        }
+                    }
+                    if (allMatch || words.length === 1) {
+                        if (score > 0) scored.push({ item, score });
+                    }
+                }
+                scored.sort((a, b) => b.score - a.score);
+                return scored.slice(0, 20).map(s => s.item);
+            }
+
+            function createShadowHost(id, css, htmlContent) {
+                const host = document.createElement('div');
+                host.id = id;
+                host.style.cssText = 'all: initial !important; display: block !important; width: 100% !important; position: static !important;';
+                const shadow = host.attachShadow({ mode: 'open' });
+                const style = document.createElement('style');
+                style.textContent = css;
+                shadow.appendChild(style);
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = htmlContent;
+                while (wrapper.firstChild) {
+                    shadow.appendChild(wrapper.firstChild);
+                }
+                return { host, shadow };
+            }
+
+            function blockHtml(item, onBack) {
+                const hasReview = item.review && String(item.review).trim() !== '';
+                const ratingNum = parseRating(item.rating);
+                const hasRating = ratingNum !== null;
+
+                let statusText;
+                if (!hasReview && !hasRating) statusText = 'В планах';
+                else if (hasReview && hasRating) statusText = 'Отзыв и оценка';
+                else if (hasReview) statusText = 'Отзыв';
+                else statusText = 'Оценка';
+
+                const rankHtml = hasRating
+                    ? `<div class="rank rank-${ratingNum}"><span>${ratingNum}</span></div>`
+                    : '';
+
+                const bodyHtml = hasReview
+                    ? `<div class="body"><div class="quote">${escapeHtml(item.review)}</div></div>`
+                    : '';
+
+                const dateHtml = item.date && String(item.date).trim() !== ''
+                    ? `<div class="date">
+                            <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                            ${escapeHtml(item.date)}
+                        </div>`
+                    : '<div></div>';
+
+                const reviewUrl = getPageUrl('/movies.html') + '?movie=' + encodeURIComponent(item.slug || item.title);
+
+                const backBtnHtml = onBack
+                    ? `<button class="back" type="button">
+                            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                            Это не то
+                        </button>`
+                    : '';
+
+                return `
+                    <div class="card">
+                        <div class="header">
+                            <div class="info">
+                                <div class="name">RIPSITE</div>
+                                <div class="status">${statusText}</div>
+                            </div>
+                            ${rankHtml}
+                        </div>
+                        ${bodyHtml}
+                        <div class="footer">
+                            ${dateHtml}
+                            <div class="footer-actions">
+                                ${backBtnHtml}
+                                <a class="link" href="${reviewUrl}" target="_blank" rel="noopener noreferrer">
+                                    <svg viewBox="0 0 24 24"><path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zM19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/></svg>
+                                    Открыть на RIPSITE
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function skeletonHtml() {
+                return `
+                    <div class="card">
+                        <div class="sk-header">
+                            <div class="sk-info">
+                                <div class="sk-line sk-name"></div>
+                                <div class="sk-line sk-status"></div>
+                            </div>
+                            <div class="sk-rank"></div>
+                        </div>
+                        <div class="sk-body">
+                            <div class="sk-line sk-text"></div>
+                            <div class="sk-line sk-text short-1"></div>
+                            <div class="sk-line sk-text short-2"></div>
+                            <div class="sk-line sk-text short-3"></div>
+                        </div>
+                        <div class="sk-footer">
+                            <div class="sk-date"></div>
+                            <div class="sk-btn"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function suggestHtml(kpTitle, initialSuggestions) {
+                const itemsHtml = initialSuggestions.length === 0
+                    ? '<div class="empty">Ничего не найдено. Попробуйте другой запрос.</div>'
+                    : initialSuggestions.map((item, i) => {
+                        const ratingNum = parseRating(item.rating);
+                        const rankClass = ratingNum ? `rank-${ratingNum}` : 'rank-_';
+                        const rankDisplay = ratingNum ? String(ratingNum) : '?';
+                        return `
+                            <div class="item" data-index="${i}">
+                                <div class="item-title">${escapeHtml(item.title)}</div>
+                                <div class="item-rank ${rankClass}"><span>${rankDisplay}</span></div>
+                            </div>
+                        `;
+                    }).join('');
+
+                return `
+                    <div class="card">
+                        <div class="header">
+                            <div class="info">
+                                <div class="name">RIPSITE</div>
+                                <div class="status">Выбор фильма</div>
+                            </div>
+                        </div>
+                        <div class="body">
+                            <div class="text">
+                                Точного совпадения для <strong>«${escapeHtml(kpTitle)}»</strong> нет.
+                                Возможно, на сайте фильм называется по-другому. Выберите вариант из списка или найдите через поиск.
+                            </div>
+                            <div class="search">
+                                <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                <input type="text" class="search-input" placeholder="Поиск фильма на сайте...">
+                            </div>
+                            <div class="list">${itemsHtml}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function findInsertTarget() {
+                const ad = document.getElementById('foxadmovie_carousel_desktop');
+                if (ad && ad.parentNode) {
+                    return ad.parentNode;
+                }
+                const col = document.querySelector('[data-tid="893da4ad"]');
+                if (col) return col;
+                const h1 = document.querySelector('h1');
+                if (h1 && h1.parentNode) return h1.parentNode;
+                return null;
+            }
+
+            function insertHost(host) {
+                const target = findInsertTarget();
+                if (!target) {
+                    console.warn('RIPMORE Kinopoisk: no insert target');
+                    return false;
+                }
+                if (host.parentNode === target) return true;
+                if (host.parentNode) host.parentNode.removeChild(host);
+                target.appendChild(host);
+                return true;
+            }
+
+            function removeAllHosts() {
+                Object.values(HOST_IDS).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.remove();
+                });
+            }
+
+            function renderSkeleton() {
+                removeAllHosts();
+                const { host } = createShadowHost(HOST_IDS.skeleton, SKELETON_CSS, skeletonHtml());
+                return insertHost(host);
+            }
+
+            function renderBlock(item, onBack) {
+                removeAllHosts();
+                const { host, shadow } = createShadowHost(HOST_IDS.block, CARD_CSS, blockHtml(item, !!onBack));
+                if (!insertHost(host)) return false;
+                if (onBack) {
+                    const backBtn = shadow.querySelector('.back');
+                    if (backBtn) backBtn.addEventListener('click', onBack);
+                }
+                return true;
+            }
+
+            function renderSuggest(kpTitle, suggestions, db, onPick) {
+                removeAllHosts();
+                const { host, shadow } = createShadowHost(HOST_IDS.suggest, SUGGEST_CSS, suggestHtml(kpTitle, suggestions));
+                if (!insertHost(host)) return false;
+
+                const listEl = shadow.querySelector('.list');
+                const searchInput = shadow.querySelector('.search-input');
+
+                function bindItems(items) {
+                    listEl.querySelectorAll('.item').forEach(el => {
+                        el.addEventListener('click', () => {
+                            const idx = parseInt(el.getAttribute('data-index'), 10);
+                            const picked = items[idx];
+                            if (picked) onPick(picked);
+                        });
+                    });
+                }
+
+                function renderList(items) {
+                    if (items.length === 0) {
+                        listEl.innerHTML = '<div class="empty">Ничего не найдено. Попробуйте другой запрос.</div>';
+                        return;
+                    }
+                    listEl.innerHTML = items.map((item, i) => {
+                        const ratingNum = parseRating(item.rating);
+                        const rankClass = ratingNum ? `rank-${ratingNum}` : 'rank-_';
+                        const rankDisplay = ratingNum ? String(ratingNum) : '?';
+                        return `
+                            <div class="item" data-index="${i}">
+                                <div class="item-title">${escapeHtml(item.title)}</div>
+                                <div class="item-rank ${rankClass}"><span>${rankDisplay}</span></div>
+                            </div>
+                        `;
+                    }).join('');
+                    bindItems(items);
+                }
+
+                bindItems(suggestions);
+
+                searchInput.addEventListener('input', () => {
+                    const q = searchInput.value.trim();
+                    if (!q) { renderList(suggestions); return; }
+                    renderList(filterByQuery(q, db));
+                });
+
+                return true;
+            }
+
+            async function build() {
+                const title = getKinopoiskTitle();
+                if (!title) return false;
+                CURRENT_TITLE = title;
+
+                if (!renderSkeleton()) {
+                    return false;
+                }
+
+                try {
+                    const db = await fetchDatabase();
+
+                    if (!document.getElementById(HOST_IDS.skeleton)) {
+                        return false;
+                    }
+
+                    function showSuggest() {
+                        const suggestions = findSuggestions(title, db);
+                        renderSuggest(title, suggestions, db, (picked) => {
+                            renderBlock(picked, showSuggest);
+                        });
+                    }
+
+                    let exact = null;
+                    const norm = normalizeTitle(title);
+                    for (const g of db) {
+                        if (normalizeTitle(g.title) === norm) { exact = g; break; }
+                    }
+
+                    if (exact) {
+                        renderBlock(exact, null);
+                    } else {
+                        showSuggest();
+                    }
+                    return true;
+                } catch (e) {
+                    console.warn('RIPMORE Kinopoisk:', e);
+                    removeAllHosts();
+                    return false;
+                }
+            }
+
+            let scheduled = false;
+            function schedule() {
+                if (scheduled) return;
+                scheduled = true;
+                setTimeout(() => {
+                    scheduled = false;
+                    runCheck();
+                }, 200);
+            }
+
+            async function runCheck() {
+                const title = getKinopoiskTitle();
+                if (!title) return;
+
+                const existing = document.getElementById(HOST_IDS.block)
+                    || document.getElementById(HOST_IDS.suggest)
+                    || document.getElementById(HOST_IDS.skeleton);
+
+                if (existing && title === CURRENT_TITLE) return;
+                await build();
+            }
+
+            function startObserving() {
+                const observer = new MutationObserver(() => {
+                    const title = getKinopoiskTitle();
+                    if (!title) return;
+                    const existing = document.getElementById(HOST_IDS.block)
+                        || document.getElementById(HOST_IDS.suggest)
+                        || document.getElementById(HOST_IDS.skeleton);
+                    if (existing && title === CURRENT_TITLE) return;
+                    schedule();
+                });
+                observer.observe(document.documentElement, { childList: true, subtree: true });
+            }
+
+            let booted = false;
+            function boot() {
+                if (booted) return;
+                booted = true;
+                startObserving();
+                runCheck();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot);
+            } else {
+                boot();
+            }
+
+            let lastUrl = location.href;
+            setInterval(() => {
+                if (location.href !== lastUrl) {
+                    lastUrl = location.href;
+                    CURRENT_TITLE = '';
+                    removeAllHosts();
+                    setTimeout(runCheck, 300);
+                    setTimeout(runCheck, 1000);
+                    setTimeout(runCheck, 2500);
+                }
+            }, 500);
+        })();
+    }
+
+    /* =========================================================================
+       ЧАСТЬ 7 - ANIVOX
+       ========================================================================= */
+
+if (IS_ANIVOX && isEnabled('anivox_review') && isSiteInfoEnabled()) {
+        (function initAnivox() {
+            const DB_PATH = '/BD/anime_database.json';
+            const HOST_IDS = {
+                block:    'ripper-anivox-block-host',
+                skeleton: 'ripper-anivox-skeleton-host',
+                suggest:  'ripper-anivox-suggest-host'
+            };
+
+            let DB_CACHE = null;
+            let DB_PROMISE = null;
+            let CURRENT_TITLE = '';
+            let CURRENT_URL = '';
+            let IS_BUILDING = false;
+            let OBSERVER_PAUSED = false;
+            let BUILD_STARTED_AT = 0;
+            const BUILD_MAX_MS = 20000;
+
+            const THEME = {
+                bg:          '#09090f',
+                card:        '#101015',
+                accent:      '#c11f2b',
+                accentHover: '#d4232f',
+                text:        '#e0e0ff',
+                textMuted:   '#a0a0cc',
+                border:      '#1e1e28'
+            };
+            const FONT = "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+            const FONT_TITLE = "'Orbitron', 'Inter', system-ui, -apple-system, sans-serif";
+
+            function isAnimePage() {
+                return location.pathname.startsWith('/anime');
+            }
+
+            const SHARED_CSS = `
+                :host {
+                    display: block;
+                    width: 100%;
+                    font-family: ${FONT} !important;
+                    font-size: 15px !important;
+                    font-weight: 400 !important;
+                    font-style: normal !important;
+                    line-height: 1.6 !important;
+                    letter-spacing: normal !important;
+                    text-transform: none !important;
+                    text-align: left !important;
+                    color: ${THEME.text} !important;
+                    -webkit-font-smoothing: antialiased !important;
+                    -moz-osx-font-smoothing: grayscale !important;
+                    text-rendering: optimizeLegibility !important;
+                    font-variant-ligatures: none !important;
+                }
+                *, *::before, *::after {
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 0;
+                    font-family: inherit;
+                    font-weight: inherit;
+                    font-style: inherit;
+                    line-height: inherit;
+                    letter-spacing: inherit;
+                    text-transform: inherit;
+                    text-align: inherit;
+                    color: inherit;
+                    -webkit-font-smoothing: inherit;
+                    -moz-osx-font-smoothing: inherit;
+                }
+            `;
+
+            const CARD_CSS = SHARED_CSS + `
+                .card { background: ${THEME.card}; border: 1px solid ${THEME.border}; border-radius: 18px; overflow: hidden; line-height: 1.6; box-shadow: 0 12px 48px rgba(0,0,0,0.6); width: 100%; animation: fadeIn 0.4s ease-out; }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+                .header { display: flex; align-items: center; gap: 14px; padding: 20px 24px 16px; border-bottom: 1px solid ${THEME.border}; background: ${THEME.bg}; }
+                .info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+                .name { font-family: ${FONT_TITLE} !important; font-weight: 700 !important; font-size: 17px !important; letter-spacing: 0.8px !important; color: #ffffff !important; line-height: 1.2 !important; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+                .status { font-family: ${FONT_TITLE} !important; font-weight: 700 !important; font-size: 11.5px !important; letter-spacing: 1px !important; text-transform: uppercase !important; color: ${THEME.textMuted} !important; line-height: 1 !important; }
+                .rank { display: inline-flex; align-items: center; justify-content: center; font-family: ${FONT_TITLE} !important; font-size: 24px !important; font-weight: 900 !important; color: #ffffff !important; width: 54px; height: 54px; letter-spacing: normal !important; text-shadow: 0 3px 12px rgba(0,0,0,0.7); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); position: relative; flex-shrink: 0; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
+                .rank::before, .rank::after { content: ''; position: absolute; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); z-index: 1; }
+                .rank::before { inset: 4px; background: rgba(16,16,21,0.9); }
+                .rank::after  { inset: 7px; background: rgba(16,16,21,0.98); }
+                .rank > span { position: relative; z-index: 3; line-height: 1; font-family: ${FONT_TITLE} !important; font-weight: 900 !important; color: #ffffff !important; }
+                .rank.rank-10 { background: linear-gradient(135deg, #c11f2b, #6a0f17); }
+                .rank.rank-9  { background: linear-gradient(135deg, #c11f2b, #8a1520); }
+                .rank.rank-8  { background: linear-gradient(135deg, #8a1520, #4a0a10); }
+                .rank.rank-7  { background: linear-gradient(135deg, #5a3a7a, #2a1a3a); }
+                .rank.rank-6  { background: linear-gradient(135deg, #2a4a5a, #152530); }
+                .rank.rank-5  { background: linear-gradient(135deg, #3a3a5a, #1a1a2e); }
+                .rank.rank-4  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .rank.rank-3  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .rank.rank-2  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .rank.rank-1  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .rank.rank-_  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .body { padding: 20px 24px 22px; background: ${THEME.card}; }
+                .quote { font-family: ${FONT} !important; font-size: 15px !important; font-weight: 400 !important; font-style: normal !important; line-height: 1.7 !important; letter-spacing: normal !important; color: ${THEME.text} !important; white-space: pre-wrap; word-break: break-word; border-left: 2px solid rgba(193,31,43,0.35); padding-left: 14px; max-height: 360px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: ${THEME.accent} ${THEME.border}; }
+                .quote::-webkit-scrollbar { width: 6px; }
+                .quote::-webkit-scrollbar-track { background: ${THEME.border}; border-radius: 3px; }
+                .quote::-webkit-scrollbar-thumb { background: ${THEME.accent}; border-radius: 3px; }
+                .footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px 18px; border-top: 1px solid ${THEME.border}; background: ${THEME.bg}; flex-wrap: wrap; }
+                .date { font-family: ${FONT} !important; font-size: 13px !important; font-weight: 400 !important; font-style: italic !important; letter-spacing: 0.3px !important; color: ${THEME.textMuted} !important; line-height: 1.4 !important; display: flex; align-items: center; gap: 8px; }
+                .date svg { width: 14px; height: 14px; fill: currentColor; opacity: 0.7; }
+                .footer-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+                .link, .back { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: ${FONT_TITLE} !important; font-weight: 700 !important; font-size: 12.5px !important; letter-spacing: 1px !important; line-height: 1 !important; text-transform: uppercase !important; padding: 9px 18px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; text-decoration: none; white-space: nowrap; }
+                .link { color: #ffffff !important; background: ${THEME.accent}; box-shadow: 0 4px 14px rgba(193,31,43,0.3); transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; }
+                .link:hover { background: ${THEME.accentHover}; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(193,31,43,0.45); color: #ffffff !important; }
+                .link svg { width: 13px; height: 13px; fill: currentColor; }
+                .back { color: ${THEME.textMuted} !important; background: transparent; border-color: ${THEME.border}; transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease; }
+                .back:hover { color: #ffffff !important; border-color: ${THEME.accent}; background: rgba(193,31,43,0.12); }
+                .back svg { width: 13px; height: 13px; fill: currentColor; }
+                @media (max-width: 640px) {
+                    .header { padding: 16px 16px 14px; gap: 12px; }
+                    .name { font-size: 16px !important; }
+                    .rank { width: 46px; height: 46px; font-size: 20px !important; }
+                    .body { padding: 16px 16px 18px; }
+                    .quote { font-size: 14px !important; max-height: 280px; }
+                    .footer { padding: 12px 16px 16px; flex-direction: column; align-items: stretch; }
+                    .footer-actions { flex-direction: column; align-items: stretch; width: 100%; }
+                    .link, .back { width: 100%; }
+                }
+            `;
+
+            const SKELETON_CSS = SHARED_CSS + `
+                .card { background: ${THEME.card}; border: 1px solid ${THEME.border}; border-radius: 18px; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,0.6); width: 100%; }
+                @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+                .sk-line, .sk-rank, .sk-date, .sk-btn { background: linear-gradient(90deg, ${THEME.border} 0%, #2a2a38 50%, ${THEME.border} 100%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
+                .sk-header { display: flex; align-items: center; gap: 14px; padding: 20px 24px 16px; border-bottom: 1px solid ${THEME.border}; background: ${THEME.bg}; }
+                .sk-info { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+                .sk-line { border-radius: 6px; }
+                .sk-name { height: 18px; width: 100px; }
+                .sk-status { height: 11px; width: 140px; opacity: 0.7; }
+                .sk-rank { width: 54px; height: 54px; flex-shrink: 0; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+                .sk-body { padding: 20px 24px 22px; display: flex; flex-direction: column; gap: 10px; }
+                .sk-text { height: 12px; width: 100%; }
+                .sk-text.short-1 { width: 92%; }
+                .sk-text.short-2 { width: 78%; }
+                .sk-text.short-3 { width: 60%; }
+                .sk-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px 18px; border-top: 1px solid ${THEME.border}; background: ${THEME.bg}; flex-wrap: wrap; }
+                .sk-date { height: 12px; width: 90px; border-radius: 6px; }
+                .sk-btn { height: 34px; width: 170px; border-radius: 10px; }
+                @media (max-width: 640px) {
+                    .sk-header { padding: 16px 16px 14px; gap: 12px; }
+                    .sk-rank { width: 46px; height: 46px; }
+                    .sk-body { padding: 16px 16px 18px; }
+                    .sk-footer { padding: 12px 16px 16px; flex-direction: column; align-items: stretch; }
+                    .sk-btn { width: 100%; }
+                }
+            `;
+
+            const SUGGEST_CSS = SHARED_CSS + `
+                .card { background: ${THEME.card}; border: 1px solid ${THEME.border}; border-radius: 18px; overflow: hidden; line-height: 1.6; box-shadow: 0 12px 48px rgba(0,0,0,0.6); width: 100%; animation: fadeIn 0.4s ease-out; }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+                .header { display: flex; align-items: center; gap: 14px; padding: 20px 24px 16px; border-bottom: 1px solid ${THEME.border}; background: ${THEME.bg}; }
+                .info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+                .name { font-family: ${FONT_TITLE} !important; font-weight: 700 !important; font-size: 17px !important; letter-spacing: 0.8px !important; color: #ffffff !important; line-height: 1.2 !important; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+                .status { font-family: ${FONT_TITLE} !important; font-weight: 700 !important; font-size: 11.5px !important; letter-spacing: 1px !important; text-transform: uppercase !important; color: ${THEME.textMuted} !important; line-height: 1 !important; }
+                .body { padding: 20px 24px 22px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+                .text { font-family: ${FONT} !important; font-size: 15px !important; font-weight: 400 !important; font-style: normal !important; line-height: 1.6 !important; letter-spacing: normal !important; color: ${THEME.text} !important; word-break: break-word; }
+                .text strong { color: #ffffff !important; font-weight: 600 !important; }
+                .search { position: relative; width: 100%; }
+                .search-input { width: 100%; padding: 12px 16px 12px 42px; background: ${THEME.bg}; border: 1px solid ${THEME.border}; border-radius: 12px; color: ${THEME.text} !important; font-family: ${FONT} !important; font-size: 14.5px !important; font-weight: 400 !important; line-height: 1.4 !important; letter-spacing: normal !important; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+                .search-input::placeholder { color: ${THEME.textMuted}; opacity: 0.7; }
+                .search-input:focus { border-color: ${THEME.accent}; box-shadow: 0 0 0 3px rgba(193,31,43,0.18); }
+                .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; fill: ${THEME.textMuted}; pointer-events: none; opacity: 0.7; }
+                .list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; scrollbar-color: ${THEME.accent} ${THEME.border}; }
+                .list::-webkit-scrollbar { width: 6px; }
+                .list::-webkit-scrollbar-track { background: ${THEME.border}; border-radius: 3px; }
+                .list::-webkit-scrollbar-thumb { background: ${THEME.accent}; border-radius: 3px; }
+                .item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: ${THEME.bg}; border: 1px solid ${THEME.border}; border-radius: 12px; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease; user-select: none; width: 100%; }
+                .item:hover { background: rgba(193,31,43,0.12); border-color: ${THEME.accent}; transform: translateY(-1px); }
+                .item-title { flex: 1; font-family: ${FONT} !important; font-size: 15px !important; font-weight: 600 !important; line-height: 1.4 !important; letter-spacing: normal !important; color: ${THEME.text} !important; min-width: 0; word-break: break-word; }
+                .item-rank { display: inline-flex; align-items: center; justify-content: center; font-family: ${FONT_TITLE} !important; font-size: 15px !important; font-weight: 900 !important; color: #ffffff !important; width: 34px; height: 34px; letter-spacing: normal !important; text-shadow: 0 2px 8px rgba(0,0,0,0.7); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); position: relative; flex-shrink: 0; }
+                .item-rank::before, .item-rank::after { content: ''; position: absolute; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); z-index: 1; }
+                .item-rank::before { inset: 3px; background: rgba(16,16,21,0.9); }
+                .item-rank::after  { inset: 5px; background: rgba(16,16,21,0.98); }
+                .item-rank > span { position: relative; z-index: 3; line-height: 1; font-family: ${FONT_TITLE} !important; font-weight: 900 !important; color: #ffffff !important; }
+                .item-rank.rank-10 { background: linear-gradient(135deg, #c11f2b, #6a0f17); }
+                .item-rank.rank-9  { background: linear-gradient(135deg, #c11f2b, #8a1520); }
+                .item-rank.rank-8  { background: linear-gradient(135deg, #8a1520, #4a0a10); }
+                .item-rank.rank-7  { background: linear-gradient(135deg, #5a3a7a, #2a1a3a); }
+                .item-rank.rank-6  { background: linear-gradient(135deg, #2a4a5a, #152530); }
+                .item-rank.rank-5  { background: linear-gradient(135deg, #3a3a5a, #1a1a2e); }
+                .item-rank.rank-4  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .item-rank.rank-3  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .item-rank.rank-2  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .item-rank.rank-1  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .item-rank.rank-_  { background: linear-gradient(135deg, #2a2a3a, #151520); }
+                .empty { padding: 20px 16px; text-align: center; color: ${THEME.textMuted} !important; font-family: ${FONT} !important; font-size: 14.5px !important; font-style: italic !important; line-height: 1.5 !important; }
+                @media (max-width: 640px) { .header { padding: 16px 16px 14px; gap: 12px; } .name { font-size: 16px !important; } .body { padding: 16px 16px 18px; } }
+            `;
+
+            function gmFetchJson(url, timeoutMs) {
+                return new Promise((resolve, reject) => {
+                    let finished = false;
+                    let timer = null;
+                    let req = null;
+                    function finish(fn, value) {
+                        if (finished) return;
+                        finished = true;
+                        if (timer) { clearTimeout(timer); timer = null; }
+                        fn(value);
+                    }
+                    try {
+                        req = GM_xmlhttpRequest({
+                            method: 'GET', url: url, timeout: timeoutMs,
+                            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' },
+                            onload: (response) => {
+                                if (finished) return;
+                                if (response.status >= 200 && response.status < 300) {
+                                    try { finish(resolve, JSON.parse(response.responseText)); } catch (e) { finish(reject, new Error('JSON parse error')); }
+                                } else if (response.status === 0 && response.responseText) {
+                                    try { finish(resolve, JSON.parse(response.responseText)); } catch (e) { finish(reject, new Error('JSON parse error')); }
+                                } else { finish(reject, new Error('HTTP ' + response.status)); }
+                            },
+                            onerror: () => finish(reject, new Error('Network error')),
+                            ontimeout: () => finish(reject, new Error('Timeout')),
+                            onabort: () => finish(reject, new Error('Aborted'))
+                        });
+                    } catch (e) { finish(reject, e); return; }
+                    if (timeoutMs && timeoutMs > 0) {
+                        timer = setTimeout(() => {
+                            if (finished) return;
+                            try { if (req && typeof req.abort === 'function') req.abort(); } catch (e) {}
+                            finish(reject, new Error('Timeout'));
+                        }, timeoutMs);
+                    }
+                });
+            }
+
+            function fetchDatabase() {
+                if (DB_CACHE) return Promise.resolve(DB_CACHE);
+                if (DB_PROMISE) return DB_PROMISE;
+
+                const load = (url) => gmFetchJson(url, DB_TIMEOUT_MS);
+
+                DB_PROMISE = new Promise((resolve, reject) => {
+                    let done = false;
+                    const finish = (fn, val) => {
+                        if (done) return;
+                        done = true;
+                        fn(val);
+                    };
+                    const hardTimer = setTimeout(() => {
+                        finish(reject, new Error('Hard timeout'));
+                    }, DB_TIMEOUT_MS * 2 + 2000);
+
+                    const base = getBaseUrl();
+                    load(base + DB_PATH)
+                        .then((data) => {
+                            if (done) return;
+                            if (!data || typeof data !== 'object') {
+                                return load(MIRROR_BASE + DB_PATH);
+                            }
+                            return data;
+                        })
+                        .then((data) => {
+                            if (done) return;
+                            clearTimeout(hardTimer);
+                            if (!data || typeof data !== 'object') {
+                                finish(reject, new Error('Invalid DB'));
+                                return;
+                            }
+                            DB_CACHE = data;
+                            finish(resolve, data);
+                        })
+                        .catch((e) => {
+                            if (done) return;
+                            load(MIRROR_BASE + DB_PATH)
+                                .then((data) => {
+                                    if (done) return;
+                                    clearTimeout(hardTimer);
+                                    if (!data || typeof data !== 'object') {
+                                        finish(reject, new Error('Invalid DB'));
+                                        return;
+                                    }
+                                    DB_CACHE = data;
+                                    finish(resolve, data);
+                                })
+                                .catch((e2) => {
+                                    if (done) return;
+                                    clearTimeout(hardTimer);
+                                    finish(reject, e2);
+                                });
+                        });
+                });
+
+                DB_PROMISE.catch(() => {
+                    DB_PROMISE = null;
+                });
+
+                return DB_PROMISE;
+            }
+
+            function normalizeTitle(title) {
+                return String(title || '').toLowerCase().replace(/[™®©]/g, '').replace(/[:\-–—]/g, ' ').replace(/\s+/g, ' ').trim();
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text == null ? '' : String(text);
+                return div.innerHTML;
+            }
+
+            function parseRating(value) {
+                if (value == null) return null;
+                if (typeof value === 'number') {
+                    const n = Math.round(value);
+                    if (n >= 1 && n <= 10) return n;
+                    return null;
+                }
+                const m = String(value).match(/(\d+)\s*(?:\/\s*10)?/);
+                if (!m) return null;
+                const n = parseInt(m[1], 10);
+                if (isNaN(n) || n < 1 || n > 10) return null;
+                return n;
+            }
+
+            function getAnivoxTitle() {
+                const candidates = ['h1.anime__info-title-name', 'h1[class*="anime__info-title"]', 'h1'];
+                for (const sel of candidates) {
+                    const el = document.querySelector(sel);
+                    if (el && el.textContent.trim()) {
+                        const div = el.querySelector('div.inline-block');
+                        if (div) {
+                            let node = el.firstChild;
+                            while (node && node.nodeType !== 3) node = node.nextSibling;
+                            if (node && node.textContent.trim()) return node.textContent.trim();
+                        }
+                        return el.textContent.trim().split('\n')[0].trim();
+                    }
+                }
+                return document.title.replace(/\s*—\s*Anivox.*$/, '').replace(/\s*\|.*$/, '').trim();
+            }
+
+            function scoreMatch(title, dbTitle) {
+                const normA = normalizeTitle(title);
+                const normB = normalizeTitle(dbTitle);
+                if (!normA || !normB) return 0;
+                if (normB === normA) return 100;
+                const aWords = normA.split(' ').filter(w => w.length > 1);
+                const bWords = normB.split(' ').filter(w => w.length > 1);
+                if (aWords.length === 0 || bWords.length === 0) return 0;
+                let score = 0;
+                for (const aw of aWords) {
+                    for (const bw of bWords) {
+                        if (aw === bw) score += 2;
+                        else if (aw.length > 3 && bw.length > 3 && (aw.startsWith(bw) || bw.startsWith(aw))) score += 1.2;
+                        else if (aw.length > 3 && bw.length > 3 && (aw.includes(bw) || bw.includes(aw))) score += 0.8;
+                    }
+                }
+                const maxLen = Math.max(aWords.length, bWords.length);
+                return (score / maxLen) * 100;
+            }
+
+            function findSuggestions(title, db) {
+                const scored = [];
+                for (const item of db) {
+                    const s = scoreMatch(title, item.title);
+                    if (s >= 30) scored.push({ item, score: s });
+                }
+                scored.sort((a, b) => b.score - a.score);
+                return scored.slice(0, 10).map(s => s.item);
+            }
+
+            function filterByQuery(query, db) {
+                const q = normalizeTitle(query);
+                if (!q) return [];
+                const words = q.split(' ').filter(w => w.length > 0);
+                const scored = [];
+                for (const item of db) {
+                    const normDb = normalizeTitle(item.title);
+                    let score = 0;
+                    let allMatch = true;
+                    for (const w of words) {
+                        if (normDb.includes(w)) score += 2;
+                        else if (w.length > 2) {
+                            const dbWords = normDb.split(' ');
+                            let partial = false;
+                            for (const dw of dbWords) {
+                                if (dw.startsWith(w) || w.startsWith(dw)) { partial = true; break; }
+                            }
+                            if (partial) score += 1; else allMatch = false;
+                        }
+                    }
+                    if (allMatch || words.length === 1) {
+                        if (score > 0) scored.push({ item, score });
+                    }
+                }
+                scored.sort((a, b) => b.score - a.score);
+                return scored.slice(0, 20).map(s => s.item);
+            }
+
+            function getAllAnime(db) {
+                if (!db || typeof db !== 'object') return [];
+                const result = [];
+
+                if (Array.isArray(db.streamed)) {
+                    for (const item of db.streamed) {
+                        if (!item || !item.title) continue;
+                        let ratingVal = '_';
+                        if (item.rating) {
+                            const m = String(item.rating).match(/(\d+)\s*\/\s*10/);
+                            if (m) ratingVal = m[1];
+                        }
+                        result.push({
+                            title: item.title,
+                            rating: ratingVal,
+                            review: item.review || '',
+                            date: item.date || '',
+                            slug: item.slug || '',
+                        });
+                    }
+                }
+
+                if (Array.isArray(db.offline)) {
+                    for (const item of db.offline) {
+                        if (!item || !item.title) continue;
+                        let ratingVal = '_';
+                        if (item.rating != null) {
+                            const n = parseInt(item.rating, 10);
+                            if (!isNaN(n) && n >= 1 && n <= 10) ratingVal = String(n);
+                        }
+                        result.push({
+                            title: item.title,
+                            rating: ratingVal,
+                            review: item.review || '',
+                            date: item.date || '',
+                            slug: item.image || '',
+                        });
+                    }
+                }
+
+                if (Array.isArray(db.script_anime)) {
+                    for (const item of db.script_anime) {
+                        if (!item || !item.title) continue;
+                        let ratingVal = '_';
+                        if (item.rating != null) {
+                            const n = parseInt(item.rating, 10);
+                            if (!isNaN(n) && n >= 1 && n <= 10) ratingVal = String(n);
+                        }
+                        result.push({
+                            title: item.title,
+                            rating: ratingVal,
+                            review: item.review || '',
+                            date: item.date || '',
+                            slug: item.slug || '',
+                        });
+                    }
+                }
+
+                return result;
+            }
+
+            function createShadowHost(id, css, htmlContent) {
+                const host = document.createElement('div');
+                host.id = id;
+                host.style.cssText = 'all: initial !important; display: block !important; width: 100% !important; position: static !important;';
+                const shadow = host.attachShadow({ mode: 'open' });
+                const style = document.createElement('style');
+                style.textContent = css;
+                shadow.appendChild(style);
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = htmlContent;
+                while (wrapper.firstChild) shadow.appendChild(wrapper.firstChild);
+                return { host, shadow };
+            }
+
+            function blockHtml(item, onBack) {
+                const hasReview = item.review && String(item.review).trim() !== '';
+                const ratingNum = parseRating(item.rating);
+                const hasRating = ratingNum !== null;
+                let statusText;
+                if (!hasReview && !hasRating) statusText = 'В планах';
+                else if (hasReview && hasRating) statusText = 'Отзыв и оценка';
+                else if (hasReview) statusText = 'Отзыв';
+                else statusText = 'Оценка';
+
+                const rankHtml = hasRating ? `<div class="rank rank-${ratingNum}"><span>${ratingNum}</span></div>` : '';
+                const bodyHtml = hasReview ? `<div class="body"><div class="quote">${escapeHtml(item.review)}</div></div>` : '';
+                const dateHtml = item.date && String(item.date).trim() !== ''
+                    ? `<div class="date"><svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>${escapeHtml(item.date)}</div>`
+                    : '<div></div>';
+                const reviewUrl = getPageUrl('/anime.html') + '?anime=' + encodeURIComponent(item.slug || item.title);
+                const backBtnHtml = onBack ? `<button class="back" type="button"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Это не то</button>` : '';
+
+                return `
+                    <div class="card">
+                        <div class="header">
+                            <div class="info"><div class="name">RIPSITE</div><div class="status">${statusText}</div></div>
+                            ${rankHtml}
+                        </div>
+                        ${bodyHtml}
+                        <div class="footer">
+                            ${dateHtml}
+                            <div class="footer-actions">
+                                ${backBtnHtml}
+                                <a class="link" href="${reviewUrl}" target="_blank" rel="noopener noreferrer">
+                                    <svg viewBox="0 0 24 24"><path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zM19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/></svg>
+                                    Открыть на RIPSITE
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function skeletonHtml() {
+                return `<div class="card"><div class="sk-header"><div class="sk-info"><div class="sk-line sk-name"></div><div class="sk-line sk-status"></div></div><div class="sk-rank"></div></div><div class="sk-body"><div class="sk-line sk-text"></div><div class="sk-line sk-text short-1"></div><div class="sk-line sk-text short-2"></div><div class="sk-line sk-text short-3"></div></div><div class="sk-footer"><div class="sk-date"></div><div class="sk-btn"></div></div></div>`;
+            }
+
+            function errorHtml(text) {
+                return `
+                    <div class="card">
+                        <div class="header"><div class="info"><div class="name">RIPSITE</div><div class="status">Ошибка</div></div></div>
+                        <div class="body"><div class="text">${escapeHtml(text)}</div></div>
+                    </div>
+                `;
+            }
+
+            function suggestHtml(title, initialSuggestions) {
+                const itemsHtml = initialSuggestions.length === 0
+                    ? '<div class="empty">Ничего не найдено. Попробуйте другой запрос.</div>'
+                    : initialSuggestions.map((item, i) => {
+                        const ratingNum = parseRating(item.rating);
+                        const rankClass = ratingNum ? `rank-${ratingNum}` : 'rank-_';
+                        const rankDisplay = ratingNum ? String(ratingNum) : '?';
+                        return `<div class="item" data-index="${i}"><div class="item-title">${escapeHtml(item.title)}</div><div class="item-rank ${rankClass}"><span>${rankDisplay}</span></div></div>`;
+                    }).join('');
+
+                return `
+                    <div class="card">
+                        <div class="header"><div class="info"><div class="name">RIPSITE</div><div class="status">Выбор аниме</div></div></div>
+                        <div class="body">
+                            <div class="text">Точного совпадения для <strong>«${escapeHtml(title)}»</strong> нет. Возможно, на сайте аниме называется по-другому. Выберите вариант из списка или найдите через поиск.</div>
+                            <div class="search"><svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input type="text" class="search-input" placeholder="Поиск аниме на сайте..."></div>
+                            <div class="list">${itemsHtml}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function findInsertTarget() {
+                const comments = document.querySelector('.comments_container');
+                if (comments && comments.parentNode) return comments;
+                return null;
+            }
+
+            function insertHost(host) {
+                const target = findInsertTarget();
+                if (!target || !target.parentNode) {
+                    return false;
+                }
+                if (host.parentNode) return true;
+                target.parentNode.insertBefore(host, target);
+                return true;
+            }
+
+            function removeAllHosts() {
+                Object.values(HOST_IDS).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.remove();
+                });
+            }
+
+            function renderSkeleton() {
+                removeAllHosts();
+                const { host } = createShadowHost(HOST_IDS.skeleton, SKELETON_CSS, skeletonHtml());
+                return insertHost(host);
+            }
+
+            function renderError(text) {
+                removeAllHosts();
+                const { host } = createShadowHost(HOST_IDS.skeleton, CARD_CSS, errorHtml(text));
+                return insertHost(host);
+            }
+
+            function renderBlock(item, onBack) {
+                removeAllHosts();
+                const { host, shadow } = createShadowHost(HOST_IDS.block, CARD_CSS, blockHtml(item, !!onBack));
+                if (!insertHost(host)) return false;
+                if (onBack) {
+                    const backBtn = shadow.querySelector('.back');
+                    if (backBtn) backBtn.addEventListener('click', onBack);
+                }
+                return true;
+            }
+
+            function renderSuggest(title, suggestions, db, onPick) {
+                removeAllHosts();
+                const { host, shadow } = createShadowHost(HOST_IDS.suggest, SUGGEST_CSS, suggestHtml(title, suggestions));
+                if (!insertHost(host)) return false;
+
+                const listEl = shadow.querySelector('.list');
+                const searchInput = shadow.querySelector('.search-input');
+
+                function bindItems(items) {
+                    listEl.querySelectorAll('.item').forEach(el => {
+                        el.addEventListener('click', () => {
+                            const idx = parseInt(el.getAttribute('data-index'), 10);
+                            const picked = items[idx];
+                            if (picked) onPick(picked);
+                        });
+                    });
+                }
+
+                function renderList(items) {
+                    if (items.length === 0) {
+                        listEl.innerHTML = '<div class="empty">Ничего не найдено. Попробуйте другой запрос.</div>';
+                        return;
+                    }
+                    listEl.innerHTML = items.map((item, i) => {
+                        const ratingNum = parseRating(item.rating);
+                        const rankClass = ratingNum ? `rank-${ratingNum}` : 'rank-_';
+                        const rankDisplay = ratingNum ? String(ratingNum) : '?';
+                        return `<div class="item" data-index="${i}"><div class="item-title">${escapeHtml(item.title)}</div><div class="item-rank ${rankClass}"><span>${rankDisplay}</span></div></div>`;
+                    }).join('');
+                    bindItems(items);
+                }
+
+                bindItems(suggestions);
+                searchInput.addEventListener('input', () => {
+                    const q = searchInput.value.trim();
+                    if (!q) { renderList(suggestions); return; }
+                    renderList(filterByQuery(q, db));
+                });
+                return true;
+            }
+
+            async function build() {
+                if (IS_BUILDING) return false;
+                if (!isAnimePage()) return false;
+                const title = getAnivoxTitle();
+                if (!title) return false;
+
+                if (CURRENT_TITLE === title &&
+                    (document.getElementById(HOST_IDS.block) ||
+                     document.getElementById(HOST_IDS.suggest) ||
+                     document.getElementById(HOST_IDS.skeleton))) {
+                    return true;
+                }
+
+                IS_BUILDING = true;
+                BUILD_STARTED_AT = Date.now();
+                pauseObserver();
+
+                try {
+                    CURRENT_TITLE = title;
+                    CURRENT_URL = location.href;
+
+                    if (!renderSkeleton()) {
+                        return false;
+                    }
+
+                    let db;
+                    try {
+                        db = await fetchDatabase();
+                    } catch (e) {
+                        renderError('Не удалось загрузить базу аниме. ' + (e && e.message ? e.message : ''));
+                        return false;
+                    }
+
+                    if (CURRENT_TITLE !== title) return false;
+                    if (!isAnimePage()) return false;
+                    if (!document.getElementById(HOST_IDS.skeleton)) return false;
+
+                    const allAnime = getAllAnime(db);
+
+                    function showSuggest() {
+                        const suggestions = findSuggestions(title, allAnime);
+                        renderSuggest(title, suggestions, allAnime, (picked) => {
+                            renderBlock(picked, showSuggest);
+                        });
+                    }
+
+                    let exact = null;
+                    const norm = normalizeTitle(title);
+                    for (const g of allAnime) {
+                        if (normalizeTitle(g.title) === norm) { exact = g; break; }
+                    }
+
+                    if (exact) {
+                        renderBlock(exact, null);
+                    } else {
+                        showSuggest();
+                    }
+                    return true;
+                } catch (e) {
+                    renderError('Ошибка: ' + (e && e.message ? e.message : String(e)));
+                    return false;
+                } finally {
+                    IS_BUILDING = false;
+                    setTimeout(resumeObserver, 500);
+                }
+            }
+
+            function pauseObserver() {
+                OBSERVER_PAUSED = true;
+            }
+
+            function resumeObserver() {
+                OBSERVER_PAUSED = false;
+            }
+
+            let scheduled = false;
+            function schedule() {
+                if (scheduled) return;
+                scheduled = true;
+                setTimeout(() => { scheduled = false; runCheck(); }, 300);
+            }
+
+            async function runCheck() {
+                if (!isAnimePage()) {
+                    removeAllHosts();
+                    CURRENT_TITLE = '';
+                    return;
+                }
+                if (IS_BUILDING) return;
+                if (OBSERVER_PAUSED) return;
+
+                if (IS_BUILDING && Date.now() - BUILD_STARTED_AT > BUILD_MAX_MS) {
+                    IS_BUILDING = false;
+                    OBSERVER_PAUSED = false;
+                }
+
+                const title = getAnivoxTitle();
+                if (!title) return;
+                const existing = document.getElementById(HOST_IDS.block)
+                    || document.getElementById(HOST_IDS.suggest)
+                    || document.getElementById(HOST_IDS.skeleton);
+                if (existing && title === CURRENT_TITLE) return;
+                await build();
+            }
+
+            function onUrlChange() {
+                const url = location.href;
+                if (url === CURRENT_URL) return;
+                const nowAnime = isAnimePage();
+                CURRENT_URL = url;
+                CURRENT_TITLE = '';
+                IS_BUILDING = false;
+                OBSERVER_PAUSED = false;
+                removeAllHosts();
+                if (nowAnime) {
+                    setTimeout(runCheck, 300);
+                    setTimeout(runCheck, 1000);
+                    setTimeout(runCheck, 2500);
+                }
+            }
+
+            function startObserving() {
+                const observer = new MutationObserver(() => {
+                    if (isAnimePage()) {
+                        const title = getAnivoxTitle();
+                        if (!title) return;
+                        const existing = document.getElementById(HOST_IDS.block)
+                            || document.getElementById(HOST_IDS.suggest)
+                            || document.getElementById(HOST_IDS.skeleton);
+                        if (existing && title === CURRENT_TITLE) return;
+                        if (OBSERVER_PAUSED || IS_BUILDING) return;
+                        schedule();
+                    }
+                });
+                observer.observe(document.documentElement, { childList: true, subtree: true });
+            }
+
+            function watchUrl() {
+                let last = location.href;
+                setInterval(() => {
+                    if (location.href !== last) {
+                        last = location.href;
+                        onUrlChange();
+                    }
+                }, 250);
+                window.addEventListener('popstate', onUrlChange);
+            }
+
+            let booted = false;
+            function boot() {
+                if (booted) return;
+                booted = true;
+                CURRENT_URL = location.href;
+                startObserving();
+                watchUrl();
+                if (isAnimePage()) {
+                    runCheck();
+                }
+                setInterval(() => {
+                    if (!isAnimePage()) return;
+                    if (IS_BUILDING && Date.now() - BUILD_STARTED_AT > BUILD_MAX_MS) {
+                        IS_BUILDING = false;
+                        OBSERVER_PAUSED = false;
+                        const sk = document.getElementById(HOST_IDS.skeleton);
+                        if (sk) {
+                            renderError('Превышено время ожидания загрузки базы. Попробуйте обновить страницу.');
+                        }
+                    }
+                }, 5000);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot);
+            } else {
+                boot();
             }
         })();
     }
