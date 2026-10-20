@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RIPMORE
 // @namespace    https://ripsite666.netlify.app/
-// @version      0.5
+// @version      0.6
 // @description  RIPMORE - скрипт который служит улучшением для пользователей RIPSITE
 // @author       RIPPER
 // @match        https://dzen.ru/*
@@ -6173,29 +6173,52 @@ if (IS_KINOPOISK && isEnabled('kinopoisk_review') && isSiteInfoEnabled()) {
                 `;
             }
 
-            function findInsertTarget() {
-                const ad = document.getElementById('foxadmovie_carousel_desktop');
-                if (ad && ad.parentNode) {
-                    return ad.parentNode;
-                }
-                const col = document.querySelector('[data-tid="893da4ad"]');
-                if (col) return col;
-                const h1 = document.querySelector('h1');
-                if (h1 && h1.parentNode) return h1.parentNode;
-                return null;
-            }
+function findInsertTarget() {
+    const seriesRoot = document.querySelector('.styles_rootDark__PBX3x');
+    if (seriesRoot && seriesRoot.parentNode) return seriesRoot.parentNode;
 
-            function insertHost(host) {
-                const target = findInsertTarget();
-                if (!target) {
-                    console.warn('RIPMORE Kinopoisk: no insert target');
-                    return false;
-                }
-                if (host.parentNode === target) return true;
-                if (host.parentNode) host.parentNode.removeChild(host);
-                target.appendChild(host);
-                return true;
-            }
+    const filmRoot = document.querySelector('.styles_root__4qj_T.styles_withBottomBorder__V0q3x');
+    if (filmRoot && filmRoot.parentNode) return filmRoot.parentNode;
+
+    const col = document.querySelector('[data-tid="893da4ad"]');
+    if (col && col.parentNode) return col.parentNode;
+
+    const ad = document.getElementById('foxadmovie_carousel_desktop');
+    if (ad && ad.parentNode) return ad.parentNode;
+
+    const h1 = document.querySelector('h1');
+    if (h1 && h1.parentNode) return h1.parentNode;
+
+    return null;
+}
+
+function insertHost(host) {
+    const seriesRoot = document.querySelector('.styles_rootDark__PBX3x');
+    if (seriesRoot && seriesRoot.parentNode) {
+        if (host.parentNode === seriesRoot.parentNode && host.previousSibling === seriesRoot) return true;
+        if (host.parentNode) host.parentNode.removeChild(host);
+        seriesRoot.parentNode.insertBefore(host, seriesRoot.nextSibling);
+        return true;
+    }
+
+    const filmRoot = document.querySelector('.styles_root__4qj_T.styles_withBottomBorder__V0q3x');
+    if (filmRoot && filmRoot.parentNode) {
+        if (host.parentNode === filmRoot.parentNode && host.previousSibling === filmRoot) return true;
+        if (host.parentNode) host.parentNode.removeChild(host);
+        filmRoot.parentNode.insertBefore(host, filmRoot.nextSibling);
+        return true;
+    }
+
+    const target = findInsertTarget();
+    if (!target) {
+        console.warn('RIPMORE Kinopoisk: no insert target');
+        return false;
+    }
+    if (host.parentNode === target) return true;
+    if (host.parentNode) host.parentNode.removeChild(host);
+    target.appendChild(host);
+    return true;
+}
 
             function removeAllHosts() {
                 Object.values(HOST_IDS).forEach(id => {
