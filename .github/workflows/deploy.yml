@@ -26,6 +26,48 @@ jobs:
           rsync -a --exclude='.git' --exclude='node_modules' --exclude='scripts' \
                 --exclude='.github' --exclude='dist' ./ dist/
 
+      - name: Normalize cs icons
+        run: |
+          cd dist/images/cs 2>/dev/null || exit 0
+          find . -type f \( -iname '*.png' -o -iname '*.svg' \) | while IFS= read -r f; do
+            d=$(dirname "$f"); b=$(basename "$f"); ext="${b##*.}"; name="${b%.*}"
+            l=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
+            lext=$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')
+            new="${l}.${lext}"
+            [ "$b" = "$new" ] && continue
+            if [ -e "$d/$new" ]; then
+              echo "COLLISION: $f vs $d/$new"; exit 1
+            fi
+            mv -- "$f" "$d/$new"
+          done
+
+      - name: Normalize game icons
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          const html = fs.readFileSync('dist/games.html', 'utf8');
+          const titles = [...html.matchAll(/title\s*:\s*"([^"]+)"/g)].map(m => m[1]);
+          const dir = 'dist/images/Gameicon';
+          if (!fs.existsSync(dir)) process.exit(0);
+          const files = fs.readdirSync(dir);
+          const norm = (s) => s.toLowerCase().replace(/\s+/g, '_');
+          const stripExt = (f) => f.replace(/\.[^.]+$/, '');
+          const ext = (f) => f.match(/\.[^.]+$/)?.[0] ?? '';
+          for (const title of titles) {
+            const want = norm(title);
+            const real = files.find(f => norm(stripExt(f)) === want);
+            if (!real) continue;
+            const target = want + ext(real).toLowerCase();
+            if (real === target) continue;
+            const from = path.join(dir, real);
+            const to = path.join(dir, target);
+            if (fs.existsSync(to)) { console.log('COLLISION:', from, 'vs', to); process.exit(1); }
+            fs.renameSync(from, to);
+            console.log('renamed:', real, '->', target);
+          }
+          EOF
+
       - name: Fix references to real filenames
         run: node scripts/fix-links.mjs dist
 
