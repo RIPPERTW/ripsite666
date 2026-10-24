@@ -71,7 +71,7 @@
             description: 'За присутствие на стриме по прохождению Minecraft Dungeons',
             users: []
         },
-        Metro: {
+        metro: {
             file: 'metro.webp',
             title: 'Гость с поверхности',
             description: 'За присутствие на стриме по прохождению серии игр Метро',
@@ -1955,7 +1955,8 @@
             };
             const FONT = "'Inter', system-ui, -apple-system, sans-serif";
             const FONT_TITLE = "'Orbitron', 'Inter', sans-serif";
-            const DATA_SINCE_TEXT = 'Данные берутся с 06.10.2026';
+            const DATA_SINCE_TEXT_MINUTES = 'Данные берутся с 06.10.2026';
+            const DATA_SINCE_TEXT_MEDALS = 'Данные берутся с 20.02.2026';
             const MAX_VISIBLE_ROWS = 10;
             const ROW_HEIGHT_PX = 34;
             const ROW_GAP_PX = 4;
@@ -3297,7 +3298,9 @@
                 dateRow.innerHTML = `<span>Данные на: ${TWITCH_DB_DATE || '—'}</span><span class="ripper-help-icon" data-ripper-help="1">?</span>`;
                 const helpIcon = dateRow.querySelector('.ripper-help-icon');
                 if (helpIcon) {
-                    helpIcon.addEventListener('mouseenter', () => twitchShowTooltip(helpIcon, DATA_SINCE_TEXT));
+                    helpIcon.addEventListener('mouseenter', () => {
+                        twitchShowTooltip(helpIcon, LEADERBOARD_MODE === 'medals' ? DATA_SINCE_TEXT_MEDALS : DATA_SINCE_TEXT_MINUTES);
+                    });
                     helpIcon.addEventListener('mouseleave', twitchHideTooltip);
                 }
                 header.appendChild(dateRow);
