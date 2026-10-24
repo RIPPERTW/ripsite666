@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RIPMORE
 // @namespace    https://ripsite666.netlify.app/
-// @version      1.0
+// @version      1.1
 // @description  RIPMORE - скрипт который служит улучшением для пользователей RIPSITE
 // @author       RIPPER
 // @match        https://dzen.ru/*
@@ -10,7 +10,7 @@
 // @match        https://shikimori.one/*
 // @match        https://ripsite666.netlify.app/*
 // @match        https://rippertw.github.io/*
-// @match        https://www.twitch.tv/ripper_cmertanoc
+// @match        https://www.twitch.tv/*
 // @match        https://www.kinopoisk.ru/film/*
 // @match        https://www.kinopoisk.ru/series/*
 // @match        https://anivox.fun/*
@@ -130,7 +130,6 @@
 
     const DB_TIMEOUT_MS = 10000;
 
-
     function getSettings() {
         try {
             const raw = GM_getValue(SETTINGS_KEY, null);
@@ -160,6 +159,7 @@
 
     function isSiteInfoEnabled() { return isEnabled('site_info'); }
     function isRankBadgesEnabled() { return isEnabled('show_rank_badges'); }
+    function isSmilesEnabled() { return isEnabled('show_smiles'); }
     function isMirrorOn() { return getSettings().mirror_data === true; }
 
     function getBaseUrl() { return isMirrorOn() ? MIRROR_BASE : PRIMARY_BASE; }
@@ -1946,6 +1946,17 @@
 
     if (IS_TWITCH && isEnabled('twitch_enabled')) {
         (function initTwitch() {
+            let isRipperChannel = false;
+            let twitchInitialized = false;
+            let currentChannel = '';
+            let twitchObserver = null;
+            let smileInitialized = false;
+            let twitchChatObserver = null;
+            let twitchInterval = null;
+            let twitchLeaderboardInterval = null;
+            let smileButtonInterval = null;
+            let twitchInitToken = 0;
+
             const TWITCH_DB_PATH = '/BD/twitch_database.json';
             const THEME = {
                 bg: '#09090f', card: '#101015', accent: '#c11f2b', accentHover: '#d4232f',
@@ -2200,6 +2211,7 @@
                     el.loading = 'lazy';
                     el.decoding = 'async';
                     el.alt = code;
+                    el.setAttribute('aria-label', code);
                     el.className = EMOJI_CLASS;
                     el.addEventListener('mouseenter', (e) => { if (smileTooltipEnabled) showSmileTooltip(e.currentTarget, code, info); });
                     el.addEventListener('mouseleave', hideSmileTooltip);
@@ -2253,6 +2265,7 @@
             }
 
             function replaceInTextNode(node) {
+                if (!isSmilesEnabled()) return false;
                 const text = node.nodeValue;
                 if (!text || !SMILE_TEST.test(text)) return false;
                 SMILE_REGEX.lastIndex = 0;
@@ -2302,6 +2315,7 @@
 
             function processSubtree(root) {
                 if (!root) return;
+                if (!isSmilesEnabled()) return;
                 const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
                     acceptNode(node) {
                         if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
@@ -2324,6 +2338,11 @@
                 flushScheduled = true;
                 requestAnimationFrame(() => {
                     flushScheduled = false;
+                    if (!isRipperChannel || !isSmilesEnabled()) {
+                        pendingChatRoots.clear();
+                        pendingTextNodes.clear();
+                        return;
+                    }
                     const chats = [...pendingChatRoots];
                     const texts = [...pendingTextNodes];
                     pendingChatRoots.clear();
@@ -2334,7 +2353,10 @@
             }
 
             function startSmileObserver() {
-                new MutationObserver((mutations) => {
+                if (twitchChatObserver) twitchChatObserver.disconnect();
+                twitchChatObserver = new MutationObserver((mutations) => {
+                    if (!isRipperChannel) return;
+                    if (!isSmilesEnabled()) return;
                     for (const m of mutations) {
                         if (m.type === 'childList') {
                             for (const node of m.addedNodes) {
@@ -2348,11 +2370,16 @@
                             }
                         } else if (m.type === 'characterData') {
                             const n = m.target;
-                            if (n && n.nodeType === 3 && !shouldSkipParent(n.parentElement)) pendingTextNodes.add(n);
+                            if (n && n.nodeType === 3 && !shouldSkipParent(n.parentElement)) {
+                                if (n.parentElement && n.parentElement.closest('.chat-line__message')) {
+                                    pendingTextNodes.add(n);
+                                }
+                            }
                         }
                     }
                     if (pendingChatRoots.size || pendingTextNodes.size) scheduleFlush();
-                }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+                });
+                twitchChatObserver.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
             }
 
             function injectSmileStyles() {
@@ -2778,13 +2805,13 @@
 
                 ripmSection.appendChild(makeToggle('Значки R', 'show_rank_badges', (on) => {
                     if (!on) document.querySelectorAll('.ripper-rank-badge').forEach(b => b.remove());
-                    else twitchScanAndApply();
+                    else twitchScanAndApply(true);
                 }));
                 ripmSection.appendChild(makeToggle('Смайлы RIPSITE', 'show_smiles', (on) => {
                     if (on) processAllChat();
                     else document.querySelectorAll('.' + EMOJI_CLASS).forEach(el => {
-                        const code = el.getAttribute('aria-label') || el.getAttribute('data-ripper-smile-code') || '';
-                        const txt = document.createTextNode(' ' + code + ' ');
+                        const code = el.getAttribute('aria-label') || el.getAttribute('alt') || el.getAttribute('data-ripper-smile-code') || '';
+                        const txt = document.createTextNode(code);
                         if (el.parentNode) el.parentNode.replaceChild(txt, el);
                     });
                 }));
@@ -2924,6 +2951,7 @@
             function toggleMenu() { menuOpen ? closeMenu() : openMenu(); }
 
             function ensureButton() {
+                if (!isRipperChannel) return;
                 const emoteBtn = document.querySelector('button[data-a-target="emote-picker-button"]');
                 if (!emoteBtn) return;
                 const container = emoteBtn.parentElement;
@@ -2984,6 +3012,8 @@
             }
 
             function processAllChat() {
+                if (!isRipperChannel) return;
+                if (!isSmilesEnabled()) return;
                 document.querySelectorAll('.chat-line__message').forEach(processSubtree);
             }
 
@@ -3023,9 +3053,11 @@
 
             function twitchLoadDatabase() {
                 if (TWITCH_DB_LOADING || TWITCH_DB) return;
+                const token = twitchInitToken;
                 TWITCH_DB_LOADING = true;
                 twitchFetchDatabase()
                     .then(data => {
+                        if (token !== twitchInitToken || !twitchInitialized || !isRipperChannel) { TWITCH_DB_LOADING = false; return; }
                         const { entries, date } = twitchExtractEntries(data);
                         TWITCH_DB_DATE = date;
                         TWITCH_DB = entries.filter(x => x && typeof x.username === 'string').map(x => ({
@@ -3035,10 +3067,11 @@
                         }));
                         TWITCH_RANK_MAP = twitchBuildRankMap();
                         TWITCH_DB_LOADING = false;
-                        twitchScanAndApply();
+                        twitchScanAndApply(true);
                         if (isEnabled('twitch_leaderboard')) twitchReplaceLeaderboardPanels();
                     })
                     .catch(e => {
+                        if (token !== twitchInitToken || !twitchInitialized || !isRipperChannel) { TWITCH_DB_LOADING = false; return; }
                         TWITCH_DB_LOADING = false;
                         TWITCH_DB = [];
                         TWITCH_RANK_MAP = new Map();
@@ -3048,6 +3081,7 @@
             }
 
             function twitchShowMirrorOfferFallback() {
+                if (!isRipperChannel) return;
                 document.querySelectorAll('.extension-panel').forEach(panel => {
                     if (!twitchIsLeaderboardPanel(panel)) return;
                     const iframeContainer = panel.querySelector('[data-selector="iframe_container_selector"]') || panel.querySelector('[data-test-selector="iframe_container_selector"]');
@@ -3161,6 +3195,7 @@
                 const b = document.createElement('span');
                 b.className = 'ripper-rank-badge';
                 b.style.color = color;
+                b.dataset.color = color;
                 b.textContent = 'R';
                 b.dataset.ripperUser = username || '';
                 b.dataset.minutes = String(minutes);
@@ -3193,13 +3228,19 @@
                 const info = rankMap.get(username);
                 if (!isRankBadgesEnabled()) { if (existing) existing.remove(); return; }
                 if (!info) {
-                    if (existing) existing.remove();
+                    if (existing) {
+                        if (existing.dataset.minutes === '0' && existing.dataset.color === THEME.gray) {
+                            attachMiniMedalToBadge(existing, username);
+                            return;
+                        }
+                        existing.remove();
+                    }
                     const grayBadge = twitchMakeBadge(THEME.gray, 0, username);
                     if (grayBadge) parent.insertBefore(grayBadge, parent.firstChild);
                     return;
                 }
                 if (existing) {
-                    if (existing.dataset.minutes !== String(info.minutes) || existing.style.color !== info.color) existing.remove();
+                    if (existing.dataset.minutes !== String(info.minutes) || existing.dataset.color !== info.color) existing.remove();
                     else { attachMiniMedalToBadge(existing, username); return; }
                 }
                 const badge = twitchMakeBadge(info.color, info.minutes, username);
@@ -3385,6 +3426,7 @@
 
             function twitchRefreshLeaderboard() {
                 if (!TWITCH_DB || !isEnabled('twitch_leaderboard')) return;
+                if (!isRipperChannel) return;
                 document.querySelectorAll('.extension-panel').forEach(panel => {
                     if (!twitchIsLeaderboardPanel(panel)) return;
                     const iframeContainer = panel.querySelector('[data-test-selector="iframe_container_selector"]');
@@ -3422,6 +3464,7 @@
 
             function twitchReplaceLeaderboardPanels() {
                 if (!TWITCH_DB || !isEnabled('twitch_leaderboard')) return;
+                if (!isRipperChannel) return;
                 document.querySelectorAll('.extension-panel').forEach(panel => {
                     if (!twitchIsLeaderboardPanel(panel)) return;
                     const iframeContainer = panel.querySelector('[data-test-selector="iframe_container_selector"]');
@@ -3435,9 +3478,12 @@
                 });
             }
 
-            function twitchScanAndApply() {
-                if (!isEnabled('twitch_badges')) return;
-                document.querySelectorAll('.chat-line__message').forEach(twitchProcessChatLine);
+            function twitchScanAndApply(force) {
+                if (!isRipperChannel) return;
+                if (!isRankBadgesEnabled()) return;
+                document.querySelectorAll('.chat-line__message').forEach(line => {
+                    twitchProcessChatLine(line);
+                });
                 processAllViewerCards();
             }
 
@@ -3467,7 +3513,7 @@
 
                 if (info) {
                     if (badge) {
-                        if (badge.dataset.minutes !== String(info.minutes) || badge.style.color !== info.color) { badge.remove(); badge = null; }
+                        if (badge.dataset.minutes !== String(info.minutes) || badge.dataset.color !== info.color) { badge.remove(); badge = null; }
                     }
                     if (!badge) {
                         badge = twitchMakeBadge(info.color, info.minutes, username);
@@ -3475,7 +3521,7 @@
                     } else attachMiniMedalToBadge(badge, username);
                 } else {
                     if (badge) {
-                        if (badge.dataset.minutes !== '0' || badge.style.color !== THEME.gray) { badge.remove(); badge = null; }
+                        if (badge.dataset.minutes !== '0' || badge.dataset.color !== THEME.gray) { badge.remove(); badge = null; }
                     }
                     if (!badge) {
                         badge = twitchMakeBadge(THEME.gray, 0, username);
@@ -3892,51 +3938,178 @@
 
             function openMedals(username, anchorEl) { openMedalsPopup(username, anchorEl); }
 
-            /* --- Twitch Init --- */
-
             function twitchStartObserver() {
-                new MutationObserver((mutations) => {
-                    let chatTouched = false;
-                    let viewerTouched = false;
+                if (twitchObserver) twitchObserver.disconnect();
+                twitchObserver = new MutationObserver((mutations) => {
+                    if (!isRipperChannel) return;
                     let extTouched = false;
+                    const chatLines = new Set();
+                    const viewerCards = new Set();
                     for (const m of mutations) {
                         for (const node of m.addedNodes) {
                             if (node.nodeType !== 1) continue;
-                            if (node.matches && (node.matches('.chat-line__message') || node.querySelector('.chat-line__message'))) chatTouched = true;
-                            if (node.matches && (node.matches('.viewer-card') || node.querySelector('.viewer-card'))) viewerTouched = true;
+                            if (node.matches && node.matches('.chat-line__message')) chatLines.add(node);
+                            else if (node.querySelectorAll) {
+                                const msgs = node.querySelectorAll('.chat-line__message');
+                                for (const msg of msgs) chatLines.add(msg);
+                            }
+                            if (node.matches && node.matches('.viewer-card')) viewerCards.add(node);
+                            else if (node.querySelectorAll) {
+                                const cards = node.querySelectorAll('.viewer-card');
+                                for (const card of cards) viewerCards.add(card);
+                            }
                             if (node.matches && (node.matches('.extension-panel') || node.querySelector('.extension-panel'))) extTouched = true;
                         }
                     }
-                    if (chatTouched && isEnabled('twitch_badges')) document.querySelectorAll('.chat-line__message').forEach(twitchProcessChatLine);
-                    if (viewerTouched && isEnabled('twitch_badges')) processAllViewerCards();
+                    if (chatLines.size && isRankBadgesEnabled()) chatLines.forEach(twitchProcessChatLine);
+                    if (viewerCards.size && isRankBadgesEnabled()) viewerCards.forEach(attachBadgesToViewerCard);
                     if (extTouched && isEnabled('twitch_leaderboard')) twitchReplaceLeaderboardPanels();
-                }).observe(document.documentElement, { childList: true, subtree: true });
+                });
+                twitchObserver.observe(document.documentElement, { childList: true, subtree: true });
             }
 
             function smileInit() {
+                if (smileInitialized) return;
+                smileInitialized = true;
                 loadSmileSettings();
                 injectSmileStyles();
                 applyEmojiScale();
                 processAllChat();
                 ensureButton();
                 startSmileObserver();
-                setInterval(ensureButton, 2000);
+                if (smileButtonInterval) clearInterval(smileButtonInterval);
+                smileButtonInterval = setInterval(() => {
+                    if (!isRipperChannel) return;
+                    ensureButton();
+                }, 2000);
             }
 
             function twitchInit() {
-                if (!isEnabled('twitch_enabled')) return;
+                if (twitchInitialized) return;
+                if (!isRipperChannel) return;
+                twitchInitialized = true;
+                twitchInitToken++;
                 twitchInjectStyles();
                 injectMedalStyles();
                 twitchLoadDatabase();
                 twitchStartObserver();
-                twitchScanAndApply();
-                setInterval(twitchScanAndApply, 4000);
-                if (isEnabled('twitch_leaderboard')) setInterval(twitchReplaceLeaderboardPanels, 3000);
+                twitchScanAndApply(true);
+                if (twitchInterval) clearInterval(twitchInterval);
+                twitchInterval = setInterval(() => {
+                    if (!isRipperChannel) return;
+                    twitchScanAndApply(false);
+                }, 6000);
+                if (isEnabled('twitch_leaderboard')) {
+                    if (twitchLeaderboardInterval) clearInterval(twitchLeaderboardInterval);
+                    twitchLeaderboardInterval = setInterval(() => {
+                        if (!isRipperChannel) return;
+                        twitchReplaceLeaderboardPanels();
+                    }, 3000);
+                }
                 smileInit();
             }
 
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', twitchInit);
-            else twitchInit();
+            function twitchDestroy() {
+                twitchInitToken++;
+                twitchInitialized = false;
+                smileInitialized = false;
+                TWITCH_DB = null;
+                TWITCH_RANK_MAP = null;
+                TWITCH_DB_LOADING = false;
+                TWITCH_DB_DATE = null;
+                LEADERBOARD_MODE = 'minutes';
+                menuOpen = false;
+                settingsPanelOpen = false;
+                menuSearchQuery = '';
+                tooltipCurrentCode = null;
+
+                if (twitchObserver) { twitchObserver.disconnect(); twitchObserver = null; }
+                if (twitchChatObserver) { twitchChatObserver.disconnect(); twitchChatObserver = null; }
+                if (twitchInterval) { clearInterval(twitchInterval); twitchInterval = null; }
+                if (twitchLeaderboardInterval) { clearInterval(twitchLeaderboardInterval); twitchLeaderboardInterval = null; }
+                if (smileButtonInterval) { clearInterval(smileButtonInterval); smileButtonInterval = null; }
+                pendingChatRoots.clear();
+                pendingTextNodes.clear();
+                flushScheduled = false;
+
+                document.querySelectorAll('.ripper-rank-badge').forEach(el => el.remove());
+                document.querySelectorAll('.ripper-leaderboard').forEach(el => el.remove());
+                document.querySelectorAll('.ripper-smile-emoji').forEach(el => {
+                    const code = el.getAttribute('aria-label') || el.getAttribute('alt') || '';
+                    const txt = document.createTextNode(code);
+                    if (el.parentNode) el.parentNode.replaceChild(txt, el);
+                });
+                document.querySelectorAll('.ripper-medals-popup, .ripper-medals-popup-users, .ripper-medal-tooltip').forEach(el => el.remove());
+                const menu = document.getElementById(MENU_ID);
+                if (menu) menu.remove();
+                const root = document.getElementById(ROOT_ID);
+                if (root) root.remove();
+                const tooltip = document.getElementById(TOOLTIP_ID);
+                if (tooltip) tooltip.remove();
+                const smileStyles = document.getElementById('ripper-smile-styles');
+                if (smileStyles) smileStyles.remove();
+                const twitchStyles = document.getElementById('ripper-twitch-styles');
+                if (twitchStyles) twitchStyles.remove();
+                const medalStyles = document.getElementById('ripper-medal-styles');
+                if (medalStyles) medalStyles.remove();
+                webmPools.forEach(pool => {
+                    if (pool.video && pool.video.parentNode) pool.video.parentNode.removeChild(pool.video);
+                });
+                webmPools.clear();
+            }
+
+            function getChannelFromPath() {
+                const path = location.pathname;
+                const match = path.match(/^\/([a-zA-Z0-9_]+)/);
+                return match ? match[1].toLowerCase() : '';
+            }
+
+            function checkChannel() {
+                const channel = getChannelFromPath();
+                const isRipper = channel === 'ripper_cmertanoc';
+                if (isRipper !== isRipperChannel) {
+                    isRipperChannel = isRipper;
+                    currentChannel = channel;
+                    if (isRipperChannel) twitchInit();
+                    else twitchDestroy();
+                } else if (isRipperChannel && channel !== currentChannel) {
+                    currentChannel = channel;
+                }
+                if (isRipperChannel && !twitchInitialized) {
+                    twitchInit();
+                }
+            }
+
+            checkChannel();
+
+            let lastPath = location.pathname;
+
+            function startChannelWatcher() {
+                setInterval(() => {
+                    const nowPath = location.pathname;
+                    if (nowPath !== lastPath) {
+                        lastPath = nowPath;
+                        checkChannel();
+                    } else {
+                        checkChannel();
+                    }
+                }, 500);
+
+                window.addEventListener('popstate', () => setTimeout(checkChannel, 50));
+
+                const origPush = history.pushState;
+                const origReplace = history.replaceState;
+                history.pushState = function() {
+                    origPush.apply(this, arguments);
+                    setTimeout(checkChannel, 50);
+                };
+                history.replaceState = function() {
+                    origReplace.apply(this, arguments);
+                    setTimeout(checkChannel, 50);
+                };
+            }
+
+            startChannelWatcher();
         })();
     }
 
