@@ -28,7 +28,7 @@ jobs:
 
       - name: Normalize cs icons
         run: |
-          cd dist/files/images/cs 2>/dev/null || exit 0
+          cd dist/Files/images/cs 2>/dev/null || exit 0
           find . -type f \( -iname '*.png' -o -iname '*.svg' \) | while IFS= read -r f; do
             d=$(dirname "$f"); b=$(basename "$f"); ext="${b##*.}"; name="${b%.*}"
             l=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
@@ -48,7 +48,7 @@ jobs:
           const path = require('path');
           const html = fs.readFileSync('dist/games.html', 'utf8');
           const titles = [...html.matchAll(/title\s*:\s*"([^"]+)"/g)].map(m => m[1]);
-          const dir = 'dist/files/images/Gameicon';
+          const dir = 'dist/Files/images/Gameicon';
           if (!fs.existsSync(dir)) process.exit(0);
           const files = fs.readdirSync(dir);
           const norm = (s) => s.toLowerCase().replace(/\s+/g, '_');
