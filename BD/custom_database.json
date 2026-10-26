@@ -1,0 +1,57 @@
+{
+  "SMILE_MAP": {
+    "зли": { "file": "idina.webp", "author": "ripper_cmertanoc" },
+    "бу": { "file": "boo.webp", "author": "ripper_cmertanoc" },
+    "да": { "file": "da.webm", "author": "ripper_cmertanoc" },
+    "0": { "file": "0.webp", "author": "ripper_cmertanoc" },
+    "хех": { "file": "heh.webm", "author": "ripper_cmertanoc" },
+    "чё": { "file": "che.webp", "author": "ripper_cmertanoc" },
+    "ыыы": { "file": "iii.webp", "author": "ripper_cmertanoc" },
+    "бля": { "file": "blyaa.webm", "author": "ripper_cmertanoc" },
+    "свин": { "file": "svin.webm", "author": "ripper_cmertanoc" },
+    "хм": { "file": "hm.webm", "author": "ripper_cmertanoc" },
+    "хе": { "file": "he.webp", "author": "ripper_cmertanoc" },
+    "омг": { "file": "omg.webm", "author": "ripper_cmertanoc" },
+    "нет": { "file": "net.webm", "author": "ripper_cmertanoc" },
+    "крутой": { "file": "cool.webm", "author": "ripper_cmertanoc" },
+    "dj": { "file": "dance.webm", "author": "ripper_cmertanoc" }
+  },
+  "MEDALS_MAP": {
+    "Watch_Dogs": {
+      "file": "Watch_Dogs.webp",
+      "title": "Свой в системе",
+      "description": "За присутствие на стриме по прохождению Watch_Dogs",
+      "users": ["fisik228", "Mrmozis", "pen1va1z"]
+    },
+    "CrossCode": {
+      "file": "CrossCode.webp",
+      "title": "Друг Леи",
+      "description": "За присутствие на стриме по прохождению CrossCode",
+      "users": ["fisik228", "acrocb", "pen1va1z"]
+    },
+    "Super_Meat_Boy_3D": {
+      "file": "Super_Meat_Boy_3D.webp",
+      "title": "Соль на раны",
+      "description": "За присутствие на стриме по прохождению Super Meat Boy 3D",
+      "users": ["fisik228", "pen1va1z"]
+    },
+    "Everlasting_Summer": {
+      "file": "Everlasting_Summer.webp",
+      "title": "Пионер",
+      "description": "За присутствие на стриме по прохождению Everlasting Summer",
+      "users": ["fisik228", "maks228262"]
+    },
+    "Minecraft_Dungeons": {
+      "file": "Minecraft_Dungeons.webp",
+      "title": "Житель лагеря",
+      "description": "За присутствие на стриме по прохождению Minecraft Dungeons",
+      "users": []
+    },
+    "metro": {
+      "file": "metro.webp",
+      "title": "Гость с поверхности",
+      "description": "За присутствие на стриме по прохождению серии игр Метро",
+      "users": ["fisik228", "mr_one1o1", "acrocb", "yuki_zayka4", "bober2718"]
+    }
+  }
+}

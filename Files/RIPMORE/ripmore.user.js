@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RIPMORE
 // @namespace    https://ripsite666.netlify.app/
-// @version      1.1
+// @version      1.2
 // @description  RIPMORE - скрипт который служит улучшением для пользователей RIPSITE
 // @author       RIPPER
 // @match        https://dzen.ru/*
@@ -14,7 +14,7 @@
 // @match        https://www.kinopoisk.ru/film/*
 // @match        https://www.kinopoisk.ru/series/*
 // @match        https://anivox.fun/*
-// @icon         https://ripsite666.netlify.app/Files/Other/RIPMORE.png
+// @icon         https://ripsite666.netlify.app/Files/RIPMORE/RIPMORE.png
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -24,8 +24,8 @@
 // @connect      steamcommunity.com
 // @connect      kinopoisk.ru
 // @connect      anivox.fun
-// @downloadURL  https://ripsite666.netlify.app/Files/Other/ripmore.user.js
-// @updateURL    https://ripsite666.netlify.app/Files/Other/ripmore.user.js
+// @downloadURL  https://ripsite666.netlify.app/Files/RIPMORE/ripmore.user.js
+// @updateURL    https://ripsite666.netlify.app/Files/RIPMORE/ripmore.user.js
 // @run-at       document-start
 // ==/UserScript==
 
@@ -40,62 +40,7 @@
 
     const STEAM_PROFILE_URL = 'https://steamcommunity.com/id/ripper_cmertanoc/';
 
-    const MEDALS_MAP = {
-        Watch_Dogs: {
-            file: 'Watch_Dogs.webp',
-            title: 'Свой в системе',
-            description: 'За присутствие на стриме по прохождению Watch_Dogs',
-            users: ['fisik228', 'Mrmozis', 'pen1va1z']
-        },
-        CrossCode: {
-            file: 'CrossCode.webp',
-            title: 'Друг Леи',
-            description: 'За присутствие на стриме по прохождению CrossCode',
-            users: ['fisik228', 'acrocb', 'pen1va1z']
-        },
-        Super_Meat_Boy_3D: {
-            file: 'Super_Meat_Boy_3D.webp',
-            title: 'Соль на раны',
-            description: 'За присутствие на стриме по прохождению Super Meat Boy 3D',
-            users: ['fisik228', 'pen1va1z']
-        },
-        Everlasting_Summer: {
-            file: 'Everlasting_Summer.webp',
-            title: 'Пионер',
-            description: 'За присутствие на стриме по прохождению Everlasting Summer',
-            users: ['fisik228', 'maks228262']
-        },
-        Minecraft_Dungeons: {
-            file: 'Minecraft_Dungeons.webp',
-            title: 'Житель лагеря',
-            description: 'За присутствие на стриме по прохождению Minecraft Dungeons',
-            users: []
-        },
-        metro: {
-            file: 'metro.webp',
-            title: 'Гость с поверхности',
-            description: 'За присутствие на стриме по прохождению серии игр Метро',
-            users: []
-        }
-    };
-
-    const SMILE_MAP = {
-        'зли': { file: 'idina.webp', author: 'ripper_cmertanoc' },
-        'бу':  { file: 'boo.webp', author: 'ripper_cmertanoc' },
-        'да':  { file: 'da.webm', author: 'ripper_cmertanoc' },
-        '0':   { file: '0.webp', author: 'ripper_cmertanoc' },
-        'хех': { file: 'heh.webm', author: 'ripper_cmertanoc' },
-        'чё':  { file: 'che.webp', author: 'ripper_cmertanoc' },
-        'ыыы': { file: 'iii.webp', author: 'ripper_cmertanoc' },
-        'бля': { file: 'blyaa.webm', author: 'ripper_cmertanoc' },
-        'свин':{ file: 'svin.webm', author: 'ripper_cmertanoc' },
-        'хм':  { file: 'hm.webm', author: 'ripper_cmertanoc' },
-        'хе':  { file: 'he.webp', author: 'ripper_cmertanoc' },
-        'омг': { file: 'omg.webm', author: 'ripper_cmertanoc' },
-        'нет': { file: 'net.webm', author: 'ripper_cmertanoc' },
-        'крутой':{ file: 'cool.webm', author: 'ripper_cmertanoc' },
-        'dj':  { file: 'dance.webm', author: 'ripper_cmertanoc' }
-    };
+    const CUSTOM_DB_PATH = '/BD/custom_database.json';
 
     const SETTINGS_KEY = 'ripmore_settings';
 
@@ -169,10 +114,10 @@
         return (getSettings().mirror_pages ? MIRROR_BASE : PRIMARY_BASE) + path;
     }
 
-    function getMedalsBaseUrl() { return getFilesBaseUrl() + '/images/Badge/'; }
-    function getSmileBaseUrl() { return getFilesBaseUrl() + '/images/Smile/'; }
-    function getRipmoreIconUrl() { return getFilesBaseUrl() + '/Files/Other/RIPMORE.png'; }
-    function getSteamAvatarUrl() { return getFilesBaseUrl() + '/Files/Other/RIPPERSQUARE.png'; }
+    function getMedalsBaseUrl() { return getFilesBaseUrl() + '/Files/images/Badge/'; }
+    function getSmileBaseUrl() { return getFilesBaseUrl() + '/Files/images/Smile/'; }
+    function getRipmoreIconUrl() { return getFilesBaseUrl() + '/Files/RIPMORE/RIPMORE.png'; }
+    function getSteamAvatarUrl() { return getFilesBaseUrl() + '/Files/images/other/RIPPERSQUARE.png'; }
 
     function gmFetchJson(url, timeoutMs) {
         return new Promise((resolve, reject) => {
@@ -286,6 +231,46 @@
         }
         scored.sort((a, b) => b.score - a.score);
         return scored.slice(0, limit).map(s => s.item);
+    }
+
+    /* =========================================================================
+       CUSTOM DATABASE LOADER
+       ========================================================================= */
+
+    let CUSTOM_DB = null;
+    let CUSTOM_DB_PROMISE = null;
+    let CUSTOM_DB_FAILED = false;
+
+    function loadCustomDatabase() {
+        if (CUSTOM_DB) return Promise.resolve(CUSTOM_DB);
+        if (CUSTOM_DB_PROMISE) return CUSTOM_DB_PROMISE;
+        CUSTOM_DB_PROMISE = gmFetchJson(getBaseUrl() + CUSTOM_DB_PATH, DB_TIMEOUT_MS)
+            .catch(() => gmFetchJson(MIRROR_BASE + CUSTOM_DB_PATH, DB_TIMEOUT_MS))
+            .then(data => {
+                CUSTOM_DB = data;
+                CUSTOM_DB_PROMISE = null;
+                return data;
+            })
+            .catch(e => {
+                CUSTOM_DB_PROMISE = null;
+                CUSTOM_DB_FAILED = true;
+                throw e;
+            });
+        return CUSTOM_DB_PROMISE;
+    }
+
+    function getCustomSmileMap() {
+        if (CUSTOM_DB && CUSTOM_DB.SMILE_MAP && typeof CUSTOM_DB.SMILE_MAP === 'object') {
+            return CUSTOM_DB.SMILE_MAP;
+        }
+        return null;
+    }
+
+    function getCustomMedalsMap() {
+        if (CUSTOM_DB && CUSTOM_DB.MEDALS_MAP && typeof CUSTOM_DB.MEDALS_MAP === 'object') {
+            return CUSTOM_DB.MEDALS_MAP;
+        }
+        return null;
     }
 
     /* =========================================================================
@@ -1887,7 +1872,7 @@
                             html += `<div style="margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--border);">
                                 <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.8rem;">После изменения настроек обновите страницу, чтобы применить их.</p>
                                 <div class="buttons" style="margin-top:0;">
-                                    <a href="${getPageUrl('/Files/Other/ripmore.user.js')}" class="btn" target="_blank" rel="noopener" style="background:var(--accent);">Установить RIPMORE</a>
+                                    <a href="${getPageUrl('/Files/RIPMORE/ripmore.user.js')}" class="btn" target="_blank" rel="noopener" style="background:var(--accent);">Установить RIPMORE</a>
                                     <a href="https://www.tampermonkey.net/" class="btn btn-outline" target="_blank" rel="noopener">Скачать Tampermonkey</a>
                                 </div>
                                 <p style="font-size:.85rem;color:var(--text-muted);margin-top:1rem;">Если Tampermonkey уже установлен — просто нажми «Установить RIPMORE», откроется окно установки.</p>
@@ -1978,6 +1963,8 @@
             let TWITCH_DB_LOADING = false;
             let TWITCH_RANK_MAP = null;
             let LEADERBOARD_MODE = 'minutes';
+            let SMILE_MAP = {};
+            let MEDALS_MAP = {};
 
             function getUserMedals(username) {
                 if (!username) return [];
@@ -2025,7 +2012,7 @@
                 return h + 'ч ' + min + 'м';
             }
 
-            const SMILE_KEYS = Object.keys(SMILE_MAP).sort((a, b) => b.length - a.length);
+            let SMILE_KEYS = [];
             const EMOJI_CLASS = 'ripper-smile-emoji';
             const MENU_CANVAS_CLASS = 'ripper-smile-menu-canvas';
             const BTN_ID = 'ripper-smile-btn';
@@ -2088,21 +2075,33 @@
                 });
             }
 
-            const SMILE_CACHE = {};
-            for (const k of SMILE_KEYS) {
-                const e = SMILE_MAP[k];
-                const ext = e.file.split('.').pop().toLowerCase();
-                SMILE_CACHE[k.toLowerCase()] = {
-                    code: k, file: e.file, ext: ext === 'webm' ? 'webm' : 'webp', author: e.author || ''
-                };
-            }
-            function getSmileInfo(code) { return SMILE_CACHE[code.toLowerCase()] || null; }
+            let SMILE_CACHE = {};
+            let SMILE_REGEX = null;
+            let SMILE_TEST = null;
 
-            const SMILE_REGEX = new RegExp(
-                '(^|[\\s.,!?;:()\\[\\]{}"\'`])(' + SMILE_KEYS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?=$|[\\s.,!?;:()\\[\\]{}"\'`])',
-                'gi'
-            );
-            const SMILE_TEST = new RegExp(SMILE_REGEX.source, 'i');
+            function buildSmileCache() {
+                SMILE_CACHE = {};
+                SMILE_KEYS = Object.keys(SMILE_MAP).sort((a, b) => b.length - a.length);
+                for (const k of SMILE_KEYS) {
+                    const e = SMILE_MAP[k];
+                    const ext = e.file.split('.').pop().toLowerCase();
+                    SMILE_CACHE[k.toLowerCase()] = {
+                        code: k, file: e.file, ext: ext === 'webm' ? 'webm' : 'webp', author: e.author || ''
+                    };
+                }
+                if (SMILE_KEYS.length > 0) {
+                    SMILE_REGEX = new RegExp(
+                        '(^|[\\s.,!?;:()\\[\\]{}"\'`])(' + SMILE_KEYS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?=$|[\\s.,!?;:()\\[\\]{}"\'`])',
+                        'gi'
+                    );
+                    SMILE_TEST = new RegExp(SMILE_REGEX.source, 'i');
+                } else {
+                    SMILE_REGEX = null;
+                    SMILE_TEST = null;
+                }
+            }
+
+            function getSmileInfo(code) { return SMILE_CACHE[code.toLowerCase()] || null; }
 
             function getOrCreatePool(file) {
                 let pool = webmPools.get(file);
@@ -2266,6 +2265,7 @@
 
             function replaceInTextNode(node) {
                 if (!isSmilesEnabled()) return false;
+                if (!SMILE_REGEX || !SMILE_TEST) return false;
                 const text = node.nodeValue;
                 if (!text || !SMILE_TEST.test(text)) return false;
                 SMILE_REGEX.lastIndex = 0;
@@ -2316,6 +2316,7 @@
             function processSubtree(root) {
                 if (!root) return;
                 if (!isSmilesEnabled()) return;
+                if (!SMILE_REGEX || !SMILE_TEST) return;
                 const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
                     acceptNode(node) {
                         if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
@@ -4080,7 +4081,23 @@
                 }
             }
 
-            checkChannel();
+            async function initTwitchData() {
+                try {
+                    const customDb = await loadCustomDatabase();
+                    const smileMap = customDb && customDb.SMILE_MAP && typeof customDb.SMILE_MAP === 'object' ? customDb.SMILE_MAP : null;
+                    const medalsMap = customDb && customDb.MEDALS_MAP && typeof customDb.MEDALS_MAP === 'object' ? customDb.MEDALS_MAP : null;
+                    SMILE_MAP = smileMap || {};
+                    MEDALS_MAP = medalsMap || {};
+                } catch (e) {
+                    console.warn('RIPMORE: failed to load custom database, using empty maps', e);
+                    SMILE_MAP = {};
+                    MEDALS_MAP = {};
+                }
+                buildSmileCache();
+                checkChannel();
+            }
+
+            initTwitchData();
 
             let lastPath = location.pathname;
 

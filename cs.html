@@ -450,7 +450,7 @@
     <main>
         <h2 class="section-title">COUNTER-STRIKE 2</h2>
         <p class="intro-text" style="text-align:center;">
-            Всего часов в игре: <strong>2090+</strong> | Последнее обновление: <span id="update-date">—</span>
+            Всего часов в игре: <strong>2100+</strong> | Последнее обновление: <span id="update-date">—</span>
         </p>
 
         <div class="content-block">
@@ -524,7 +524,7 @@
         <p>© 2025–2026 RIPSITE · Все права защищены</p>
     </footer>
     <script src="agreement.js" defer></script>
-    <script src="csstats.js"></script>
+    <script src="files/other/csstats.js"></script>
     <script>
         document.getElementById("update-date").textContent = csstats.lastModified.toLocaleDateString("ru-RU");
         const statsGrid = document.getElementById("stats-grid");
@@ -600,12 +600,12 @@
             
             if (mode === "duo" && ratingStr.startsWith("S")) {
                 const num = ratingStr.substring(1);
-                return `<img src="images/cs/wingman${num}.svg" alt="${ratingStr}" style="width:80px; height:auto; vertical-align:middle; margin-left:-10px;">`;
+                return `<img src="files/images/cs/wingman${num}.svg" alt="${ratingStr}" style="width:80px; height:auto; vertical-align:middle; margin-left:-10px;">`;
             }
             
             if (mode === "comp" && ratingStr.startsWith("MM")) {
                 const num = ratingStr.substring(2);
-                return `<img src="images/cs/competitive${num}.svg" alt="${ratingStr}" style="width:80px; height:auto; vertical-align:middle; margin-left:-10px;">`;
+                return `<img src="files/images/cs/competitive${num}.svg" alt="${ratingStr}" style="width:80px; height:auto; vertical-align:middle; margin-left:-10px;">`;
             }
             
             return ratingStr;
@@ -769,7 +769,7 @@
 
             const map = mapFilterStats.value;
             document.getElementById("stats-map-icon").style.display = map !== "all" ? "inline" : "none";
-            if (map !== "all") document.getElementById("stats-map-icon").src = `images/cs/${map.toLowerCase()}.png`;
+            if (map !== "all") document.getElementById("stats-map-icon").src = `files/images/cs/${map.toLowerCase()}.png`;
         }
 
         function renderMatches() {
@@ -791,7 +791,7 @@
 
             const mapFilterValue = filterMap.value;
             if (mapFilterValue !== "all") {
-                document.getElementById("history-map-icon").src = `images/cs/${mapFilterValue.toLowerCase()}.png`;
+                document.getElementById("history-map-icon").src = `files/images/cs/${mapFilterValue.toLowerCase()}.png`;
                 document.getElementById("history-map-icon").style.display = "inline";
             } else {
                 document.getElementById("history-map-icon").style.display = "none";
@@ -879,7 +879,7 @@
                         div.className = "match advanced";
                         div.innerHTML = `
                             <div class="match-date">${m[0]}</div>
-                            <div class="match-map"><img src="images/cs/${m[1].toLowerCase()}.png" alt="${m[1]}" style="width:32px; vertical-align:middle; margin-right:8px;">${m[1]}</div>
+                            <div class="match-map"><img src="files/images/cs/${m[1].toLowerCase()}.png" alt="${m[1]}" style="width:32px; vertical-align:middle; margin-right:8px;">${m[1]}</div>
                             <div class="match-score ${scoreClass}">${m[2]}</div>
                             <div class="match-rating ${ratingClass}" style="color: ${result === 'win' ? '#22c55e' : result === 'loss' ? '#ef4444' : 'inherit'};">${ratingDisplay}</div>
                             <div class="match-kda">${m[5]}K / ${m[6]}D / ${m[7]}A</div>
@@ -929,7 +929,7 @@
                         <tr style="cursor:pointer;">
                             <td style="text-align:left; white-space:nowrap;">${m[0]}</td>
                             <td></td>
-                            <td><img src="images/cs/${m[1].toLowerCase()}.png" alt="${m[1]}" style="width:24px; vertical-align:middle; margin-right:6px;">${m[1]}</td>
+                            <td><img src="files/images/cs/${m[1].toLowerCase()}.png" alt="${m[1]}" style="width:24px; vertical-align:middle; margin-right:6px;">${m[1]}</td>
                             <td class="${scoreClass}">${m[2]}</td>
                             <td style="text-align:center; font-weight:600; color: ${result === 'win' ? '#22c55e' : result === 'loss' ? '#ef4444' : 'inherit'};">${ratingDisplay}</td>
                             <td>${m[5]}</td>

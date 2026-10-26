@@ -1401,7 +1401,7 @@
                 }
 
                 const game = getGameByTitle(earliestMatch.title);
-                const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+                const imagePath = `files/images/Gameicon/${makeImageName(game.title)}.png`;
                 const rankClass = game.rang ? `rank-${game.rang}` : '';
                 const rankDisplay = game.rang || '?';
 
@@ -1426,7 +1426,7 @@
             if (!game) return;
 
             hideHoverPreview();
-            const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+            const imagePath = `files/images/Gameicon/${makeImageName(game.title)}.png`;
             updateURL(title);
             showReview(game.title, game.comment, game.rang, imagePath, game.date || '');
         }
@@ -1519,7 +1519,7 @@
         }
 
         function buildGameCard(game, clickable = true) {
-            const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+            const imagePath = `files/images/Gameicon/${makeImageName(game.title)}.png`;
 
             const card = document.createElement('div');
             card.className = 'game-card';
@@ -1884,7 +1884,7 @@
                 if (gameTitle) {
                     const game = getGameByTitle(gameTitle);
                     if (game) {
-                        const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+                        const imagePath = `files/images/Gameicon/${makeImageName(game.title)}.png`;
                         showReview(game.title, game.comment, game.rang, imagePath, game.date || '');
                     }
                 }
@@ -1898,7 +1898,7 @@
             if (gameTitle) {
                 const game = getGameByTitle(gameTitle);
                 if (game) {
-                    const imagePath = `images/Gameicon/${makeImageName(game.title)}.png`;
+                    const imagePath = `files/images/Gameicon/${makeImageName(game.title)}.png`;
                     showReview(game.title, game.comment, game.rang, imagePath, game.date || '');
                     history.replaceState({ modal: true, fullscreen: false, game: gameTitle }, '', window.location.href);
                 } else {
