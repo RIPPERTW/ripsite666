@@ -52,7 +52,7 @@ jobs:
           const html = fs.readFileSync('dist/games.html', 'utf8');
           const titles = [...html.matchAll(/title\s*:\s*"([^"]+)"/g)].map(m => m[1]);
           const dirs = [
-            'dist/images/Gameicon',
+            'dist/Files/images/Gameicon',
             'dist/Files/RIPMORE/images/Gameicon',
             'dist/Files/Other/images/Gameicon',
             'dist/Files/RIPMORE/Gameicon',
