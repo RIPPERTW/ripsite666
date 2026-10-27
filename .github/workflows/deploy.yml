@@ -28,20 +28,17 @@ jobs:
 
       - name: Normalize cs icons
         run: |
-          for base in dist/images/cs dist/Files/RIPMORE/images/cs dist/Files/Other/images/cs; do
-            cd "$base" 2>/dev/null || continue
-            find . -type f \( -iname '*.png' -o -iname '*.svg' \) | while IFS= read -r f; do
-              d=$(dirname "$f"); b=$(basename "$f"); ext="${b##*.}"; name="${b%.*}"
-              l=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
-              lext=$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')
-              new="${l}.${lext}"
-              [ "$b" = "$new" ] && continue
-              if [ -e "$d/$new" ]; then
-                echo "COLLISION: $f vs $d/$new"; exit 1
-              fi
-              mv -- "$f" "$d/$new"
-            done
-            cd - >/dev/null
+          cd dist/images/cs 2>/dev/null || exit 0
+          find . -type f \( -iname '*.png' -o -iname '*.svg' \) | while IFS= read -r f; do
+            d=$(dirname "$f"); b=$(basename "$f"); ext="${b##*.}"; name="${b%.*}"
+            l=$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]')
+            lext=$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')
+            new="${l}.${lext}"
+            [ "$b" = "$new" ] && continue
+            if [ -e "$d/$new" ]; then
+              echo "COLLISION: $f vs $d/$new"; exit 1
+            fi
+            mv -- "$f" "$d/$new"
           done
 
       - name: Normalize game icons
@@ -51,91 +48,28 @@ jobs:
           const path = require('path');
           const html = fs.readFileSync('dist/games.html', 'utf8');
           const titles = [...html.matchAll(/title\s*:\s*"([^"]+)"/g)].map(m => m[1]);
-          const dirs = [
-            'dist/images/Gameicon',
-            'dist/Files/RIPMORE/images/Gameicon',
-            'dist/Files/Other/images/Gameicon',
-            'dist/Files/RIPMORE/Gameicon',
-            'dist/Files/Other/Gameicon'
-          ];
+          const dir = 'dist/images/Gameicon';
+          if (!fs.existsSync(dir)) process.exit(0);
+          const files = fs.readdirSync(dir);
           const norm = (s) => s.toLowerCase().replace(/\s+/g, '_');
           const stripExt = (f) => f.replace(/\.[^.]+$/, '');
           const ext = (f) => f.match(/\.[^.]+$/)?.[0] ?? '';
-          for (const dir of dirs) {
-            if (!fs.existsSync(dir)) continue;
-            const files = fs.readdirSync(dir);
-            for (const title of titles) {
-              const want = norm(title);
-              const real = files.find(f => norm(stripExt(f)) === want);
-              if (!real) continue;
-              const target = want + ext(real).toLowerCase();
-              if (real === target) continue;
-              const from = path.join(dir, real);
-              const to = path.join(dir, target);
-              if (fs.existsSync(to)) { console.log('COLLISION:', from, 'vs', to); process.exit(1); }
-              fs.renameSync(from, to);
-              console.log('renamed:', real, '->', target);
-            }
+          for (const title of titles) {
+            const want = norm(title);
+            const real = files.find(f => norm(stripExt(f)) === want);
+            if (!real) continue;
+            const target = want + ext(real).toLowerCase();
+            if (real === target) continue;
+            const from = path.join(dir, real);
+            const to = path.join(dir, target);
+            if (fs.existsSync(to)) { console.log('COLLISION:', from, 'vs', to); process.exit(1); }
+            fs.renameSync(from, to);
+            console.log('renamed:', real, '->', target);
           }
           EOF
 
       - name: Fix references to real filenames
         run: node scripts/fix-links.mjs dist
-
-      - name: Fix path case sensitivity
-        run: |
-          node - <<'EOF'
-          const fs = require('fs');
-          const path = require('path');
-          const EXTS = new Set(['.html','.htm','.css','.js']);
-          const cache = new Map();
-          function listDir(dir) {
-            if (cache.has(dir)) return cache.get(dir);
-            let entries = [];
-            try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch {}
-            cache.set(dir, entries);
-            return entries;
-          }
-          function findReal(root, urlPath) {
-            const segs = decodeURIComponent(urlPath).split('/').filter(Boolean);
-            let cur = root;
-            for (const seg of segs) {
-              const entries = listDir(cur);
-              let match = entries.find(e => e.name === seg);
-              if (!match) match = entries.find(e => e.name.toLowerCase() === seg.toLowerCase());
-              if (!match) return null;
-              cur = path.join(cur, match.name);
-            }
-            return cur;
-          }
-          function walk(dir) {
-            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-              const p = path.join(dir, e.name);
-              if (e.isDirectory()) { walk(p); continue; }
-              if (!EXTS.has(path.extname(e.name).toLowerCase())) continue;
-              let src = fs.readFileSync(p, 'utf8');
-              let changed = false;
-              src = src.replace(/\b(src|href)\s*=\s*(["'])([^"']+)\2/gi, (m, attr, q, val) => {
-                if (/^(https?:)?\/\//i.test(val) || val.startsWith('data:') || val.startsWith('#') || val.startsWith('mailto:') || val.startsWith('tel:')) return m;
-                const mm = val.match(/^([^?#]+)([?#].*)?$/);
-                if (!mm) return m;
-                const pathPart = mm[1], tail = mm[2] ?? '';
-                const isRoot = pathPart.startsWith('/');
-                const base = isRoot ? 'dist' : path.dirname(p);
-                const rel = isRoot ? pathPart.replace(/^\//, '') : pathPart;
-                const real = findReal(base, rel);
-                if (!real) return m;
-                let relOut = real.slice(base.length).replace(/\\/g, '/');
-                if (relOut.startsWith('/')) relOut = relOut.slice(1);
-                const out = (isRoot ? '/' : '') + relOut + tail;
-                if (out !== val) { changed = true; return `${attr}=${q}${out}${q}`; }
-                return m;
-              });
-              if (changed) { fs.writeFileSync(p, src, 'utf8'); console.log('fixed case:', p); }
-            }
-          }
-          walk('dist');
-          EOF
 
       - name: Sanity check
         run: |
