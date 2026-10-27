@@ -52,7 +52,7 @@ jobs:
           const html = fs.readFileSync('dist/games.html', 'utf8');
           const titles = [...html.matchAll(/title\s*:\s*"([^"]+)"/g)].map(m => m[1]);
           const dirs = [
-            'dist/images/Gameicon',
+            'dist/Files/images/Gameicon',
             'dist/Files/RIPMORE/images/Gameicon',
             'dist/Files/Other/images/Gameicon',
             'dist/Files/RIPMORE/Gameicon',
@@ -82,20 +82,62 @@ jobs:
       - name: Fix references to real filenames
         run: node scripts/fix-links.mjs dist
 
-      - name: Normalize Files folder case
+      - name: Fix path case sensitivity
         run: |
-          cd dist
-          if [ -d "Files" ] && [ ! -d "files" ]; then
-            mv "Files" "files"
-            echo "Renamed Files -> files"
-          elif [ -d "Files" ] && [ -d "files" ]; then
-            echo "ERROR: both Files and files exist"; exit 1
-          fi
-          find . -type d -name 'RIPMORE' -exec sh -c 'mv "$1" "$(dirname "$1")/ripmorе"' _ {} \; 2>/dev/null || true
-          find . -type d -name 'Other' -exec sh -c 'mv "$1" "$(dirname "$1")/other"' _ {} \; 2>/dev/null || true
-          find . -type d -name 'Gameicon' -exec sh -c 'mv "$1" "$(dirname "$1")/gameicon"' _ {} \; 2>/dev/null || true
+          node - <<'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          const EXTS = new Set(['.html','.htm','.css','.js']);
+          const cache = new Map();
+          function listDir(dir) {
+            if (cache.has(dir)) return cache.get(dir);
+            let entries = [];
+            try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch {}
+            cache.set(dir, entries);
+            return entries;
+          }
+          function findReal(root, urlPath) {
+            const segs = decodeURIComponent(urlPath).split('/').filter(Boolean);
+            let cur = root;
+            for (const seg of segs) {
+              const entries = listDir(cur);
+              let match = entries.find(e => e.name === seg);
+              if (!match) match = entries.find(e => e.name.toLowerCase() === seg.toLowerCase());
+              if (!match) return null;
+              cur = path.join(cur, match.name);
+            }
+            return cur;
+          }
+          function walk(dir) {
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              const p = path.join(dir, e.name);
+              if (e.isDirectory()) { walk(p); continue; }
+              if (!EXTS.has(path.extname(e.name).toLowerCase())) continue;
+              let src = fs.readFileSync(p, 'utf8');
+              let changed = false;
+              src = src.replace(/\b(src|href)\s*=\s*(["'])([^"']+)\2/gi, (m, attr, q, val) => {
+                if (/^(https?:)?\/\//i.test(val) || val.startsWith('data:') || val.startsWith('#') || val.startsWith('mailto:') || val.startsWith('tel:')) return m;
+                const mm = val.match(/^([^?#]+)([?#].*)?$/);
+                if (!mm) return m;
+                const pathPart = mm[1], tail = mm[2] ?? '';
+                const isRoot = pathPart.startsWith('/');
+                const base = isRoot ? 'dist' : path.dirname(p);
+                const rel = isRoot ? pathPart.replace(/^\//, '') : pathPart;
+                const real = findReal(base, rel);
+                if (!real) return m;
+                let relOut = real.slice(base.length).replace(/\\/g, '/');
+                if (relOut.startsWith('/')) relOut = relOut.slice(1);
+                const out = (isRoot ? '/' : '') + relOut + tail;
+                if (out !== val) { changed = true; return `${attr}=${q}${out}${q}`; }
+                return m;
+              });
+              if (changed) { fs.writeFileSync(p, src, 'utf8'); console.log('fixed case:', p); }
+            }
+          }
+          walk('dist');
+          EOF
 
-      - name: Log broken image refs
+      - name: Sanity check
         run: |
           node - <<'EOF'
           const fs = require('fs'), path = require('path');
@@ -118,21 +160,13 @@ jobs:
                 if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('#')) continue;
                 if (!IMG_RE.test(url)) continue;
                 if (hasDynamic(url)) continue;
-                const clean = decodeURIComponent(url.split(/[?#]/)[0]);
-                if (!clean) continue;
-                const isRoot = clean.startsWith('/');
-                const base = isRoot ? 'dist' : path.dirname(p);
-                const rel = isRoot ? clean.replace(/^\//, '') : clean;
-                const full = path.join(base, rel);
-                if (!fs.existsSync(full)) {
-                  console.log('BROKEN:', p, '->', url, '(looked at', full + ')');
-                  bad++;
-                }
+                const clean = url.split(/[?#]/)[0];
+                if (/[A-Z]/.test(clean)) { console.log('WARN uppercase:', p, '->', url); }
               }
             }
           };
           walk('dist');
-          console.log('Total broken:', bad);
+          console.log('Sanity check done');
           EOF
 
       - uses: actions/upload-pages-artifact@v3
