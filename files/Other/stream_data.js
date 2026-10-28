@@ -1,4 +1,11 @@
 streamData = {
+  "2026-02-19": [
+    ["Just Chatting", "0:16:59"],
+    ["Everlasting Summer", "0:36:40"],
+    ["Counter-Strike", "1:08:00"],
+    ["Forager", "4:29:20"],
+    ["SUPERHOT: MIND CONTROL DELETE", "0:47:31"],
+  ],
   "2026-02-20": [
     ["Just Chatting", "0:49:23"],
     ["PEAK", "1:18:00"],

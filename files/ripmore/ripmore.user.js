@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RIPMORE
 // @namespace    https://ripsite666.netlify.app/
-// @version      1.2
+// @version      1.3
 // @description  RIPMORE - скрипт который служит улучшением для пользователей RIPSITE
 // @author       RIPPER
 // @match        https://dzen.ru/*
@@ -1942,7 +1942,6 @@
             let smileButtonInterval = null;
             let twitchInitToken = 0;
 
-            const TWITCH_DB_PATH = '/BD/twitch_database.json';
             const THEME = {
                 bg: '#09090f', card: '#101015', accent: '#c11f2b', accentHover: '#d4232f',
                 gold: '#f5c518', silver: '#c0c0c0', bronze: '#cd7f32',
@@ -1951,18 +1950,12 @@
             };
             const FONT = "'Inter', system-ui, -apple-system, sans-serif";
             const FONT_TITLE = "'Orbitron', 'Inter', sans-serif";
-            const DATA_SINCE_TEXT_MINUTES = 'Данные берутся с 06.10.2026';
-            const DATA_SINCE_TEXT_MEDALS = 'Данные берутся с 20.02.2026';
             const MAX_VISIBLE_ROWS = 10;
             const ROW_HEIGHT_PX = 34;
             const ROW_GAP_PX = 4;
             const LIST_PADDING_PX = 8;
 
-            let TWITCH_DB = null;
-            let TWITCH_DB_DATE = null;
-            let TWITCH_DB_LOADING = false;
             let TWITCH_RANK_MAP = null;
-            let LEADERBOARD_MODE = 'minutes';
             let SMILE_MAP = {};
             let MEDALS_MAP = {};
 
@@ -1992,7 +1985,6 @@
                     const users = MEDALS_MAP[key].users || [];
                     for (const u of users) set.add(String(u).toLowerCase());
                 }
-                if (TWITCH_DB) for (const e of TWITCH_DB) set.add(e.username);
                 return set.size;
             }
 
@@ -2000,16 +1992,6 @@
                 const total = getTotalUniqueUsers();
                 if (total === 0) return 0;
                 return Math.round((getMedalsUsers(medalKey).length / total) * 100);
-            }
-
-            function formatMinutes(totalMinutes) {
-                const m = Math.max(0, Math.floor(Number(totalMinutes) || 0));
-                if (m === 0) return '0м';
-                const h = Math.floor(m / 60);
-                const min = m % 60;
-                if (h === 0) return min + 'м';
-                if (min === 0) return h + 'ч';
-                return h + 'ч ' + min + 'м';
             }
 
             let SMILE_KEYS = [];
@@ -3018,22 +3000,6 @@
                 document.querySelectorAll('.chat-line__message').forEach(processSubtree);
             }
 
-            function twitchFetchDatabase() {
-                const base = getBaseUrl();
-                return gmFetchJson(base + TWITCH_DB_PATH, DB_TIMEOUT_MS).catch(err => {
-                    if (base === PRIMARY_BASE) return gmFetchJson(MIRROR_BASE + TWITCH_DB_PATH, DB_TIMEOUT_MS);
-                    throw err;
-                });
-            }
-
-            function twitchExtractEntries(data) {
-                if (Array.isArray(data)) return { entries: data, date: null };
-                if (data && data.leaderboard) {
-                    return { entries: Array.isArray(data.leaderboard.data) ? data.leaderboard.data : [], date: data.leaderboard.date || null };
-                }
-                return { entries: [], date: null };
-            }
-
             function twitchGetColorByPosition(pos) {
                 if (pos === 1) return THEME.gold;
                 if (pos === 2) return THEME.silver;
@@ -3043,69 +3009,20 @@
 
             function twitchBuildRankMap() {
                 const map = new Map();
-                if (!TWITCH_DB) return map;
-                const sorted = TWITCH_DB.slice().sort((a, b) => b.minutes - a.minutes);
-                sorted.forEach((entry, idx) => {
+                const userMedalCount = new Map();
+                for (const key of Object.keys(MEDALS_MAP)) {
+                    const users = MEDALS_MAP[key] && Array.isArray(MEDALS_MAP[key].users) ? MEDALS_MAP[key].users : [];
+                    for (const u of users) {
+                        const lname = String(u).toLowerCase();
+                        userMedalCount.set(lname, (userMedalCount.get(lname) || 0) + 1);
+                    }
+                }
+                const sorted = [...userMedalCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+                sorted.forEach(([username, count], idx) => {
                     const pos = idx + 1;
-                    map.set(entry.username, { minutes: entry.minutes, color: twitchGetColorByPosition(pos), position: pos });
+                    map.set(username, { medals: count, color: twitchGetColorByPosition(pos), position: pos });
                 });
                 return map;
-            }
-
-            function twitchLoadDatabase() {
-                if (TWITCH_DB_LOADING || TWITCH_DB) return;
-                const token = twitchInitToken;
-                TWITCH_DB_LOADING = true;
-                twitchFetchDatabase()
-                    .then(data => {
-                        if (token !== twitchInitToken || !twitchInitialized || !isRipperChannel) { TWITCH_DB_LOADING = false; return; }
-                        const { entries, date } = twitchExtractEntries(data);
-                        TWITCH_DB_DATE = date;
-                        TWITCH_DB = entries.filter(x => x && typeof x.username === 'string').map(x => ({
-                            username: x.username.toLowerCase(),
-                            displayUsername: x.username,
-                            minutes: Number(x.minutes) || 0
-                        }));
-                        TWITCH_RANK_MAP = twitchBuildRankMap();
-                        TWITCH_DB_LOADING = false;
-                        twitchScanAndApply(true);
-                        if (isEnabled('twitch_leaderboard')) twitchReplaceLeaderboardPanels();
-                    })
-                    .catch(e => {
-                        if (token !== twitchInitToken || !twitchInitialized || !isRipperChannel) { TWITCH_DB_LOADING = false; return; }
-                        TWITCH_DB_LOADING = false;
-                        TWITCH_DB = [];
-                        TWITCH_RANK_MAP = new Map();
-                        console.warn('RIPMORE Twitch: db load failed', e);
-                        if (isEnabled('twitch_leaderboard')) twitchShowMirrorOfferFallback();
-                    });
-            }
-
-            function twitchShowMirrorOfferFallback() {
-                if (!isRipperChannel) return;
-                document.querySelectorAll('.extension-panel').forEach(panel => {
-                    if (!twitchIsLeaderboardPanel(panel)) return;
-                    const iframeContainer = panel.querySelector('[data-selector="iframe_container_selector"]') || panel.querySelector('[data-test-selector="iframe_container_selector"]');
-                    if (iframeContainer && !iframeContainer.querySelector('.ripper-mirror-offer')) {
-                        const offer = buildOfferViewer('twitch');
-                        offer._onRetry = () => {
-                            const o = document.getElementById(offer.id);
-                            if (o) o.remove();
-                            TWITCH_DB = null;
-                            TWITCH_RANK_MAP = null;
-                            twitchLoadDatabase();
-                        };
-                        offer._onMirror = () => {
-                            const o = document.getElementById(offer.id);
-                            if (o) o.remove();
-                            TWITCH_DB = null;
-                            TWITCH_RANK_MAP = null;
-                            twitchLoadDatabase();
-                        };
-                        while (iframeContainer.firstChild) iframeContainer.removeChild(iframeContainer.firstChild);
-                        iframeContainer.appendChild(offer);
-                    }
-                });
             }
 
             function twitchInjectStyles() {
@@ -3116,20 +3033,13 @@
                     .ripper-rank-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;min-width:18px;margin-right:5px;border-radius:4px;background:${THEME.bg};color:#fff;font-family:${FONT};font-weight:800;font-size:12px;line-height:1;vertical-align:middle;position:relative;cursor:pointer;user-select:none;box-shadow:inset 0 0 0 1.5px currentColor;z-index:1}
                     .ripper-rank-tooltip{position:fixed;z-index:2147483647;background:${THEME.bg};color:${THEME.text};font-family:${FONT};font-size:12px;font-weight:600;line-height:1.3;padding:6px 10px;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.7);pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .12s}
                     .ripper-rank-tooltip.visible{opacity:1}
-                    .ripper-rank-tooltip .rr-minutes{color:${THEME.red};font-weight:800}
+                    .ripper-rank-tooltip .rr-medals{color:${THEME.red};font-weight:800}
                     .ripper-leaderboard{font-family:${FONT};background:${THEME.bg};color:${THEME.text};display:flex;flex-direction:column;height:100%;width:100%;box-sizing:border-box;overflow:hidden}
                     .ripper-leaderboard *{box-sizing:border-box}
                     .ripper-leaderboard-header{padding:14px 16px 10px;border-bottom:1px solid ${THEME.border};display:flex;flex-direction:column;gap:8px;flex-shrink:0}
                     .ripper-leaderboard-title-row{display:flex;align-items:center;gap:8px}
                     .ripper-leaderboard-title{font-family:${FONT_TITLE};font-weight:700;font-size:15px;letter-spacing:.5px;color:${THEME.text};display:flex;align-items:center;gap:8px;flex:1}
                     .ripper-leaderboard-title .rl-accent{display:inline-block;width:4px;height:16px;background:${THEME.red};border-radius:2px}
-                    .ripper-leaderboard-modes{display:flex;gap:4px;background:${THEME.card};border:1px solid ${THEME.border};border-radius:6px;padding:2px}
-                    .ripper-leaderboard-mode-btn{font-family:${FONT};font-size:11px;font-weight:700;padding:4px 10px;border-radius:4px;border:none;background:transparent;color:${THEME.textMuted};cursor:pointer;transition:background .12s,color .12s}
-                    .ripper-leaderboard-mode-btn:hover{color:${THEME.text};background:rgba(255,255,255,.06)}
-                    .ripper-leaderboard-mode-btn.active{background:${THEME.accent};color:#fff}
-                    .ripper-leaderboard-date{font-size:11.5px;color:${THEME.textMuted};letter-spacing:.3px;font-weight:500;display:flex;align-items:center;gap:6px}
-                    .ripper-leaderboard-date>span{color:${THEME.text};font-weight:600}
-                    .ripper-help-icon{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;min-width:14px;border-radius:50%;background:${THEME.border};color:${THEME.textMuted};font-size:10px;font-weight:800;font-family:${FONT};cursor:help;user-select:none;line-height:1}
                     .ripper-leaderboard-list{flex:1;overflow-y:auto;padding:8px 8px 12px;display:flex;flex-direction:column;gap:${ROW_GAP_PX}px;scrollbar-width:thin;scrollbar-color:${THEME.border} transparent}
                     .ripper-leaderboard-list::-webkit-scrollbar{width:6px}
                     .ripper-leaderboard-list::-webkit-scrollbar-thumb{background:${THEME.border};border-radius:3px}
@@ -3142,8 +3052,6 @@
                     .ripper-leaderboard-place.top3{color:${THEME.bronze}}
                     .ripper-leaderboard-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;min-width:18px;border-radius:4px;background:${THEME.bg};font-family:${FONT};font-weight:800;font-size:12px;line-height:1;flex-shrink:0;box-shadow:inset 0 0 0 1.5px currentColor;position:relative;cursor:pointer;user-select:none}
                     .ripper-leaderboard-name{flex:1;min-width:0;font-size:13px;font-weight:600;color:${THEME.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-                    .ripper-leaderboard-minutes{font-size:12px;font-weight:700;color:${THEME.textMuted};flex-shrink:0;font-variant-numeric:tabular-nums}
-                    .ripper-leaderboard-minutes span{color:${THEME.text}}
                     .ripper-leaderboard-medals-count{font-size:12px;font-weight:700;color:${THEME.textMuted};flex-shrink:0;font-variant-numeric:tabular-nums}
                     .ripper-leaderboard-medals-count span{color:${THEME.text}}
                     .ripper-leaderboard-total{font-size:11.5px;font-weight:600;color:${THEME.textMuted};padding:6px 16px 0;flex-shrink:0}
@@ -3191,7 +3099,7 @@
             function isHiddenTwitchUser(username) {
                 return !!username && TWITCH_HIDDEN_USERS.has(String(username).toLowerCase());
             }
-            function twitchMakeBadge(color, minutes, username) {
+            function twitchMakeBadge(color, medals, username) {
                 if (isHiddenTwitchUser(username)) return null;
                 const b = document.createElement('span');
                 b.className = 'ripper-rank-badge';
@@ -3199,8 +3107,12 @@
                 b.dataset.color = color;
                 b.textContent = 'R';
                 b.dataset.ripperUser = username || '';
-                b.dataset.minutes = String(minutes);
-                b.addEventListener('mouseenter', () => twitchShowTooltip(b, `Просмотрено: <span class="rr-minutes">${formatMinutes(minutes)}</span>`));
+                b.dataset.medals = String(medals);
+                b.addEventListener('mouseenter', () => {
+                    const count = getUserMedals(username).length;
+                    const text = count === 0 ? 'Нет достижений' : `Достижений: <span class="rr-medals">${count}</span>`;
+                    twitchShowTooltip(b, text);
+                });
                 b.addEventListener('mouseleave', twitchHideTooltip);
                 b.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -3230,7 +3142,7 @@
                 if (!isRankBadgesEnabled()) { if (existing) existing.remove(); return; }
                 if (!info) {
                     if (existing) {
-                        if (existing.dataset.minutes === '0' && existing.dataset.color === THEME.gray) {
+                        if (existing.dataset.medals === '0' && existing.dataset.color === THEME.gray) {
                             attachMiniMedalToBadge(existing, username);
                             return;
                         }
@@ -3241,12 +3153,12 @@
                     return;
                 }
                 if (existing) {
-                    if (existing.dataset.minutes !== String(info.minutes) || existing.dataset.color !== info.color) existing.remove();
+                    if (existing.dataset.medals !== String(info.medals) || existing.dataset.color !== info.color) existing.remove();
                     else { attachMiniMedalToBadge(existing, username); return; }
                 }
-                const badge = twitchMakeBadge(info.color, info.minutes, username);
+                const badge = twitchMakeBadge(info.color, info.medals, username);
                 if (badge) {
-                    badge.dataset.minutes = String(info.minutes);
+                    badge.dataset.medals = String(info.medals);
                     parent.insertBefore(badge, parent.firstChild);
                 }
             }
@@ -3266,28 +3178,19 @@
             }
 
             function twitchGetLeaderboardRows() {
-                if (LEADERBOARD_MODE === 'medals') {
-                    const map = new Map();
-                    const db = TWITCH_DB || [];
-                    for (const e of db) {
-                        const medalsCount = getUserMedals(e.username).length;
-                        if (medalsCount === 0) continue;
-                        map.set(e.username, { username: e.username, displayUsername: e.displayUsername || e.username, minutes: e.minutes, inDb: true });
+                const map = new Map();
+                for (const key of Object.keys(MEDALS_MAP)) {
+                    const users = MEDALS_MAP[key] && Array.isArray(MEDALS_MAP[key].users) ? MEDALS_MAP[key].users : [];
+                    for (const u of users) {
+                        const lname = String(u).toLowerCase();
+                        if (!map.has(lname)) map.set(lname, { username: lname, displayUsername: String(u) });
                     }
-                    for (const key of Object.keys(MEDALS_MAP)) {
-                        const users = MEDALS_MAP[key].users || [];
-                        for (const u of users) {
-                            const lname = String(u).toLowerCase();
-                            if (!map.has(lname)) map.set(lname, { username: lname, displayUsername: String(u), minutes: 0, inDb: false });
-                        }
-                    }
-                    const rows = [...map.values()];
-                    rows.forEach(row => { row.medalsCount = getUserMedals(row.username).length; });
-                    rows.sort((a, b) => b.medalsCount - a.medalsCount || b.minutes - a.minutes);
-                    rows.forEach((row, idx) => { row.color = twitchGetColorByPosition(idx + 1); });
-                    return rows;
                 }
-                return (TWITCH_DB || []).slice().sort((a, b) => b.minutes - a.minutes);
+                const rows = [...map.values()];
+                rows.forEach(row => { row.medalsCount = getUserMedals(row.username).length; });
+                rows.sort((a, b) => b.medalsCount - a.medalsCount || a.username.localeCompare(b.username));
+                rows.forEach((row, idx) => { row.color = twitchGetColorByPosition(idx + 1); });
+                return rows;
             }
 
             function twitchBuildLeaderboard() {
@@ -3304,48 +3207,10 @@
 
                 const title = document.createElement('div');
                 title.className = 'ripper-leaderboard-title';
-                title.innerHTML = '<span class="rl-accent"></span>Топ зрителей';
+                title.innerHTML = '<span class="rl-accent"></span>Топ по достижениям';
 
-                const modes = document.createElement('div');
-                modes.className = 'ripper-leaderboard-modes';
-
-                const btnMin = document.createElement('button');
-                btnMin.type = 'button';
-                btnMin.className = 'ripper-leaderboard-mode-btn' + (LEADERBOARD_MODE === 'minutes' ? ' active' : '');
-                btnMin.textContent = 'Время';
-                btnMin.addEventListener('click', (e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    LEADERBOARD_MODE = 'minutes';
-                    twitchRefreshLeaderboard();
-                });
-
-                const btnMed = document.createElement('button');
-                btnMed.type = 'button';
-                btnMed.className = 'ripper-leaderboard-mode-btn' + (LEADERBOARD_MODE === 'medals' ? ' active' : '');
-                btnMed.textContent = 'Достижения';
-                btnMed.addEventListener('click', (e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    LEADERBOARD_MODE = 'medals';
-                    twitchRefreshLeaderboard();
-                });
-
-                modes.appendChild(btnMin);
-                modes.appendChild(btnMed);
                 titleRow.appendChild(title);
-                titleRow.appendChild(modes);
                 header.appendChild(titleRow);
-
-                const dateRow = document.createElement('div');
-                dateRow.className = 'ripper-leaderboard-date';
-                dateRow.innerHTML = `<span>Данные на: ${TWITCH_DB_DATE || '—'}</span><span class="ripper-help-icon" data-ripper-help="1">?</span>`;
-                const helpIcon = dateRow.querySelector('.ripper-help-icon');
-                if (helpIcon) {
-                    helpIcon.addEventListener('mouseenter', () => {
-                        twitchShowTooltip(helpIcon, LEADERBOARD_MODE === 'medals' ? DATA_SINCE_TEXT_MEDALS : DATA_SINCE_TEXT_MINUTES);
-                    });
-                    helpIcon.addEventListener('mouseleave', twitchHideTooltip);
-                }
-                header.appendChild(dateRow);
 
                 const totalRow = document.createElement('div');
                 totalRow.className = 'ripper-leaderboard-total';
@@ -3365,9 +3230,7 @@
                 } else {
                     rows.forEach((entry, idx) => {
                         const pos = idx + 1;
-                        const color = LEADERBOARD_MODE === 'medals'
-                            ? (entry.color || twitchGetColorByPosition(pos))
-                            : (entry.inDb !== false ? twitchGetColorByPosition(pos) : THEME.gray);
+                        const color = entry.color || twitchGetColorByPosition(pos);
                         const row = document.createElement('div');
                         row.className = 'ripper-leaderboard-row';
                         row.style.height = ROW_HEIGHT_PX + 'px';
@@ -3382,32 +3245,13 @@
                         badge.style.color = color;
                         badge.textContent = 'R';
 
-                        if (LEADERBOARD_MODE !== 'medals') {
-                            const medals = getUserMedals(entry.username);
-                            if (medals.length > 0) {
-                                const mini = document.createElement('span');
-                                mini.className = 'ripper-medal-mini';
-                                mini.style.color = color;
-                                mini.style.background = color;
-                                const inner = document.createElement('span');
-                                inner.textContent = String(medals.length);
-                                mini.appendChild(inner);
-                                badge.appendChild(mini);
-                            }
-                        }
-
                         const name = document.createElement('div');
                         name.className = 'ripper-leaderboard-name';
                         name.textContent = entry.displayUsername || entry.username;
 
                         const tail = document.createElement('div');
-                        if (LEADERBOARD_MODE === 'medals') {
-                            tail.className = 'ripper-leaderboard-medals-count';
-                            tail.innerHTML = `<span>${entry.medalsCount}</span> достиж.`;
-                        } else {
-                            tail.className = 'ripper-leaderboard-minutes';
-                            tail.innerHTML = `<span>${formatMinutes(entry.minutes)}</span>`;
-                        }
+                        tail.className = 'ripper-leaderboard-medals-count';
+                        tail.innerHTML = `<span>${entry.medalsCount}</span> достиж.`;
 
                         row.appendChild(place);
                         row.appendChild(badge);
@@ -3426,7 +3270,7 @@
             }
 
             function twitchRefreshLeaderboard() {
-                if (!TWITCH_DB || !isEnabled('twitch_leaderboard')) return;
+                if (!isEnabled('twitch_leaderboard')) return;
                 if (!isRipperChannel) return;
                 document.querySelectorAll('.extension-panel').forEach(panel => {
                     if (!twitchIsLeaderboardPanel(panel)) return;
@@ -3464,8 +3308,9 @@
             }
 
             function twitchReplaceLeaderboardPanels() {
-                if (!TWITCH_DB || !isEnabled('twitch_leaderboard')) return;
+                if (!isEnabled('twitch_leaderboard')) return;
                 if (!isRipperChannel) return;
+                if (!MEDALS_MAP || Object.keys(MEDALS_MAP).length === 0) return;
                 document.querySelectorAll('.extension-panel').forEach(panel => {
                     if (!twitchIsLeaderboardPanel(panel)) return;
                     const iframeContainer = panel.querySelector('[data-test-selector="iframe_container_selector"]');
@@ -3514,15 +3359,15 @@
 
                 if (info) {
                     if (badge) {
-                        if (badge.dataset.minutes !== String(info.minutes) || badge.dataset.color !== info.color) { badge.remove(); badge = null; }
+                        if (badge.dataset.medals !== String(info.medals) || badge.dataset.color !== info.color) { badge.remove(); badge = null; }
                     }
                     if (!badge) {
-                        badge = twitchMakeBadge(info.color, info.minutes, username);
+                        badge = twitchMakeBadge(info.color, info.medals, username);
                         displayNameEl.insertBefore(badge, displayNameEl.firstChild);
                     } else attachMiniMedalToBadge(badge, username);
                 } else {
                     if (badge) {
-                        if (badge.dataset.minutes !== '0' || badge.dataset.color !== THEME.gray) { badge.remove(); badge = null; }
+                        if (badge.dataset.medals !== '0' || badge.dataset.color !== THEME.gray) { badge.remove(); badge = null; }
                     }
                     if (!badge) {
                         badge = twitchMakeBadge(THEME.gray, 0, username);
@@ -3768,13 +3613,6 @@
                 }, 10);
             }
 
-            function getMinutesForUser(username) {
-                if (!username || !TWITCH_DB) return null;
-                const lname = String(username).toLowerCase();
-                for (const e of TWITCH_DB) if (e.username === lname) return e.minutes;
-                return null;
-            }
-
             function openMedalsPopup(username, anchorEl) {
                 if (!username) return;
                 closeMedalsPopup();
@@ -3784,7 +3622,6 @@
                 const totalMedals = getAllMedalsCount();
                 const earned = medals.length;
                 const pct = totalMedals > 0 ? Math.round((earned / totalMedals) * 100) : 0;
-                const minutes = getMinutesForUser(username);
 
                 const popup = document.createElement('div');
                 popup.className = 'ripper-medals-popup';
@@ -3806,7 +3643,7 @@
 
                 const titleSub = document.createElement('div');
                 titleSub.className = 'ripper-medals-popup-title-sub';
-                titleSub.textContent = minutes != null ? `${username} (${formatMinutes(minutes)})` : username;
+                titleSub.textContent = username;
 
                 titleWrap.appendChild(titleMain);
                 titleWrap.appendChild(titleSub);
@@ -3992,7 +3829,7 @@
                 twitchInitToken++;
                 twitchInjectStyles();
                 injectMedalStyles();
-                twitchLoadDatabase();
+                TWITCH_RANK_MAP = twitchBuildRankMap();
                 twitchStartObserver();
                 twitchScanAndApply(true);
                 if (twitchInterval) clearInterval(twitchInterval);
@@ -4014,11 +3851,7 @@
                 twitchInitToken++;
                 twitchInitialized = false;
                 smileInitialized = false;
-                TWITCH_DB = null;
                 TWITCH_RANK_MAP = null;
-                TWITCH_DB_LOADING = false;
-                TWITCH_DB_DATE = null;
-                LEADERBOARD_MODE = 'minutes';
                 menuOpen = false;
                 settingsPanelOpen = false;
                 menuSearchQuery = '';
@@ -4094,7 +3927,12 @@
                     MEDALS_MAP = {};
                 }
                 buildSmileCache();
+                TWITCH_RANK_MAP = twitchBuildRankMap();
                 checkChannel();
+                if (twitchInitialized) {
+                    twitchScanAndApply(true);
+                    if (isEnabled('twitch_leaderboard')) twitchReplaceLeaderboardPanels();
+                }
             }
 
             initTwitchData();

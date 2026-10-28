@@ -156,87 +156,6 @@
         #category-chart {
             max-height: 440px;
         }
-        .leaderboard-block {
-            margin-top: 3.5rem;
-            background: rgba(193,31,43,0.06);
-            border: 1px solid rgba(193,31,43,0.18);
-            border-radius: 18px;
-            padding: 2.2rem 2rem;
-        }
-        .leaderboard-block h3 {
-            text-align: center;
-            color: var(--accent);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.9rem;
-            margin-bottom: 0.6rem;
-        }
-        .leaderboard-date {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 1rem;
-            margin-bottom: 1.8rem;
-        }
-        .leaderboard-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.65rem;
-            max-width: 760px;
-            margin: 0 auto;
-        }
-        .leaderboard-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(255,255,255,0.045);
-            padding: 0.85rem 1.4rem;
-            border-radius: 12px;
-            border-left: 4px solid transparent;
-            transition: background 0.2s, border-color 0.2s;
-        }
-        .leaderboard-item:hover {
-            background: rgba(255,255,255,0.07);
-        }
-        .leaderboard-item.rank-1 {
-            border-left-color: #ffd700;
-            background: rgba(255,215,0,0.07);
-        }
-        .leaderboard-item.rank-2 {
-            border-left-color: #c0c0c0;
-            background: rgba(192,192,192,0.06);
-        }
-        .leaderboard-item.rank-3 {
-            border-left-color: #cd7f32;
-            background: rgba(205,127,50,0.06);
-        }
-        .leaderboard-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        .leaderboard-rank {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 1.15rem;
-            color: var(--text-muted);
-            min-width: 2.2rem;
-            text-align: center;
-        }
-        .rank-1 .leaderboard-rank { color: #ffd700; }
-        .rank-2 .leaderboard-rank { color: #c0c0c0; }
-        .rank-3 .leaderboard-rank { color: #cd7f32; }
-        .leaderboard-username {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: var(--text);
-        }
-        .leaderboard-minutes {
-            font-weight: 700;
-            font-size: 1.05rem;
-            color: var(--accent);
-        }
-        .leaderboard-item.rank-1 .leaderboard-minutes { color: #ffd700; }
-        .leaderboard-item.rank-2 .leaderboard-minutes { color: #c0c0c0; }
-        .leaderboard-item.rank-3 .leaderboard-minutes { color: #cd7f32; }
     </style>
 </head>
 <body>
@@ -256,7 +175,7 @@
     <main>
         <h2 class="section-title">TWITCH</h2>
         <p class="intro-text">
-            Статистика проведённых стримов с 20.02.2026 | Последнее обновление: <span id="update-date">—</span>
+            Статистика проведённых стримов с 19.02.2026 | Последнее обновление: <span id="update-date">—</span>
         </p>
         <div class="content-block">
             <div id="loading">Загрузка данных...</div>
@@ -273,12 +192,6 @@
                 <div id="streams-container" style="max-width: 720px; margin: 0 auto;">
                     <canvas id="category-chart"></canvas>
                 </div>
-
-                <div class="leaderboard-block">
-                    <h3>Лидерборд чатеров</h3>
-                    <p class="leaderboard-date">Данные просмотра берутся с 06.10.2026 | Последнее обновление: <span id="leaderboard-date">—</span></p>
-                    <div class="leaderboard-list" id="leaderboard-list"></div>
-                </div>
             </div>
         </div>
     </main>
@@ -289,21 +202,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="files/Other/stream_data.js"></script>
     <script>
-const leaderboard = {
-            date: "18.10.2026",
-            data: [
-                { "username": "kunilai", "minutes": 85 },
-                { "username": "kotyareg", "minutes": 50 },
-                { "username": "podnosi_patroni", "minutes": 35 },
-                { "username": "badbrauser", "minutes": 25 },
-                { "username": "nyknan", "minutes": 15 },
-                { "username": "ggkwl37", "minutes": 15 },
-                { "username": "tackling", "minutes": 10 },
-                { "username": "fisik228", "minutes": 10 },
-                { "username": "1magist", "minutes": 10 },
-                { "username": "nyxara_0x", "minutes": 5 }
-            ]
-        };
         function getLastUpdateDate(data) {
             if (!data || typeof data !== "object" || Object.keys(data).length === 0) {
                 return "—";
@@ -446,36 +344,6 @@ const leaderboard = {
             });
         }
 
-        function renderLeaderboard() {
-            const dateEl = document.getElementById("leaderboard-date");
-            const listEl = document.getElementById("leaderboard-list");
-            if (!dateEl || !listEl) return;
-
-            dateEl.textContent = leaderboard.date;
-
-            const sorted = [...leaderboard.data].sort((a, b) => b.minutes - a.minutes);
-
-            listEl.innerHTML = "";
-
-            sorted.forEach((entry, index) => {
-                const rank = index + 1;
-                const div = document.createElement("div");
-                div.className = "leaderboard-item";
-                if (rank === 1) div.classList.add("rank-1");
-                else if (rank === 2) div.classList.add("rank-2");
-                else if (rank === 3) div.classList.add("rank-3");
-
-                div.innerHTML = `
-                    <div class="leaderboard-left">
-                        <span class="leaderboard-rank">#${rank}</span>
-                        <span class="leaderboard-username">${entry.username}</span>
-                    </div>
-                    <span class="leaderboard-minutes">${minutesToChMM(entry.minutes)}</span>
-                `;
-                listEl.appendChild(div);
-            });
-        }
-
         window.addEventListener("load", () => {
             if (typeof streamData !== "undefined") {
                 const data = streamData.default || streamData;
@@ -487,7 +355,6 @@ const leaderboard = {
                         Убедитесь, что он находится в одной папке с этим файлом.
                     </div>`;
             }
-            renderLeaderboard();
         });
     </script>
 </body>
