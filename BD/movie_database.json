@@ -96,6 +96,22 @@
     "date": ""
   },
   {
+    "slug": "BlackPantherWakandaForever",
+    "title": "Чёрная Пантера: Ваканда навсегда",
+    "rating": "Моя оценка: 7/10",
+    "description": "После смерти короля Т Чаллы королева Рамонда, Шури, М Баку, Окойе и Накия сражаются, чтобы защитить Ваканду от мировых держав.",
+    "image_path": "icon/BlackPantherWakandaForever.png",
+    "episodes": [
+      {
+        "title": "Серия 1",
+        "dzen_id": "okkbuQdoOAAA"
+      }
+    ],
+    "alternative_sources": [],
+    "review": "",
+    "date": ""
+  },
+  {
     "slug": "BlackWidow",
     "title": "Чёрная Вдова",
     "rating": "Моя оценка: 8/10",
