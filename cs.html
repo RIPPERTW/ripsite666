@@ -145,24 +145,149 @@
             margin-bottom: 2.2rem;
             align-items: center;
         }
-        select, .view-mode label {
+
+        /* КАСТОМНЫЙ СЕЛЕКТ */
+        .custom-select {
+            position: relative;
+            display: inline-block;
+            min-width: 180px;
+            user-select: none;
+        }
+        .custom-select-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.8rem;
             background: var(--card);
             color: var(--text);
             border: 1px solid var(--border);
             padding: 0.8rem 1.2rem;
             border-radius: 12px;
             font-size: 1rem;
-            min-width: 160px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
         }
+        .custom-select-trigger:hover {
+            border-color: var(--text-muted);
+        }
+        .custom-select.open .custom-select-trigger {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(193,31,43,0.15);
+        }
+        .custom-select-arrow {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid var(--text-muted);
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+        }
+        .custom-select.open .custom-select-arrow {
+            transform: rotate(180deg);
+            border-top-color: var(--accent);
+        }
+        .custom-select-options {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 500;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-6px);
+            transition: all 0.18s ease;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .custom-select.open .custom-select-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .custom-select-option {
+            padding: 0.7rem 1.2rem;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease;
+            color: var(--text-muted);
+        }
+        .custom-select-option:hover {
+            background: rgba(193,31,43,0.15);
+            color: var(--text);
+        }
+        .custom-select-option.selected {
+            background: rgba(193,31,43,0.25);
+            color: #fff;
+            font-weight: 600;
+        }
+        .custom-select-options::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-select-options::-webkit-scrollbar-track {
+            background: var(--card);
+        }
+        .custom-select-options::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        .custom-select-options::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
         .view-mode {
             display: flex;
             flex-wrap: wrap;
             gap: 1.8rem;
             margin-bottom: 1.8rem;
         }
+        .view-mode label {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .view-mode label:hover {
+            color: var(--text);
+        }
         .view-mode input[type="radio"] {
-            transform: scale(1.4);
-            margin-right: 0.6rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            background: var(--card);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .view-mode input[type="radio"]:checked {
+            border-color: var(--accent);
+            background: var(--accent);
+            box-shadow: 0 0 0 3px rgba(193,31,43,0.2);
+        }
+        .view-mode input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: white;
+            transform: translate(-50%, -50%);
         }
         .stats-grid {
             display: grid;
@@ -199,6 +324,21 @@
         .rating-plus { color: #22c55e; }
         .rating-minus { color: #ef4444; }
         .rating-neutral { color: var(--text-muted); }
+        .rating-red { color: #ef4444; }
+        .rating-gray { color: #a0a0cc; }
+        .rating-green { color: #22c55e; }
+        .rating-gold { color: #fbbf24; }
+        .adr-red { color: #ef4444; }
+        .adr-green { color: #22c55e; }
+        .kd-green { color: #22c55e; }
+        .kd-red { color: #ef4444; }
+        .premier-gray { color: #9ca3af; }
+        .premier-lightblue { color: #38bdf8; }
+        .premier-blue { color: #3b82f6; }
+        .premier-purple { color: #a855f7; }
+        .premier-pink { color: #ec4899; }
+        .premier-red { color: #ef4444; }
+        .premier-gold { color: #fbbf24; }
         .charts-row {
             display: none;
         }
@@ -280,11 +420,15 @@
             border-bottom: 1px solid var(--border);
             vertical-align: middle;
         }
-        .match-table tr:hover {
+        .match-table > tbody > tr.match-row:hover {
+            background: rgba(193,31,43,0.08);
+        }
+        .players-table tbody tr:hover {
             background: rgba(193,31,43,0.08);
         }
         .match-table .score-win { color: #96C626; font-weight: bold; }
         .match-table .score-lose { color: #A04141; font-weight: bold; }
+        .match-table .score-draw { color: #3b82f6; font-weight: bold; }
         .faceit-plaque {
             background: linear-gradient(135deg, #1a1a2e, #16213e);
             border: 1px solid #ff5500;
@@ -385,7 +529,7 @@
                 flex-direction: column;
                 align-items: stretch;
             }
-            select {
+            .custom-select {
                 width: 100%;
             }
             .view-mode {
@@ -429,6 +573,650 @@
             color: #a0a0cc;
             font-weight: 600;
         }
+        .match-card {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem 1.6rem;
+            align-items: center;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.2rem 1.4rem;
+            margin: 0.8rem 0;
+            transition: all 0.22s ease;
+        }
+        .match-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 24px rgba(193,31,43,0.15);
+        }
+        .match-card .m-date {
+            min-width: 90px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+        .match-card .m-map {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 130px;
+            font-weight: 600;
+        }
+        .match-card .m-map img {
+            width: 30px;
+            height: auto;
+        }
+        .match-card .m-score {
+            font-weight: 900;
+            font-size: 1.25rem;
+            min-width: 100px;
+        }
+        .match-card .m-score .score-letter {
+            margin-right: 6px;
+            font-weight: 800;
+        }
+        .match-card .m-rank {
+            min-width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .match-card .m-kda {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            min-width: 110px;
+        }
+        .match-card .m-hs,
+        .match-card .m-adr {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            min-width: 80px;
+        }
+        .match-card .m-expand {
+            margin-left: auto;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            user-select: none;
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+        .match-card .m-expand:hover {
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+        .match-players {
+            width: 100%;
+            margin-top: 1rem;
+            display: none;
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+        }
+        .match-players.open {
+            display: block;
+        }
+        .players-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .players-table th {
+            text-align: left;
+            padding: 8px 10px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .players-table td {
+            padding: 7px 10px;
+            border-bottom: 1px solid rgba(30,30,40,0.5);
+        }
+        .players-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .players-table tr.team1 td:first-child {
+            border-left: none;
+            box-shadow: inset 3px 0 0 0 #c11f2b;
+        }
+        .players-table tr.team2 td:first-child {
+            border-left: none;
+            box-shadow: inset 3px 0 0 0 #4b5563;
+        }
+        .players-table tr.team-separator td {
+            padding: 0;
+            height: 6px;
+            background: var(--bg);
+            border: none;
+        }
+        .players-table td .rank-icon {
+            width: 60px;
+            height: auto;
+            vertical-align: middle;
+            margin-left: 0;
+        }
+        .result-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 5px;
+            margin-right: 8px;
+            letter-spacing: 0.5px;
+        }
+        .result-badge.win { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .result-badge.lose { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .result-badge.draw { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .rank-icon {
+            width: 80px;
+            height: auto;
+            vertical-align: middle;
+            margin-left: -10px;
+        }
+        .match-card .rank-icon {
+            margin-left: 0;
+            width: 64px;
+        }
+        .player-link {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            cursor: pointer;
+            display: inline-block;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        .player-link:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+        .social-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin-left: 6px;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            transition: opacity 0.2s;
+            opacity: 0.8;
+        }
+        .social-icon:hover {
+            opacity: 1;
+        }
+        .social-icon svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .social-icon-large {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+        .social-icon-large svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .player-cell {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+        .player-cell .player-link {
+            flex-shrink: 1;
+            min-width: 0;
+        }
+        .search-section {
+            margin-bottom: 2.5rem;
+            padding: 1.8rem;
+
+        }
+        .search-section h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            color: var(--accent);
+            margin-bottom: 1.2rem;
+        }
+        .search-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1.2rem;
+        }
+        .search-controls input[type="text"] {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            min-width: 260px;
+            flex: 1;
+        }
+        .search-controls input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .search-results {
+            margin-top: 1rem;
+        }
+        .search-result-item {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem 1.6rem;
+            align-items: center;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.4rem;
+            margin: 0.6rem 0;
+            transition: all 0.2s;
+        }
+        .search-result-item:hover {
+            border-color: var(--accent);
+            box-shadow: 0 6px 20px rgba(193,31,43,0.12);
+        }
+        .search-result-item .sr-nick {
+            font-weight: 700;
+            font-size: 1.05rem;
+            min-width: 160px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .search-result-item .sr-nick .player-link {
+            max-width: 130px;
+        }
+        .search-result-item .sr-steamid {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            min-width: 180px;
+        }
+        .search-result-item .sr-counts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.4rem;
+            font-size: 0.92rem;
+            color: var(--text-muted);
+        }
+        .search-result-item .sr-counts span {
+            font-weight: 600;
+        }
+        .search-result-item .sr-counts .cnt-premier { color: #fbbf24; }
+        .search-result-item .sr-counts .cnt-comp { color: #38bdf8; }
+        .search-result-item .sr-counts .cnt-duo { color: #a855f7; }
+        .search-result-item .sr-total {
+            font-weight: 800;
+            color: var(--accent);
+            font-size: 1.1rem;
+            min-width: 80px;
+            text-align: right;
+        }
+        .player-profile-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 2000;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 3rem 1rem;
+            overflow-y: auto;
+        }
+        .player-profile-modal.open {
+            display: flex;
+        }
+        .player-profile-content {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            max-width: 1000px;
+            width: 100%;
+            padding: 2.5rem;
+            position: relative;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+            max-height: calc(100vh - 6rem);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #player-profile-body {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+        .player-profile-close {
+            position: absolute;
+            top: 1rem;
+            right: 1.4rem;
+            font-size: 2rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+            z-index: 10;
+        }
+        .player-profile-close:hover {
+            color: var(--accent);
+        }
+        .profile-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem 2rem;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .profile-header .profile-nick {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--accent);
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .profile-header .profile-steam {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+        .profile-header .profile-steam:hover {
+            color: #c11f2b;
+        }
+        .profile-header .profile-steam img {
+            width: 28px;
+            height: 28px;
+        }
+        .profile-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-shrink: 0;
+        }
+        .profile-stat-card {
+            background: rgba(193,31,43,0.08);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .profile-stat-card .psv {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--accent);
+        }
+        .profile-stat-card .psl {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+        #profile-matches-container {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+        .profile-matches-list {
+            margin-top: 1rem;
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            padding-right: 6px;
+        }
+        .profile-matches-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .profile-matches-list::-webkit-scrollbar-track {
+            background: var(--card);
+        }
+        .profile-matches-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        .profile-matches-list::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+        .profile-match-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.4rem;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            margin: 0.4rem 0;
+            font-size: 0.92rem;
+            background: rgba(255,255,255,0.02);
+        }
+        .profile-match-row:hover {
+            background: rgba(193,31,43,0.08);
+        }
+        .profile-match-row .pm-date { min-width: 80px; color: var(--text-muted); }
+        .profile-match-row .pm-map { min-width: 100px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .profile-match-row .pm-map img { width: 22px; }
+        .profile-match-row .pm-score { min-width: 70px; font-weight: 700; }
+        .profile-match-row .pm-kda { min-width: 100px; }
+        .profile-match-row .pm-rating { min-width: 60px; }
+        .profile-match-row .pm-expand {
+            margin-left: auto;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            user-select: none;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+        .profile-match-row .pm-expand:hover {
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+        .profile-match-details {
+            width: 100%;
+            display: none;
+            margin-top: 0.8rem;
+            border-top: 1px solid var(--border);
+            padding-top: 0.8rem;
+        }
+        .profile-match-details.open {
+            display: block;
+        }
+        .empty-msg {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 2rem;
+            font-style: italic;
+        }
+        @media (max-width: 820px) {
+            .profile-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 480px) {
+            .profile-stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .profile-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .steam-svg-icon {
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+        }
+        .steam-svg-icon-large {
+            width: 28px;
+            height: 28px;
+        }
+
+        /* Компактные карточки матчей — компактный вид с раскрытием */
+        .compact-match-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .compact-match-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            transition: border-color 0.22s, box-shadow 0.22s;
+            overflow: hidden;
+        }
+        .compact-match-item:hover {
+            border-color: var(--accent);
+            box-shadow: 0 6px 20px rgba(193,31,43,0.12);
+        }
+        .compact-match-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem 1.4rem;
+            align-items: center;
+            padding: 0.9rem 1.2rem;
+            cursor: pointer;
+            font-size: 0.93rem;
+        }
+        .compact-match-header .cm-date { min-width: 80px; color: var(--text-muted); font-weight: 600; font-size: 0.88rem; }
+        .compact-match-header .cm-map { min-width: 110px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .compact-match-header .cm-map img { width: 24px; }
+        .compact-match-header .cm-score { min-width: 80px; font-weight: 800; font-size: 1.02rem; }
+        .compact-match-header .cm-score .score-letter { margin-right: 4px; }
+        .compact-match-header .cm-rank { min-width: 60px; display: flex; align-items: center; }
+        .compact-match-header .cm-rank .rank-icon { width: 50px; margin-left: 0; }
+        .compact-match-header .cm-kda { min-width: 100px; font-size: 0.9rem; }
+        .compact-match-header .cm-hs { min-width: 65px; color: var(--text-muted); font-size: 0.88rem; }
+        .compact-match-header .cm-adr { min-width: 70px; font-size: 0.88rem; }
+        .compact-match-header .cm-expand {
+            margin-left: auto;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.82rem;
+            padding: 3px 9px;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .compact-match-header:hover .cm-expand {
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+        .compact-match-body {
+            display: none;
+            border-top: 1px solid var(--border);
+            padding: 0.8rem 1.2rem 1rem;
+        }
+        .compact-match-body.open {
+            display: block;
+        }
+        .compact-match-body .match-players {
+            display: block;
+            margin-top: 0;
+            border-top: none;
+            padding-top: 0;
+        }
+        .share-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin-left: 6px;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            transition: opacity 0.2s;
+            opacity: 0.8;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+        .share-btn:hover {
+            opacity: 1;
+        }
+        .share-btn svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .match-share-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            border: 1px solid var(--accent);
+            color: var(--text);
+            padding: 0.7rem 1.6rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            z-index: 3000;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .match-share-toast.show {
+            opacity: 1;
+        }
+        .profile-header .share-btn-large {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            transition: opacity 0.2s;
+            opacity: 0.8;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            margin-left: 0;
+        }
+        .profile-header .share-btn-large:hover {
+            opacity: 1;
+        }
+        .profile-header .share-btn-large svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -457,30 +1245,41 @@
             <div class="tabs">
                 <div class="tab active" data-tab="stats">СТАТИСТИКА</div>
                 <div class="tab" data-tab="history">ИСТОРИЯ МАТЧЕЙ</div>
+                <div class="tab" data-tab="players">ПОПУТЧИКИ</div>
             </div>
             <div id="stats-tab">
                 <div class="filters">
-                    <select id="mode-stats">
-                        <option value="premier" selected>Премьер</option>
-                        <option value="comp">Соревновательный</option>
-                        <option value="duo">Напарники</option>
-                    </select>
-                    <select id="premier-season">
-                        <option value="all" selected>Все сезоны</option>
-                        <option value="2">Премьер Сезон 2</option>
-                        <option value="3">Премьер Сезон 3</option>
-                        <option value="4">Премьер Сезон 4</option>
-                        <option value="5">Премьер Сезон 5</option>
-                    </select>
-                    <select id="period">
-                        <option value="all">За всё время</option>
-                        <option value="30">Последние 30 матчей</option>
-                        <option value="60">Последние 60 матчей</option>
-                        <option value="90">Последние 90 матчей</option>
-                    </select>
-                    <select id="map-filter-stats">
-                        <option value="all">Все карты</option>
-                    </select>
+                    <div class="custom-select" id="cs-mode-stats" data-value="premier">
+                        <div class="custom-select-trigger"><span class="custom-select-label">Премьер</span><span class="custom-select-arrow"></span></div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="premier">Премьер</div>
+                            <div class="custom-select-option" data-value="comp">Соревновательный</div>
+                            <div class="custom-select-option" data-value="duo">Напарники</div>
+                        </div>
+                    </div>
+                    <div class="custom-select" id="cs-premier-season" data-value="all">
+                        <div class="custom-select-trigger"><span class="custom-select-label">Все сезоны</span><span class="custom-select-arrow"></span></div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="all">Все сезоны</div>
+                            <div class="custom-select-option" data-value="2">Премьер Сезон 2</div>
+                            <div class="custom-select-option" data-value="3">Премьер Сезон 3</div>
+                            <div class="custom-select-option" data-value="4">Премьер Сезон 4</div>
+                            <div class="custom-select-option" data-value="5">Премьер Сезон 5</div>
+                        </div>
+                    </div>
+                    <div class="custom-select" id="cs-period" data-value="all">
+                        <div class="custom-select-trigger"><span class="custom-select-label">За всё время</span><span class="custom-select-arrow"></span></div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="all">За всё время</div>
+                            <div class="custom-select-option" data-value="30">Последние 30 матчей</div>
+                            <div class="custom-select-option" data-value="60">Последние 60 матчей</div>
+                            <div class="custom-select-option" data-value="90">Последние 90 матчей</div>
+                        </div>
+                    </div>
+                    <div class="custom-select" id="cs-map-stats" data-value="all">
+                        <div class="custom-select-trigger"><span class="custom-select-label">Все карты</span><span class="custom-select-arrow"></span></div>
+                        <div class="custom-select-options"></div>
+                    </div>
                     <img id="stats-map-icon" src="" alt="Map icon" style="width:50px; height:auto; display:none; vertical-align:middle; margin-left:1rem;">
                 </div>
                 <div class="stats-grid" id="stats-grid"></div>
@@ -491,24 +1290,49 @@
                     <label><input type="radio" name="viewMode" value="advanced"> Продвинутый</label>
                 </div>
                 <div class="filters">
-                    <select id="mode-history">
-                        <option value="premier" selected>Премьер</option>
-                        <option value="comp">Соревновательный</option>
-                        <option value="duo">Напарники</option>
-                    </select>
-                    <select id="premier-season-history">
-                        <option value="all" selected>Все сезоны</option>
-                        <option value="2">Премьер Сезон 2</option>
-                        <option value="3">Премьер Сезон 3</option>
-                        <option value="4">Премьер Сезон 4</option>
-                        <option value="5">Премьер Сезон 5</option>
-                    </select>
-                    <select id="filter-map">
-                        <option value="all">Все карты</option>
-                    </select>
+                    <div class="custom-select" id="cs-mode-history" data-value="premier">
+                        <div class="custom-select-trigger"><span class="custom-select-label">Премьер</span><span class="custom-select-arrow"></span></div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="premier">Премьер</div>
+                            <div class="custom-select-option" data-value="comp">Соревновательный</div>
+                            <div class="custom-select-option" data-value="duo">Напарники</div>
+                        </div>
+                    </div>
+                    <div class="custom-select" id="cs-premier-season-history" data-value="all">
+                        <div class="custom-select-trigger"><span class="custom-select-label">Все сезоны</span><span class="custom-select-arrow"></span></div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option selected" data-value="all">Все сезоны</div>
+                            <div class="custom-select-option" data-value="2">Премьер Сезон 2</div>
+                            <div class="custom-select-option" data-value="3">Премьер Сезон 3</div>
+                            <div class="custom-select-option" data-value="4">Премьер Сезон 4</div>
+                            <div class="custom-select-option" data-value="5">Премьер Сезон 5</div>
+                        </div>
+                    </div>
+                    <div class="custom-select" id="cs-map-history" data-value="all">
+                        <div class="custom-select-trigger"><span class="custom-select-label">Все карты</span><span class="custom-select-arrow"></span></div>
+                        <div class="custom-select-options"></div>
+                    </div>
                     <img id="history-map-icon" src="" alt="Map icon" style="width:50px; height:auto; display:none; vertical-align:middle; margin-left:1rem;">
                 </div>
                 <div id="matches-container"></div>
+            </div>
+            <div id="players-tab" style="display:none;">
+                <div class="search-section">
+                    <h3>ПОИСК ПОПУТЧИКОВ</h3>
+                    <div class="search-controls">
+                        <input type="text" id="player-search-input" placeholder="Введите ник или SteamID...">
+                        <div class="custom-select" id="cs-search-mode" data-value="all" style="min-width:180px;">
+                            <div class="custom-select-trigger"><span class="custom-select-label">Все режимы</span><span class="custom-select-arrow"></span></div>
+                            <div class="custom-select-options">
+                                <div class="custom-select-option selected" data-value="all">Все режимы</div>
+                                <div class="custom-select-option" data-value="premier">Премьер</div>
+                                <div class="custom-select-option" data-value="comp">Соревновательный</div>
+                                <div class="custom-select-option" data-value="duo">Напарники</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="search-results" id="player-search-results"></div>
+                </div>
             </div>
         </div>
 
@@ -523,509 +1347,1277 @@
     <footer>
         <p>© 2025–2026 RIPSITE · Все права защищены</p>
     </footer>
+
+    <div class="player-profile-modal" id="player-profile-modal">
+        <div class="player-profile-content">
+            <span class="player-profile-close" id="player-profile-close">&times;</span>
+            <div id="player-profile-body"></div>
+        </div>
+    </div>
+
+    <div class="match-share-toast" id="match-share-toast">Ссылка скопирована!</div>
+
     <script src="agreement.js" defer></script>
     <script src="files/Other/csstats.js"></script>
     <script>
-        document.getElementById("update-date").textContent = csstats.lastModified.toLocaleDateString("ru-RU");
-        const statsGrid = document.getElementById("stats-grid");
-        const modeStatsSelect = document.getElementById("mode-stats");
-        const premierSeasonSelect = document.getElementById("premier-season");
-        const periodSelect = document.getElementById("period");
-        const mapFilterStats = document.getElementById("map-filter-stats");
-        const matchesContainer = document.getElementById("matches-container");
-        const modeHistorySelect = document.getElementById("mode-history");
-        const premierSeasonHistory = document.getElementById("premier-season-history");
-        const filterMap = document.getElementById("filter-map");
-        // Charts removed
+        /* ============ КАСТОМНЫЙ СЕЛЕКТ ============ */
+        function initCustomSelect(root, onChange) {
+            var trigger = root.querySelector('.custom-select-trigger');
+            var label = root.querySelector('.custom-select-label');
+            var optionsWrap = root.querySelector('.custom-select-options');
 
-        const mapsPremier = [...new Set(csstats.matches.filter(m => m[10] === "premier").map(m => m[1]))].sort();
-        const mapsComp = [...new Set(csstats.matches.filter(m => m[10] === "comp").map(m => m[1]))].sort();
-        const mapsDuo = [...new Set(csstats.matches.filter(m => m[10] === "duo").map(m => m[1]))].sort();
+            function close() { root.classList.remove('open'); }
 
-        let viewMode = localStorage.getItem("csHistoryViewMode") || "compact";
-        document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
-            radio.checked = (radio.value === viewMode);
-            radio.addEventListener("change", () => {
-                viewMode = radio.value;
-                localStorage.setItem("csHistoryViewMode", viewMode);
-                renderMatches();
-            });
-        });
-
-        document.querySelectorAll(".tab").forEach(tab => {
-            tab.addEventListener("click", () => {
-                document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-                tab.classList.add("active");
-                document.getElementById("stats-tab").style.display = tab.dataset.tab === "stats" ? "block" : "none";
-                document.getElementById("history-tab").style.display = tab.dataset.tab === "history" ? "block" : "none";
-                if (tab.dataset.tab === "stats") updateStats();
-                if (tab.dataset.tab === "history") renderMatches();
-            });
-        });
-
-        function parseDate(str) {
-            const [d, m, y] = str.split(".");
-            return new Date(`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`);
-        }
-        function formatDateKey(date) {
-            return date.toISOString().split('T')[0];
-        }
-        function formatDateRu(dateKey) {
-            const [y, mo, d] = dateKey.split('-');
-            return `${d}.${mo}.${y}`;
-        }
-        function getPremierSeasonBounds(season) {
-            if (season === "2") return { start: new Date("2025-05-21"), end: new Date("2025-06-15") };
-            if (season === "3") return { start: new Date("2025-08-10"), end: new Date("2026-01-19") };
-            if (season === "4") return { start: new Date("2026-01-22"), end: new Date("2026-07-07") };
-            if (season === "5") return { start: new Date("2026-07-09"), end: new Date("2099-12-31") };
-            return null;
-        }
-        function getResultFromFlag(flag) {
-            if (flag === "W") return "win";
-            if (flag === "L") return "loss";
-            if (flag === "T") return "draw";
-            return "unknown";
-        }
-        function getRatingClass(ratingStr, mode) {
-            if (mode === "duo") return "rating-neutral";
-            if (!ratingStr || ratingStr === "---") return "rating-neutral";
-            if (ratingStr.startsWith("+")) return "rating-plus";
-            if (ratingStr.startsWith("-")) return "rating-minus";
-            return "rating-neutral";
-        }
-
-        function getRatingImageHTML(ratingStr, mode) {
-            if (!ratingStr || ratingStr === "---") return ratingStr || '—';
-            
-            if (mode === "duo" && ratingStr.startsWith("S")) {
-                const num = ratingStr.substring(1);
-                return `<img src="files/images/cs/wingman${num}.svg" alt="${ratingStr}" style="width:80px; height:auto; vertical-align:middle; margin-left:-10px;">`;
-            }
-            
-            if (mode === "comp" && ratingStr.startsWith("MM")) {
-                const num = ratingStr.substring(2);
-                return `<img src="files/images/cs/competitive${num}.svg" alt="${ratingStr}" style="width:80px; height:auto; vertical-align:middle; margin-left:-10px;">`;
-            }
-            
-            return ratingStr;
-        }
-
-        function parseRatingChange(ratingStr, mode) {
-            if (mode === "duo" || mode === "comp") return 0;
-            if (!ratingStr || ratingStr === "---") return 0;
-            const match = ratingStr.match(/([+-]?\d+)/);
-            return match ? parseInt(match[1]) : 0;
-        }
-        function extractRatingValue(ratingStr, mode) {
-            if (mode === "duo") {
-                const match = ratingStr.match(/S(\d+)/);
-                return match ? parseInt(match[1]) : null;
-            }
-            if (mode === "comp") {
-                return ratingStr && ratingStr !== "---" ? ratingStr : null;
-            }
-            if (!ratingStr || ratingStr === "---") return null;
-            const match = ratingStr.match(/→\s*(\d+)/);
-            return match ? parseInt(match[1]) : null;
-        }
-        function getStats() {
-            const mode = modeStatsSelect.value;
-            const season = premierSeasonSelect.value;
-            const period = periodSelect.value;
-            const mapName = mapFilterStats.value;
-
-            let seasonStart = null, seasonEnd = null;
-            const bounds = getPremierSeasonBounds(season);
-            if (bounds && mode === "premier") {
-                seasonStart = bounds.start;
-                seasonEnd = bounds.end;
+            function selectValue(value, silent) {
+                var opts = optionsWrap.querySelectorAll('.custom-select-option');
+                var foundText = null;
+                opts.forEach(function(o) {
+                    if (o.getAttribute('data-value') === value) {
+                        o.classList.add('selected');
+                        foundText = o.textContent;
+                    } else {
+                        o.classList.remove('selected');
+                    }
+                });
+                if (foundText !== null) label.textContent = foundText;
+                root.setAttribute('data-value', value);
+                close();
+                if (!silent && onChange) onChange(value);
             }
 
-            const allModeMatches = csstats.matches.filter(m => m[10] === mode).sort((a,b) => parseDate(b[0]) - parseDate(a[0]));
-            let filtered = allModeMatches;
-            if (period !== "all") {
-                const numMatches = parseInt(period);
-                filtered = allModeMatches.slice(0, numMatches);
-            }
-
-            filtered = filtered.filter(m => {
-                const matchDate = parseDate(m[0]);
-                const matchMode = m[10];
-                if (mode !== matchMode) return false;
-                if (season !== "all" && mode === "premier" && (matchDate < seasonStart || matchDate > seasonEnd)) return false;
-                if (mapName !== "all" && m[1] !== mapName) return false;
-                return true;
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.querySelectorAll('.custom-select.open').forEach(function(el) {
+                    if (el !== root) el.classList.remove('open');
+                });
+                root.classList.toggle('open');
             });
 
-            let wins = 0, losses = 0, draws = 0;
-            let kills = 0, deaths = 0, assists = 0, hsTotal = 0, adrTotal = 0;
-            const mapStats = {};
-
-            filtered.forEach(m => {
-                const result = getResultFromFlag(m[3]);
-                if (result === "win") wins++;
-                else if (result === "loss") losses++;
-                else if (result === "draw") draws++;
-
-                kills += m[5];
-                deaths += m[6];
-                assists += m[7];
-                hsTotal += m[8];
-                adrTotal += m[9];
-
-                const map = m[1];
-                if (!mapStats[map]) mapStats[map] = { played: 0, win: 0 };
-                mapStats[map].played++;
-                if (result === "win") mapStats[map].win++;
+            optionsWrap.addEventListener('click', function(e) {
+                var opt = e.target.closest('.custom-select-option');
+                if (!opt) return;
+                selectValue(opt.getAttribute('data-value'), false);
             });
 
-            const total = wins + losses + draws;
-            const winrate = total ? Math.round(wins / total * 100) : 0;
-            const lossrate = total ? Math.round(losses / total * 100) : 0;
-            const drawrate = total ? Math.round(draws / total * 100) : 0;
-            const avgHS = total ? Math.round(hsTotal / total) : 0;
-            const avgADR = total ? Math.round(adrTotal / total) : 0;
-            const kd = deaths === 0 ? kills.toFixed(2) : (kills / deaths).toFixed(2);
-
-            let bestMap = "", bestWR = -1;
-            for (const [map, s] of Object.entries(mapStats)) {
-                const wr = s.played > 0 ? s.win / s.played : 0;
-                if (wr > bestWR || (wr === bestWR && s.played > (mapStats[bestMap]?.played || 0))) {
-                    bestWR = wr;
-                    bestMap = map;
-                }
-            }
-
-            const allModeMatchesForRating = csstats.matches.filter(m => m[10] === mode).sort((a,b) => parseDate(b[0]) - parseDate(a[0]));
-            const recent30 = allModeMatchesForRating.slice(0, 30);
-            const reversed = [...recent30].reverse();
-
-            const ratingHistoryForward = [];
-            const resultFlagsForward = [];
-            let lastKnownRating = null;
-            let totalRatingChange = 0;
-
-            for (let match of reversed) {
-                const ratingStr = match[4];
-                const matchMode = match[10];
-                const ratingValue = extractRatingValue(ratingStr, matchMode);
-                const ratingChange = parseRatingChange(ratingStr, matchMode);
-
-                if (ratingValue !== null) {
-                    lastKnownRating = ratingValue;
-                }
-                ratingHistoryForward.push(lastKnownRating);
-                resultFlagsForward.push(getResultFromFlag(match[3]));
-                totalRatingChange += ratingChange;
-            }
-
-            const ratingHistory = ratingHistoryForward.reverse();
-            const resultFlags = resultFlagsForward.reverse();
-            const currentRating = ratingHistory[0];
-
-            return {
-                wins, losses, draws, total, winrate, lossrate, drawrate,
-                kills, deaths, assists, avgHS, avgADR, kd, bestMap, mapStats,
-                mapDistribution: mapStats, ratingHistory, currentRating, totalRatingChange, resultFlags, mode
+            root._selectValue = function(value) { selectValue(value, true); };
+            root._getValue = function() { return root.getAttribute('data-value'); };
+            root._setOptions = function(items) {
+                optionsWrap.innerHTML = '';
+                items.forEach(function(item) {
+                    var el = document.createElement('div');
+                    el.className = 'custom-select-option';
+                    el.setAttribute('data-value', item.value);
+                    el.textContent = item.label;
+                    if (item.value === root.getAttribute('data-value')) el.classList.add('selected');
+                    optionsWrap.appendChild(el);
+                });
             };
+
+            return root;
         }
 
-        function updateMapOptions(selectId, mode) {
-            let maps = mode === "premier" ? mapsPremier : mode === "comp" ? mapsComp : mode === "duo" ? mapsDuo : mapsPremier;
-            let options = `<option value="all">Все карты</option>` + maps.map(m => `<option value="${m}">${m}</option>`).join("");
-            const select = document.getElementById(selectId);
-            select.innerHTML = options;
-            select.value = "all";
-        }
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.custom-select.open').forEach(function(el) { el.classList.remove('open'); });
+        });
 
-        function updateSeasonVisibility() {
-            const mode = modeStatsSelect.value;
-            premierSeasonSelect.style.display = mode === "premier" ? "inline-block" : "none";
-            if (mode !== "premier") premierSeasonSelect.value = "all";
-        }
-        function updateSeasonVisibilityHistory() {
-            const mode = modeHistorySelect.value;
-            premierSeasonHistory.style.display = mode === "premier" ? "inline-block" : "none";
-            if (mode !== "premier") premierSeasonHistory.value = "all";
-        }
+        (function() {
+            if (typeof csstats === 'undefined' || !csstats.premier || !csstats.comp || !csstats.duo) {
+                document.getElementById('update-date').textContent = '—';
+                document.getElementById('stats-grid').innerHTML = '<div class="empty-msg">Не удалось загрузить статистику. Проверьте наличие файла csstats.js и переменную csstats.</div>';
+                return;
+            }
 
-        // customTooltip removed as charts are gone
+            document.getElementById("update-date").textContent = csstats.lastModified.toLocaleDateString("ru-RU");
 
-        function updateStats() {
-            const s = getStats();
-            statsGrid.innerHTML = `
-                <div class="stat-card"><div class="stat-value">${s.total}</div><div class="stat-label">Матчей</div></div>
-                <div class="stat-card"><div class="stat-value win">${s.wins} <small>(${s.winrate}%)</small></div><div class="stat-label">Побед</div></div>
-                <div class="stat-card"><div class="stat-value lose">${s.losses} <small>(${s.lossrate}%)</small></div><div class="stat-label">Поражений</div></div>
-                <div class="stat-card"><div class="stat-value draw">${s.draws} <small>(${s.drawrate}%)</small></div><div class="stat-label">Ничьих</div></div>
-                <div class="stat-card"><div class="stat-value" style="color:${s.kd >= 1.3 ? '#22c55e' : s.kd >= 1 ? '#eab308' : '#ef4444'};">${s.kd}</div><div class="stat-label">K/D</div></div>
-                <div class="stat-card"><div class="stat-value">${s.kills}</div><div class="stat-label">Убийств</div></div>
-                <div class="stat-card"><div class="stat-value">${s.deaths}</div><div class="stat-label">Смертей</div></div>
-                <div class="stat-card"><div class="stat-value">${s.assists}</div><div class="stat-label">Помощи</div></div>
-                <div class="stat-card"><div class="stat-value">${s.avgHS}%</div><div class="stat-label">HS%</div></div>
-                <div class="stat-card"><div class="stat-value">${s.avgADR}</div><div class="stat-label">ADR</div></div>
-            `;
+            var MY_NICK = "RIPPER";
+            var MY_STEAMID = "76561199007449644";
 
-            const map = mapFilterStats.value;
-            document.getElementById("stats-map-icon").style.display = map !== "all" ? "inline" : "none";
-            if (map !== "all") document.getElementById("stats-map-icon").src = `files/images/cs/${map.toLowerCase()}.png`;
-        }
+            var statsGrid = document.getElementById("stats-grid");
+            var matchesContainer = document.getElementById("matches-container");
 
-        function renderMatches() {
-            matchesContainer.innerHTML = "";
-            const mode = modeHistorySelect.value;
-            const season = premierSeasonHistory.value;
-            const bounds = getPremierSeasonBounds(season);
+            /* ===== Кастомные селекты ===== */
+            var modeStatsCS = initCustomSelect(document.getElementById("cs-mode-stats"), function() { onModeStatsChange(); });
+            var premierSeasonCS = initCustomSelect(document.getElementById("cs-premier-season"), function() { updateStats(); });
+            var periodCS = initCustomSelect(document.getElementById("cs-period"), function() { updateStats(); });
+            var mapStatsCS = initCustomSelect(document.getElementById("cs-map-stats"), function() { updateStats(); });
 
-            let filtered = csstats.matches.filter(m => {
-                const matchDate = parseDate(m[0]);
-                const matchMode = m[10];
-                let seasonOk = (season === "all" || mode !== "premier") || (matchDate >= bounds?.start && matchDate <= bounds?.end);
-                const mapOk = filterMap.value === "all" || m[1] === filterMap.value;
-                const modeOk = matchMode === mode;
-                return seasonOk && mapOk && modeOk;
+            var modeHistoryCS = initCustomSelect(document.getElementById("cs-mode-history"), function() { onModeHistoryChange(); });
+            var premierSeasonHistoryCS = initCustomSelect(document.getElementById("cs-premier-season-history"), function() { renderMatches(); });
+            var mapHistoryCS = initCustomSelect(document.getElementById("cs-map-history"), function() { renderMatches(); });
+
+            var searchModeCS = initCustomSelect(document.getElementById("cs-search-mode"), function() { renderPlayerSearch(); });
+
+            var rawMatches = [];
+            ["premier", "comp", "duo"].forEach(function(mode) {
+                if (csstats[mode] && Array.isArray(csstats[mode])) {
+                    csstats[mode].forEach(function(m) {
+                        m.mode = mode;
+                        rawMatches.push(m);
+                    });
+                }
             });
 
-            filtered.sort((a, b) => parseDate(b[0]) - parseDate(a[0]));
-
-            const mapFilterValue = filterMap.value;
-            if (mapFilterValue !== "all") {
-                document.getElementById("history-map-icon").src = `files/images/cs/${mapFilterValue.toLowerCase()}.png`;
-                document.getElementById("history-map-icon").style.display = "inline";
-            } else {
-                document.getElementById("history-map-icon").style.display = "none";
+            function parseDate(str) {
+                var parts = str.split(".");
+                return new Date(parts[2] + "-" + parts[1].padStart(2, '0') + "-" + parts[0].padStart(2, '0'));
+            }
+            function formatDateKey(date) {
+                return date.toISOString().split('T')[0];
+            }
+            function formatDateRu(dateKey) {
+                var parts = dateKey.split('-');
+                return parts[2] + "." + parts[1] + "." + parts[0];
             }
 
-            if (viewMode === "advanced") {
-                const days = {};
-                filtered.forEach(m => {
-                    const dateObj = parseDate(m[0]);
-                    const dateKey = formatDateKey(dateObj);
-                    if (!days[dateKey]) {
-                        days[dateKey] = {
-                            matches: [],
-                            ratingChange: 0,
-                            wins: 0,
-                            losses: 0,
-                            draws: 0,
-                            totalKD: {k:0, d:0},
-                            totalADR: 0,
-                            totalKills: 0,
-                            count: 0
-                        };
-                    }
-                    const day = days[dateKey];
-                    day.matches.push(m);
-                    day.count++;
-                    const result = getResultFromFlag(m[3]);
-                    if (result === "win") day.wins++;
-                    else if (result === "loss") day.losses++;
-                    else if (result === "draw") day.draws++;
-
-                    if (m[4] && m[4] !== "---" && mode !== "comp") {
-                        const val = parseRatingChange(m[4], m[10]);
-                        if (!isNaN(val)) day.ratingChange += val;
-                    }
-                    day.totalKD.k += m[5];
-                    day.totalKD.d += m[6];
-                    day.totalADR += m[9];
-                    day.totalKills += m[5];
-                });
-
-                const sortedDays = Object.keys(days).sort((a,b) => new Date(b) - new Date(a));
-                sortedDays.forEach(dateKey => {
-                    const day = days[dateKey];
-                    const kd = day.totalKD.d === 0 ? day.totalKD.k.toFixed(1) : (day.totalKD.k / day.totalKD.d).toFixed(2);
-                    const adr = (day.totalADR / day.count).toFixed(0);
-                    const avgKills = (day.totalKills / day.count).toFixed(1);
-
-                    const dayBlock = document.createElement("div");
-                    dayBlock.className = "matches-day";
-
-                    const header = document.createElement("div");
-                    header.className = "day-header";
-                    let ratingChangeHtml = '';
-                    if (mode !== "duo" && mode !== "comp") {
-                        ratingChangeHtml = `<span class="rating-change ${day.ratingChange > 0 ? "rating-plus" : day.ratingChange < 0 ? "rating-minus" : "rating-neutral"}">
-                            ${day.ratingChange > 0 ? "+" : ""}${day.ratingChange}
-                        </span>`;
-                    }
-                    header.innerHTML = `
-                        <div class="info">
-                            <span class="date">${formatDateRu(dateKey)}</span>
-                            <span class="matches-count">матчей: ${day.count}</span>
-                            ${ratingChangeHtml}
-                            <span class="day-wins">W: ${day.wins}</span>
-                            <span class="day-losses">L: ${day.losses}</span>
-                            ${day.draws > 0 ? `<span class="day-draws">T: ${day.draws}</span>` : ""}
-                            <span class="day-kd">K/D ${kd}</span>
-                            <span class="day-adr">ADR ${adr}</span>
-                            <span class="day-avg">AVG ${avgKills}</span>
-                        </div>
-                        <span class="toggle">▼</span>
-                    `;
-
-                    const matchesList = document.createElement("div");
-                    matchesList.className = "day-matches";
-
-                    day.matches.forEach(m => {
-                        const result = getResultFromFlag(m[3]);
-                        const scoreClass = result === "win" ? "win" : result === "draw" ? "draw" : "lose";
-                        const ratingClass = getRatingClass(m[4], m[10]);
-                        const ratingDisplay = getRatingImageHTML(m[4], m[10]);
-
-                        const div = document.createElement("div");
-                        div.className = "match advanced";
-                        div.innerHTML = `
-                            <div class="match-date">${m[0]}</div>
-                            <div class="match-map"><img src="files/images/cs/${m[1].toLowerCase()}.png" alt="${m[1]}" style="width:32px; vertical-align:middle; margin-right:8px;">${m[1]}</div>
-                            <div class="match-score ${scoreClass}">${m[2]}</div>
-                            <div class="match-rating ${ratingClass}" style="color: ${result === 'win' ? '#22c55e' : result === 'loss' ? '#ef4444' : 'inherit'};">${ratingDisplay}</div>
-                            <div class="match-kda">${m[5]}K / ${m[6]}D / ${m[7]}A</div>
-                            <div class="match-hs">HS ${m[8]}%</div>
-                            <div class="match-adr">ADR ${m[9]}</div>
-                        `;
-                        matchesList.appendChild(div);
-                    });
-
-                    dayBlock.appendChild(header);
-                    dayBlock.appendChild(matchesList);
-                    matchesContainer.appendChild(dayBlock);
-
-                    header.addEventListener("click", () => {
-                        const isCollapsed = header.classList.toggle("collapsed");
-                        matchesList.style.display = isCollapsed ? "none" : "block";
-                        const toggle = header.querySelector(".toggle");
-                        toggle.textContent = isCollapsed ? "▶" : "▼";
-                    });
-                });
-            } else {
-                let tableHTML = `
-                    <table width="100%" class="match-table" style="border-collapse:separate; font-size:14px;" id="matches-table">
-                        <thead>
-                            <tr style="color:#fff;">
-                                <th data-sort="0">Дата</th>
-                                <th></th>
-                                <th data-sort="2">Карта</th>
-                                <th data-sort="3">Счёт</th>
-                                <th data-sort="4" style="text-align:center;">Ранг</th>
-                                <th data-sort="5">K</th>
-                                <th data-sort="6">D</th>
-                                <th data-sort="7">A</th>
-                                <th data-sort="8">HS%</th>
-                                <th data-sort="9">ADR</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                filtered.forEach(m => {
-                    const result = getResultFromFlag(m[3]);
-                    const scoreClass = result === "win" ? "score-win" : result === "loss" ? "score-lose" : "";
-                    const ratingDisplay = getRatingImageHTML(m[4], m[10]);
-
-                    tableHTML += `
-                        <tr style="cursor:pointer;">
-                            <td style="text-align:left; white-space:nowrap;">${m[0]}</td>
-                            <td></td>
-                            <td><img src="files/images/cs/${m[1].toLowerCase()}.png" alt="${m[1]}" style="width:24px; vertical-align:middle; margin-right:6px;">${m[1]}</td>
-                            <td class="${scoreClass}">${m[2]}</td>
-                            <td style="text-align:center; font-weight:600; color: ${result === 'win' ? '#22c55e' : result === 'loss' ? '#ef4444' : 'inherit'};">${ratingDisplay}</td>
-                            <td>${m[5]}</td>
-                            <td>${m[6]}</td>
-                            <td>${m[7]}</td>
-                            <td>${m[8]}%</td>
-                            <td>${m[9]}</td>
-                        </tr>
-                    `;
-                });
-
-                tableHTML += `</tbody></table>`;
-                matchesContainer.innerHTML = tableHTML;
+            function getPremierSeasonBounds(season) {
+                if (season === "2") return { start: new Date("2025-05-21"), end: new Date("2025-06-15") };
+                if (season === "3") return { start: new Date("2025-08-10"), end: new Date("2026-01-19") };
+                if (season === "4") return { start: new Date("2026-01-22"), end: new Date("2026-07-07") };
+                if (season === "5") return { start: new Date("2026-07-09"), end: new Date("2099-12-31") };
+                return null;
             }
-        }
 
-        modeStatsSelect.addEventListener("change", () => {
-            modeHistorySelect.value = modeStatsSelect.value;
+            function computeResult(match) {
+                if (match.result) return match.result;
+                var scoreParts = match.score.split(":");
+                if (scoreParts.length !== 2) return "T";
+                var s1 = parseInt(scoreParts[0]);
+                var s2 = parseInt(scoreParts[1]);
+                if (s1 > s2) return "W";
+                if (s1 < s2) return "L";
+                return "T";
+            }
+
+            function computeResultForPlayer(match, playerTeam) {
+                var scoreParts = match.score.split(":");
+                if (scoreParts.length !== 2) return "T";
+                var s1 = parseInt(scoreParts[0]);
+                var s2 = parseInt(scoreParts[1]);
+                var myScore, oppScore;
+                if (playerTeam === 1) { myScore = s1; oppScore = s2; }
+                else { myScore = s2; oppScore = s1; }
+                if (myScore > oppScore) return "W";
+                if (myScore < oppScore) return "L";
+                return "T";
+            }
+
+            function getResultFromFlag(flag) {
+                if (flag === "W") return "win";
+                if (flag === "L") return "loss";
+                if (flag === "T") return "draw";
+                return "unknown";
+            }
+
+            function findMe(match) {
+                if (!match.players) return null;
+                return match.players.find(function(p) { return p.nick === MY_NICK; }) || null;
+            }
+
+            function normalizeMatch(m, uniqueId) {
+                var me = findMe(m);
+                return {
+                    id: m.id != null ? m.id : uniqueId,
+                    date: m.date,
+                    map: m.map,
+                    score: m.score,
+                    result: computeResult(m),
+                    rating: m.rating != null ? String(m.rating) : "",
+                    mode: m.mode,
+                    players: m.players || null,
+                    k: me ? me.k : 0,
+                    d: me ? me.d : 0,
+                    a: me ? me.a : 0,
+                    hs: me ? me.hs : 0,
+                    adr: me ? me.adr : 0,
+                    kast: me ? me.kast : null,
+                    playerRating: me ? me.rating : null,
+                    myRank: me ? me.rank : null
+                };
+            }
+
+            var allMatches = rawMatches.map(function(m, i) {
+                return normalizeMatch(m, i);
+            });
+
+            function premierRatingClass(ratingValue) {
+                var val = parseInt(ratingValue);
+                if (isNaN(val)) return "premier-gray";
+                if (val < 5000) return "premier-gray";
+                if (val < 10000) return "premier-lightblue";
+                if (val < 15000) return "premier-blue";
+                if (val < 20000) return "premier-purple";
+                if (val < 25000) return "premier-pink";
+                if (val < 30000) return "premier-red";
+                return "premier-gold";
+            }
+
+            function rankCodeToNumber(code) {
+                if (!code) return 0;
+                var m = String(code).match(/(\d+)/);
+                return m ? parseInt(m[1]) : 0;
+            }
+
+            function getRankIconHTML(rankCode, mode) {
+                if (mode === "premier") {
+                    return rankCode || '—';
+                }
+                var num = rankCodeToNumber(rankCode);
+                if (num < 0) num = 0;
+                if (num > 18) num = 18;
+                if (mode === "duo") {
+                    return '<img class="rank-icon" src="files/images/cs/wingman' + num + '.svg" alt="Wingman ' + num + '">';
+                }
+                if (mode === "comp") {
+                    return '<img class="rank-icon" src="files/images/cs/competitive' + num + '.svg" alt="Competitive ' + num + '">';
+                }
+                return rankCode || '—';
+            }
+
+            function ratingColorClass(val) {
+                if (val === null || val === undefined || isNaN(val)) return "";
+                if (val < 0.90) return "rating-red";
+                if (val < 1.30) return "rating-gray";
+                if (val < 1.80) return "rating-green";
+                return "rating-gold";
+            }
+            function adrColorClass(val) {
+                if (val === null || val === undefined || isNaN(val)) return "";
+                return Number(val) < 75 ? "adr-red" : "adr-green";
+            }
+            function kdColorClass(k, d) {
+                return k >= d ? "kd-green" : "kd-red";
+            }
+
+            var mapsPremier = [], mapsComp = [], mapsDuo = [];
+            allMatches.forEach(function(m) {
+                if (m.mode === "premier" && mapsPremier.indexOf(m.map) === -1) mapsPremier.push(m.map);
+                if (m.mode === "comp" && mapsComp.indexOf(m.map) === -1) mapsComp.push(m.map);
+                if (m.mode === "duo" && mapsDuo.indexOf(m.map) === -1) mapsDuo.push(m.map);
+            });
+            mapsPremier.sort();
+            mapsComp.sort();
+            mapsDuo.sort();
+
+            var viewMode = localStorage.getItem("csHistoryViewMode") || "compact";
+            document.querySelectorAll('input[name="viewMode"]').forEach(function(radio) {
+                radio.checked = (radio.value === viewMode);
+                radio.addEventListener("change", function() {
+                    viewMode = radio.value;
+                    localStorage.setItem("csHistoryViewMode", viewMode);
+                    renderMatches();
+                });
+            });
+
+            document.querySelectorAll(".tab").forEach(function(tab) {
+                tab.addEventListener("click", function() {
+                    document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
+                    tab.classList.add("active");
+                    document.getElementById("stats-tab").style.display = tab.dataset.tab === "stats" ? "block" : "none";
+                    document.getElementById("history-tab").style.display = tab.dataset.tab === "history" ? "block" : "none";
+                    document.getElementById("players-tab").style.display = tab.dataset.tab === "players" ? "block" : "none";
+                    if (tab.dataset.tab === "stats") updateStats();
+                    if (tab.dataset.tab === "history") renderMatches();
+                    if (tab.dataset.tab === "players") renderPlayerSearch();
+                });
+            });
+
+            function updateMapOptions(cs, mode) {
+                var maps = mode === "premier" ? mapsPremier : mode === "comp" ? mapsComp : mode === "duo" ? mapsDuo : mapsPremier;
+                var items = [{ value: "all", label: "Все карты" }];
+                maps.forEach(function(m) { items.push({ value: m, label: m }); });
+                cs._setOptions(items);
+                cs._selectValue("all");
+            }
+
+            function onModeStatsChange() {
+                modeHistoryCS._selectValue(modeStatsCS._getValue());
+                updateSeasonVisibility();
+                updateSeasonVisibilityHistory();
+                updateMapOptions(mapStatsCS, modeStatsCS._getValue());
+                updateMapOptions(mapHistoryCS, modeStatsCS._getValue());
+                updateStats();
+            }
+
+            function onModeHistoryChange() {
+                modeStatsCS._selectValue(modeHistoryCS._getValue());
+                updateSeasonVisibility();
+                updateSeasonVisibilityHistory();
+                updateMapOptions(mapHistoryCS, modeHistoryCS._getValue());
+                updateMapOptions(mapStatsCS, modeHistoryCS._getValue());
+                renderMatches();
+            }
+
+            function updateSeasonVisibility() {
+                var mode = modeStatsCS._getValue();
+                var csEl = document.getElementById("cs-premier-season");
+                csEl.style.display = mode === "premier" ? "inline-block" : "none";
+                if (mode !== "premier") premierSeasonCS._selectValue("all");
+            }
+            function updateSeasonVisibilityHistory() {
+                var mode = modeHistoryCS._getValue();
+                var csEl = document.getElementById("cs-premier-season-history");
+                csEl.style.display = mode === "premier" ? "inline-block" : "none";
+                if (mode !== "premier") premierSeasonHistoryCS._selectValue("all");
+            }
+
+            function getStats() {
+                var mode = modeStatsCS._getValue();
+                var season = premierSeasonCS._getValue();
+                var period = periodCS._getValue();
+                var mapName = mapStatsCS._getValue();
+
+                var seasonStart = null, seasonEnd = null;
+                var bounds = getPremierSeasonBounds(season);
+                if (bounds && mode === "premier") {
+                    seasonStart = bounds.start;
+                    seasonEnd = bounds.end;
+                }
+
+                var allModeMatches = allMatches.filter(function(m) { return m.mode === mode; }).sort(function(a, b) { return parseDate(b.date) - parseDate(a.date); });
+                var filtered = allModeMatches;
+                if (period !== "all") {
+                    var numMatches = parseInt(period);
+                    filtered = allModeMatches.slice(0, numMatches);
+                }
+
+                filtered = filtered.filter(function(m) {
+                    var matchDate = parseDate(m.date);
+                    if (season !== "all" && mode === "premier" && (matchDate < seasonStart || matchDate > seasonEnd)) return false;
+                    if (mapName !== "all" && m.map !== mapName) return false;
+                    return true;
+                });
+
+                var wins = 0, losses = 0, draws = 0;
+                var kills = 0, deaths = 0, assists = 0, hsTotal = 0, adrTotal = 0;
+                var mapStats = {};
+
+                filtered.forEach(function(m) {
+                    var result = getResultFromFlag(m.result);
+                    if (result === "win") wins++;
+                    else if (result === "loss") losses++;
+                    else if (result === "draw") draws++;
+
+                    kills += m.k;
+                    deaths += m.d;
+                    assists += m.a;
+                    hsTotal += m.hs;
+                    adrTotal += m.adr;
+
+                    var map = m.map;
+                    if (!mapStats[map]) mapStats[map] = { played: 0, win: 0 };
+                    mapStats[map].played++;
+                    if (result === "win") mapStats[map].win++;
+                });
+
+                var total = wins + losses + draws;
+                var winrate = total ? Math.round(wins / total * 100) : 0;
+                var lossrate = total ? Math.round(losses / total * 100) : 0;
+                var drawrate = total ? Math.round(draws / total * 100) : 0;
+                var avgHS = total ? Math.round(hsTotal / total) : 0;
+                var avgADR = total ? Math.round(adrTotal / total) : 0;
+                var kd = deaths === 0 ? kills.toFixed(2) : (kills / deaths).toFixed(2);
+
+                var bestMap = "", bestWR = -1;
+                for (var map in mapStats) {
+                    var s = mapStats[map];
+                    var wr = s.played > 0 ? s.win / s.played : 0;
+                    if (wr > bestWR || (wr === bestWR && s.played > (mapStats[bestMap] ? mapStats[bestMap].played : 0))) {
+                        bestWR = wr;
+                        bestMap = map;
+                    }
+                }
+
+                return {
+                    wins: wins, losses: losses, draws: draws, total: total, winrate: winrate, lossrate: lossrate, drawrate: drawrate,
+                    kills: kills, deaths: deaths, assists: assists, avgHS: avgHS, avgADR: avgADR, kd: kd, bestMap: bestMap, mapStats: mapStats
+                };
+            }
+
+            function updateStats() {
+                var s = getStats();
+                var kdClass = s.kills >= s.deaths ? "kd-green" : "kd-red";
+                statsGrid.innerHTML =
+                    '<div class="stat-card"><div class="stat-value">' + s.total + '</div><div class="stat-label">Матчей</div></div>' +
+                    '<div class="stat-card"><div class="stat-value win">' + s.wins + ' <small>(' + s.winrate + '%)</small></div><div class="stat-label">Побед</div></div>' +
+                    '<div class="stat-card"><div class="stat-value lose">' + s.losses + ' <small>(' + s.lossrate + '%)</small></div><div class="stat-label">Поражений</div></div>' +
+                    '<div class="stat-card"><div class="stat-value draw">' + s.draws + ' <small>(' + s.drawrate + '%)</small></div><div class="stat-label">Ничьих</div></div>' +
+                    '<div class="stat-card"><div class="stat-value ' + kdClass + '">' + s.kd + '</div><div class="stat-label">K/D</div></div>' +
+                    '<div class="stat-card"><div class="stat-value ' + kdColorClass(s.kills, s.deaths) + '">' + s.kills + '</div><div class="stat-label">Убийств</div></div>' +
+                    '<div class="stat-card"><div class="stat-value ' + kdColorClass(s.kills, s.deaths) + '">' + s.deaths + '</div><div class="stat-label">Смертей</div></div>' +
+                    '<div class="stat-card"><div class="stat-value">' + s.assists + '</div><div class="stat-label">Помощи</div></div>' +
+                    '<div class="stat-card"><div class="stat-value">' + s.avgHS + '%</div><div class="stat-label">HS%</div></div>' +
+                    '<div class="stat-card"><div class="stat-value ' + adrColorClass(s.avgADR) + '">' + s.avgADR + '</div><div class="stat-label">ADR</div></div>';
+
+                var map = mapStatsCS._getValue();
+                document.getElementById("stats-map-icon").style.display = map !== "all" ? "inline" : "none";
+                if (map !== "all") document.getElementById("stats-map-icon").src = "files/images/cs/" + map.toLowerCase() + ".png";
+            }
+
+            function buildPlayersTable(match) {
+                if (!match.players || match.players.length === 0) return '';
+                var team1 = match.players.filter(function(p) { return p.team === 1; });
+                var team2 = match.players.filter(function(p) { return p.team === 2; });
+                var html = '<div class="match-players"><table class="players-table"><thead><tr>' +
+                    '<th>Игрок</th><th>Ранг</th><th>K</th><th>D</th><th>A</th><th>HS%</th><th>ADR</th><th>KAST</th><th>Rating</th>' +
+                    '</tr></thead><tbody>';
+                function playerRow(p) {
+                    var rankDisplay;
+                    if (match.mode === "premier") {
+                        if (p.rank) {
+                            rankDisplay = '<span class="' + premierRatingClass(p.rank) + '">' + p.rank + '</span>';
+                        } else {
+                            rankDisplay = '—';
+                        }
+                    } else {
+                        rankDisplay = getRankIconHTML(p.rank, match.mode);
+                    }
+                    var rClass = ratingColorClass(parseFloat(p.rating));
+                    var aClass = adrColorClass(parseFloat(p.adr));
+                    var kClass = kdColorClass(p.k, p.d);
+                    var dClass = kdColorClass(p.k, p.d);
+                    var steamUrl = p.steamid ? "https://steamcommunity.com/profiles/" + p.steamid : '#';
+                    var steamIcon = p.steamid ? '<a href="' + steamUrl + '" target="_blank" class="social-icon" title="Steam профиль"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#c11f2b"><path d="M11.979 0C5.678 0 .511 4.86.011 11.033l6.456 2.67a3.43 3.43 0 0 1 1.95-.607c.177 0 .351.014.521.039l2.873-4.163v-.059a4.52 4.52 0 1 1 4.52 4.52h-.103l-4.099 2.927c.004.061.004.122.004.184a3.437 3.437 0 1 1-6.874 0v-.077L.642 14.604C1.789 19.924 6.52 24 11.979 24 18.617 24 24 18.627 24 11.989 24 5.372 18.617 0 11.979 0zM7.98 18.18l-1.478-.61a2.582 2.582 0 0 0 4.858-.934 2.58 2.58 0 0 0-2.58-2.58c-.173 0-.343.018-.507.051l1.528.633a1.89 1.89 0 0 1 .993 2.478 1.89 1.89 0 0 1-2.477.993h-.001zm8.351-11.543a2.68 2.68 0 1 0 0 5.36 2.68 2.68 0 0 0 0-5.36zm0 .67a2.01 2.01 0 1 1 0 4.02 2.01 2.01 0 0 1 0-4.02z"/></svg></a>' : '';
+                    return '<tr class="' + (p.team === 1 ? 'team1' : 'team2') + '">' +
+                        '<td><div class="player-cell"><a class="player-link" data-nick="' + p.nick + '" data-steamid="' + (p.steamid || '') + '">' + p.nick + '</a>' + steamIcon + '</div></td>' +
+                        '<td>' + rankDisplay + '</td>' +
+                        '<td class="' + kClass + '">' + p.k + '</td>' +
+                        '<td class="' + dClass + '">' + p.d + '</td>' +
+                        '<td>' + p.a + '</td>' +
+                        '<td>' + p.hs + '%</td>' +
+                        '<td class="' + aClass + '">' + p.adr + '</td>' +
+                        '<td>' + (p.kast !== undefined ? p.kast + '%' : '—') + '</td>' +
+                        '<td class="' + rClass + '">' + p.rating + '</td>' +
+                        '</tr>';
+                }
+                team1.forEach(function(p) { html += playerRow(p); });
+                if (team1.length > 0 && team2.length > 0) {
+                    html += '<tr class="team-separator"><td colspan="9"></td></tr>';
+                }
+                team2.forEach(function(p) { html += playerRow(p); });
+                html += '</tbody></table></div>';
+                return html;
+            }
+
+            function getMyRankDisplay(m) {
+                if (m.mode === "premier") {
+                    return m.rating ? '<span class="' + premierRatingClass(m.rating) + '">' + m.rating + '</span>' : '—';
+                }
+                return getRankIconHTML(m.myRank, m.mode);
+            }
+
+            var SHARE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#c11f2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+
+            function buildMatchCard(m) {
+                var result = getResultFromFlag(m.result);
+                var scoreColor = result === "win" ? "#22c55e" : result === "loss" ? "#ef4444" : "#3b82f6";
+                var rankDisplay = getMyRankDisplay(m);
+                var letter = result === "win" ? "W" : result === "loss" ? "L" : result === "draw" ? "T" : "";
+                var kClass = kdColorClass(m.k, m.d);
+                var dClass = kdColorClass(m.k, m.d);
+                var aClass = adrColorClass(parseFloat(m.adr));
+                var div = document.createElement("div");
+                div.className = "match-card";
+                div.dataset.matchId = m.id;
+                div.innerHTML =
+                    '<div class="m-date">' + m.date + '</div>' +
+                    '<div class="m-map"><img src="files/images/cs/' + m.map.toLowerCase() + '.png" alt="' + m.map + '">' + m.map + '</div>' +
+                    '<div class="m-score" style="color:' + scoreColor + '"><span class="score-letter">' + letter + '</span>' + m.score + '</div>' +
+                    '<div class="m-rank">' + rankDisplay + '</div>' +
+                    '<div class="m-kda"><span class="' + kClass + '">' + m.k + 'K</span> / <span class="' + dClass + '">' + m.d + 'D</span> / ' + m.a + 'A</div>' +
+                    '<div class="m-hs">HS ' + m.hs + '%</div>' +
+                    '<div class="m-adr ' + aClass + '">ADR ' + m.adr + '</div>' +
+                    '<button class="share-btn" title="Поделиться матчем">' + SHARE_SVG + '</button>' +
+                    '<div class="m-expand">Детали ▾</div>' +
+                    buildPlayersTable(m);
+                var shareBtn = div.querySelector('.share-btn');
+                shareBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    shareMatch(m.id);
+                });
+                var expandBtn = div.querySelector('.m-expand');
+                var playersBlock = div.querySelector('.match-players');
+                if (m.players && m.players.length > 0) {
+                    expandBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var isOpen = playersBlock.classList.toggle('open');
+                        expandBtn.textContent = isOpen ? 'Скрыть ▴' : 'Детали ▾';
+                    });
+                } else {
+                    expandBtn.style.display = 'none';
+                }
+                return div;
+            }
+
+            /* КОМПАКТНЫЙ ЭЛЕМЕНТ С РАСКРЫТИЕМ */
+            function buildCompactItem(m) {
+                var result = getResultFromFlag(m.result);
+                var scoreColor = result === "win" ? "#22c55e" : result === "loss" ? "#ef4444" : "#3b82f6";
+                var rankDisplay = getMyRankDisplay(m);
+                var letter = result === "win" ? "W" : result === "loss" ? "L" : result === "draw" ? "T" : "";
+                var kClass = kdColorClass(m.k, m.d);
+                var dClass = kdColorClass(m.k, m.d);
+                var aClass = adrColorClass(parseFloat(m.adr));
+                var hasPlayers = m.players && m.players.length > 0;
+
+                var wrap = document.createElement("div");
+                wrap.className = "compact-match-item";
+
+                var header = document.createElement("div");
+                header.className = "compact-match-header";
+                header.innerHTML =
+                    '<span class="cm-date">' + m.date + '</span>' +
+                    '<span class="cm-map"><img src="files/images/cs/' + m.map.toLowerCase() + '.png" alt="' + m.map + '">' + m.map + '</span>' +
+                    '<span class="cm-score" style="color:' + scoreColor + '"><span class="score-letter">' + letter + '</span>' + m.score + '</span>' +
+                    '<span class="cm-rank">' + rankDisplay + '</span>' +
+                    '<span class="cm-kda"><span class="' + kClass + '">' + m.k + 'K</span> / <span class="' + dClass + '">' + m.d + 'D</span> / ' + m.a + 'A</span>' +
+                    '<span class="cm-hs">HS ' + m.hs + '%</span>' +
+                    '<span class="cm-adr ' + aClass + '">ADR ' + m.adr + '</span>' +
+                    '<button class="share-btn" title="Поделиться матчем">' + SHARE_SVG + '</button>' +
+                    (hasPlayers ? '<span class="cm-expand">Детали ▾</span>' : '');
+
+                var body = document.createElement("div");
+                body.className = "compact-match-body";
+                if (hasPlayers) {
+                    body.innerHTML = buildPlayersTable(m);
+                }
+
+                wrap.appendChild(header);
+                wrap.appendChild(body);
+
+                var shareBtn = header.querySelector('.share-btn');
+                shareBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    shareMatch(m.id);
+                });
+
+                if (hasPlayers) {
+                    header.addEventListener("click", function(e) {
+                        if (e.target.closest('.cm-expand') || e.target === header || header.contains(e.target)) {
+                            if (e.target.closest('.share-btn')) return;
+                            var isOpen = body.classList.toggle("open");
+                            var exp = header.querySelector(".cm-expand");
+                            if (exp) exp.textContent = isOpen ? 'Скрыть ▴' : 'Детали ▾';
+                        }
+                    });
+                }
+
+                return wrap;
+            }
+
+            function renderMatches() {
+                matchesContainer.innerHTML = "";
+                var mode = modeHistoryCS._getValue();
+                var season = premierSeasonHistoryCS._getValue();
+                var bounds = getPremierSeasonBounds(season);
+
+                var filtered = allMatches.filter(function(m) {
+                    var matchDate = parseDate(m.date);
+                    var seasonOk = (season === "all" || mode !== "premier") || (matchDate >= bounds.start && matchDate <= bounds.end);
+                    var mapOk = mapHistoryCS._getValue() === "all" || m.map === mapHistoryCS._getValue();
+                    var modeOk = m.mode === mode;
+                    return seasonOk && mapOk && modeOk;
+                });
+
+                filtered.sort(function(a, b) { return parseDate(b.date) - parseDate(a.date); });
+
+                var mapFilterValue = mapHistoryCS._getValue();
+                if (mapFilterValue !== "all") {
+                    document.getElementById("history-map-icon").src = "files/images/cs/" + mapFilterValue.toLowerCase() + ".png";
+                    document.getElementById("history-map-icon").style.display = "inline";
+                } else {
+                    document.getElementById("history-map-icon").style.display = "none";
+                }
+
+                if (filtered.length === 0) {
+                    matchesContainer.innerHTML = '<div class="empty-msg">Нет матчей для выбранных фильтров</div>';
+                    return;
+                }
+
+                if (viewMode === "advanced") {
+                    var days = {};
+                    filtered.forEach(function(m) {
+                        var dateObj = parseDate(m.date);
+                        var dateKey = formatDateKey(dateObj);
+                        if (!days[dateKey]) {
+                            days[dateKey] = {
+                                matches: [],
+                                ratingChange: 0,
+                                wins: 0,
+                                losses: 0,
+                                draws: 0,
+                                totalKD: {k:0, d:0},
+                                totalADR: 0,
+                                totalKills: 0,
+                                count: 0
+                            };
+                        }
+                        var day = days[dateKey];
+                        day.matches.push(m);
+                        day.count++;
+                        var result = getResultFromFlag(m.result);
+                        if (result === "win") day.wins++;
+                        else if (result === "loss") day.losses++;
+                        else if (result === "draw") day.draws++;
+
+                        day.totalKD.k += m.k;
+                        day.totalKD.d += m.d;
+                        day.totalADR += m.adr;
+                        day.totalKills += m.k;
+                    });
+
+                    var sortedDays = Object.keys(days).sort(function(a, b) { return new Date(b) - new Date(a); });
+                    var fragment = document.createDocumentFragment();
+                    sortedDays.forEach(function(dateKey) {
+                        var day = days[dateKey];
+                        var kd = day.totalKD.d === 0 ? day.totalKD.k.toFixed(1) : (day.totalKD.k / day.totalKD.d).toFixed(2);
+                        var adr = (day.totalADR / day.count).toFixed(0);
+                        var avgKills = (day.totalKills / day.count).toFixed(1);
+
+                        var dayBlock = document.createElement("div");
+                        dayBlock.className = "matches-day";
+
+                        var header = document.createElement("div");
+                        header.className = "day-header";
+                        header.innerHTML =
+                            '<div class="info">' +
+                                '<span class="date">' + formatDateRu(dateKey) + '</span>' +
+                                '<span class="matches-count">матчей: ' + day.count + '</span>' +
+                                '<span class="day-wins">W: ' + day.wins + '</span>' +
+                                '<span class="day-losses">L: ' + day.losses + '</span>' +
+                                (day.draws > 0 ? '<span class="day-draws">T: ' + day.draws + '</span>' : "") +
+                                '<span class="day-kd">K/D ' + kd + '</span>' +
+                                '<span class="day-adr">ADR ' + adr + '</span>' +
+                                '<span class="day-avg">AVG ' + avgKills + '</span>' +
+                            '</div>' +
+                            '<span class="toggle">▼</span>';
+
+                        var matchesList = document.createElement("div");
+                        matchesList.className = "day-matches";
+
+                        day.matches.forEach(function(m) {
+                            matchesList.appendChild(buildMatchCard(m));
+                        });
+
+                        dayBlock.appendChild(header);
+                        dayBlock.appendChild(matchesList);
+                        fragment.appendChild(dayBlock);
+
+                        header.addEventListener("click", function() {
+                            var isCollapsed = header.classList.toggle("collapsed");
+                            matchesList.style.display = isCollapsed ? "none" : "block";
+                            var toggle = header.querySelector(".toggle");
+                            toggle.textContent = isCollapsed ? "▶" : "▼";
+                        });
+                    });
+                    matchesContainer.appendChild(fragment);
+                } else {
+                    /* КОМПАКТНЫЙ ВИД: сворачивающиеся карточки с деталями */
+                    var list = document.createElement("div");
+                    list.className = "compact-match-list";
+                    var frag = document.createDocumentFragment();
+                    filtered.forEach(function(m) {
+                        frag.appendChild(buildCompactItem(m));
+                    });
+                    list.appendChild(frag);
+                    matchesContainer.appendChild(list);
+                }
+            }
+
+            function truncateNick(nick, maxLen) {
+                if (nick.length > maxLen) {
+                    return nick.substring(0, maxLen) + '...';
+                }
+                return nick;
+            }
+
+            function collectPlayersData() {
+                var playerMap = {};
+                allMatches.forEach(function(m) {
+                    if (!m.players) return;
+                    m.players.forEach(function(p) {
+                        if (!p.steamid) return;
+                        if (p.nick === MY_NICK) return;
+                        if (!playerMap[p.steamid]) {
+                            playerMap[p.steamid] = {
+                                nick: p.nick,
+                                steamid: p.steamid,
+                                counts: { premier: 0, comp: 0, duo: 0 },
+                                total: 0,
+                                matches: []
+                            };
+                        }
+                        if (!playerMap[p.steamid].counts[m.mode]) playerMap[p.steamid].counts[m.mode] = 0;
+                        playerMap[p.steamid].counts[m.mode]++;
+                        playerMap[p.steamid].total++;
+                        playerMap[p.steamid].matches.push({
+                            match: m,
+                            playerData: p
+                        });
+                    });
+                });
+                return Object.keys(playerMap).map(function(k) { return playerMap[k]; });
+            }
+
+            var allPlayersData = collectPlayersData();
+
+            function renderPlayerSearch() {
+                var input = document.getElementById("player-search-input");
+                var resultsContainer = document.getElementById("player-search-results");
+                var query = (input.value || "").trim().toLowerCase();
+                var modeFilter = searchModeCS._getValue();
+
+                resultsContainer.innerHTML = "";
+
+                if (query === "") {
+                    resultsContainer.innerHTML = '<div class="empty-msg">Введите ник или SteamID для поиска</div>';
+                    return;
+                }
+
+                var filtered = allPlayersData.filter(function(p) {
+                    var matchesQuery = p.nick.toLowerCase().indexOf(query) !== -1 || p.steamid.indexOf(query) !== -1;
+                    var matchesMode = modeFilter === "all" || (p.counts[modeFilter] && p.counts[modeFilter] > 0);
+                    return matchesQuery && matchesMode;
+                });
+
+                filtered.sort(function(a, b) {
+                    if (modeFilter === "all") return b.total - a.total;
+                    return (b.counts[modeFilter] || 0) - (a.counts[modeFilter] || 0);
+                });
+
+                if (filtered.length === 0) {
+                    resultsContainer.innerHTML = '<div class="empty-msg">Ничего не найдено</div>';
+                    return;
+                }
+
+                var fragment = document.createDocumentFragment();
+                filtered.forEach(function(p) {
+                    var item = document.createElement("div");
+                    item.className = "search-result-item";
+                    var steamUrl = "https://steamcommunity.com/profiles/" + p.steamid;
+                    var countsHtml = "";
+                    if (modeFilter === "all") {
+                        countsHtml = '<div class="sr-counts">' +
+                            (p.counts.premier ? '<span class="cnt-premier">Премьер: ' + p.counts.premier + '</span>' : '') +
+                            (p.counts.comp ? '<span class="cnt-comp">Соревн.: ' + p.counts.comp + '</span>' : '') +
+                            (p.counts.duo ? '<span class="cnt-duo">Напарники: ' + p.counts.duo + '</span>' : '') +
+                            '</div>';
+                    } else {
+                        countsHtml = '<div class="sr-counts"><span>Матчей: ' + (p.counts[modeFilter] || 0) + '</span></div>';
+                    }
+                    item.innerHTML =
+                        '<div class="sr-nick"><a class="player-link" data-nick="' + p.nick + '" data-steamid="' + p.steamid + '">' + truncateNick(p.nick, 18) + '</a>' +
+                            '<a href="' + steamUrl + '" target="_blank" class="social-icon" title="Steam профиль"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#c11f2b"><path d="M11.979 0C5.678 0 .511 4.86.011 11.033l6.456 2.67a3.43 3.43 0 0 1 1.95-.607c.177 0 .351.014.521.039l2.873-4.163v-.059a4.52 4.52 0 1 1 4.52 4.52h-.103l-4.099 2.927c.004.061.004.122.004.184a3.437 3.437 0 1 1-6.874 0v-.077L.642 14.604C1.789 19.924 6.52 24 11.979 24 18.617 24 24 18.627 24 11.989 24 5.372 18.617 0 11.979 0zM7.98 18.18l-1.478-.61a2.582 2.582 0 0 0 4.858-.934 2.58 2.58 0 0 0-2.58-2.58c-.173 0-.343.018-.507.051l1.528.633a1.89 1.89 0 0 1 .993 2.478 1.89 1.89 0 0 1-2.477.993h-.001zm8.351-11.543a2.68 2.68 0 1 0 0 5.36 2.68 2.68 0 0 0 0-5.36zm0 .67a2.01 2.01 0 1 1 0 4.02 2.01 2.01 0 0 1 0-4.02z"/></svg></a>' +
+                        '</div>' +
+                        '<div class="sr-steamid">' + p.steamid + '</div>' +
+                        countsHtml +
+                        '<div class="sr-total">' + (modeFilter === "all" ? p.total : (p.counts[modeFilter] || 0)) + '</div>';
+                    fragment.appendChild(item);
+                });
+                resultsContainer.appendChild(fragment);
+            }
+
+            function getPlayerMatches(steamid) {
+                var playerMatches = [];
+                allMatches.forEach(function(m) {
+                    if (!m.players) return;
+                    var p = m.players.find(function(pl) { return pl.steamid === steamid; });
+                    if (p && p.nick !== MY_NICK) {
+                        playerMatches.push({ match: m, playerData: p });
+                    }
+                });
+                return playerMatches;
+            }
+
+            function computePlayerStats(playerMatches, mode, season, period, mapName) {
+                var filtered = playerMatches;
+
+                if (mode && mode !== "all") {
+                    filtered = filtered.filter(function(pm) { return pm.match.mode === mode; });
+                }
+
+                if (season && season !== "all" && mode === "premier") {
+                    var bounds = getPremierSeasonBounds(season);
+                    if (bounds) {
+                        filtered = filtered.filter(function(pm) {
+                            var matchDate = parseDate(pm.match.date);
+                            return matchDate >= bounds.start && matchDate <= bounds.end;
+                        });
+                    }
+                }
+
+                if (period && period !== "all") {
+                    var numMatches = parseInt(period);
+                    filtered = filtered.filter(function(pm) { return pm.match.mode === mode; });
+                    filtered.sort(function(a, b) { return parseDate(b.match.date) - parseDate(a.match.date); });
+                    filtered = filtered.slice(0, numMatches);
+                } else {
+                    if (mode && mode !== "all") {
+                        filtered.sort(function(a, b) { return parseDate(b.match.date) - parseDate(a.match.date); });
+                    }
+                }
+
+                if (mapName && mapName !== "all") {
+                    filtered = filtered.filter(function(pm) { return pm.match.map === mapName; });
+                }
+
+                var totalKills = 0, totalDeaths = 0, totalAssists = 0, totalHS = 0, totalADR = 0, totalRating = 0, matchCount = 0;
+                var wins = 0, losses = 0, draws = 0;
+
+                filtered.forEach(function(pm) {
+                    var p = pm.playerData;
+                    totalKills += p.k;
+                    totalDeaths += p.d;
+                    totalAssists += p.a;
+                    totalHS += p.hs;
+                    totalADR += p.adr;
+                    totalRating += parseFloat(p.rating) || 0;
+                    matchCount++;
+
+                    var result = getResultFromFlag(computeResultForPlayer(pm.match, p.team));
+                    if (result === "win") wins++;
+                    else if (result === "loss") losses++;
+                    else if (result === "draw") draws++;
+                });
+
+                var avgHS = matchCount ? Math.round(totalHS / matchCount) : 0;
+                var avgADR = matchCount ? Math.round(totalADR / matchCount) : 0;
+                var avgRating = matchCount ? (totalRating / matchCount).toFixed(2) : "0.00";
+                var kd = totalDeaths === 0 ? totalKills.toFixed(2) : (totalKills / totalDeaths).toFixed(2);
+                var winrate = matchCount ? Math.round(wins / matchCount * 100) : 0;
+                var lossrate = matchCount ? Math.round(losses / matchCount * 100) : 0;
+                var drawrate = matchCount ? Math.round(draws / matchCount * 100) : 0;
+
+                return {
+                    totalKills: totalKills, totalDeaths: totalDeaths, totalAssists: totalAssists,
+                    avgHS: avgHS, avgADR: avgADR, avgRating: avgRating, kd: kd,
+                    wins: wins, losses: losses, draws: draws, matchCount: matchCount,
+                    winrate: winrate, lossrate: lossrate, drawrate: drawrate,
+                    filteredMatches: filtered
+                };
+            }
+
+            function showShareToast(text) {
+                var toast = document.getElementById('match-share-toast');
+                toast.textContent = text;
+                toast.classList.add('show');
+                clearTimeout(toast._timer);
+                toast._timer = setTimeout(function() {
+                    toast.classList.remove('show');
+                }, 2000);
+            }
+
+            function copyToClipboard(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    return navigator.clipboard.writeText(text).catch(function() {
+                        fallbackCopy(text);
+                    });
+                } else {
+                    fallbackCopy(text);
+                }
+            }
+
+            function fallbackCopy(text) {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch(e) {}
+                document.body.removeChild(ta);
+            }
+
+            function shareMatch(matchId) {
+                var url = window.location.origin + window.location.pathname + '?matchid=' + matchId;
+                copyToClipboard(url);
+                showShareToast('Ссылка на матч скопирована!');
+            }
+
+            function sharePlayer(steamid) {
+                var url = window.location.origin + window.location.pathname + '?steamid=' + steamid;
+                copyToClipboard(url);
+                showShareToast('Ссылка на профиль скопирована!');
+            }
+
+            function openMatchById(matchId) {
+                var foundMatch = null;
+                var foundMode = null;
+                ["premier", "comp", "duo"].forEach(function(mode) {
+                    if (foundMatch) return;
+                    if (csstats[mode] && Array.isArray(csstats[mode])) {
+                        csstats[mode].forEach(function(m) {
+                            if (!foundMatch && m && m.id != null && String(m.id) === String(matchId)) {
+                                foundMatch = m;
+                                foundMode = mode;
+                            }
+                        });
+                    }
+                });
+
+                if (!foundMatch) {
+                    alert('Матч с ID ' + matchId + ' не найден.');
+                    return;
+                }
+
+                var m = foundMatch;
+                var mode = foundMode;
+                var players = m.players || [];
+                var me = players.find(function(p) { return p.nick === MY_NICK; }) || null;
+
+                var matchCard = {
+                    id: String(m.id),
+                    date: m.date,
+                    map: m.map,
+                    score: m.score,
+                    result: computeResult(m),
+                    rating: m.rating != null ? String(m.rating) : "",
+                    mode: mode,
+                    players: players,
+                    k: me ? me.k : 0,
+                    d: me ? me.d : 0,
+                    a: me ? me.a : 0,
+                    hs: me ? me.hs : 0,
+                    adr: me ? me.adr : 0,
+                    kast: me ? me.kast : null,
+                    playerRating: me ? me.rating : null,
+                    myRank: me ? me.rank : null
+                };
+
+                var modal = document.createElement('div');
+                modal.className = 'player-profile-modal open';
+                modal.id = 'match-view-modal';
+
+                var content = document.createElement('div');
+                content.className = 'player-profile-content';
+                content.style.maxWidth = '900px';
+
+                var closeBtn = document.createElement('span');
+                closeBtn.className = 'player-profile-close';
+                closeBtn.innerHTML = '&times;';
+                closeBtn.addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                });
+
+                var body = document.createElement('div');
+                body.style.overflowY = 'auto';
+                body.style.flex = '1 1 auto';
+                body.style.minHeight = '0';
+                body.style.paddingRight = '6px';
+                var headerHtml = '<div style="display:flex;flex-wrap:wrap;gap:1rem 1.5rem;align-items:center;margin-bottom:1.2rem;">' +
+                    '<h3 style="font-family:\'Orbitron\',sans-serif;font-size:1.4rem;color:var(--accent);margin:0;">Матч #' + matchCard.id + '</h3>' +
+                    '<button class="share-btn" style="width:22px;height:22px;margin-left:0;" title="Поделиться матчем">' + SHARE_SVG + '</button>' +
+                    '</div>';
+                body.innerHTML = headerHtml;
+
+                var shareBtn = body.querySelector('.share-btn');
+                shareBtn.addEventListener('click', function() {
+                    shareMatch(matchCard.id);
+                });
+
+                var matchInfo = document.createElement('div');
+                matchInfo.style.cssText = 'display:flex;flex-wrap:wrap;gap:1rem 2rem;align-items:center;margin-bottom:1.5rem;background:rgba(193,31,43,0.08);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.6rem;';
+                var resultClass = matchCard.result === 'W' ? 'win' : matchCard.result === 'L' ? 'lose' : 'draw';
+                matchInfo.innerHTML =
+                    '<span><strong>Дата:</strong> ' + matchCard.date + '</span>' +
+                    '<span><strong>Карта:</strong> ' + matchCard.map + '</span>' +
+                    '<span><strong>Счёт:</strong> <span class="' + resultClass + '" style="font-weight:800;">' + matchCard.result + ' ' + matchCard.score + '</span></span>' +
+                    '<span><strong>Режим:</strong> ' + (mode === 'premier' ? 'Премьер' : mode === 'comp' ? 'Соревновательный' : 'Напарники') + '</span>';
+                body.appendChild(matchInfo);
+
+                var tableContainer = document.createElement('div');
+                tableContainer.innerHTML = buildPlayersTable(matchCard);
+                var playersDiv = tableContainer.firstElementChild;
+                if (playersDiv) {
+                    playersDiv.classList.remove('match-players');
+                    playersDiv.style.marginTop = '0';
+                    playersDiv.style.borderTop = 'none';
+                    playersDiv.style.paddingTop = '0';
+                }
+                body.appendChild(playersDiv);
+
+                content.appendChild(closeBtn);
+                content.appendChild(body);
+                modal.appendChild(content);
+                document.body.appendChild(modal);
+
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                    }
+                });
+
+                var escHandler = function(e) {
+                    if (e.key === 'Escape') {
+                        if (document.body.contains(modal)) document.body.removeChild(modal);
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                };
+                document.addEventListener('keydown', escHandler);
+            }
+
+            function openPlayerProfile(nick, steamid) {
+                var modal = document.getElementById("player-profile-modal");
+                var body = document.getElementById("player-profile-body");
+                if (!steamid) {
+                    body.innerHTML = '<div class="empty-msg">Нет данных SteamID для этого игрока</div>';
+                    modal.classList.add("open");
+                    return;
+                }
+
+                var playerMatches = getPlayerMatches(steamid);
+
+                if (playerMatches.length === 0) {
+                    body.innerHTML = '<div class="empty-msg">Матчи с этим игроком не найдены</div>';
+                    modal.classList.add("open");
+                    return;
+                }
+
+                var displayNick = playerMatches[0].playerData.nick;
+                var steamUrl = "https://steamcommunity.com/profiles/" + steamid;
+
+                var availableMaps = [];
+                playerMatches.forEach(function(pm) {
+                    if (availableMaps.indexOf(pm.match.map) === -1) availableMaps.push(pm.match.map);
+                });
+                availableMaps.sort();
+
+                body.innerHTML =
+                    '<div class="profile-header">' +
+                        '<div class="profile-nick">' + truncateNick(displayNick, 25) + '</div>' +
+                        '<a href="' + steamUrl + '" target="_blank" class="profile-steam">' +
+                            '<span class="social-icon-large"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#c11f2b"><path d="M11.979 0C5.678 0 .511 4.86.011 11.033l6.456 2.67a3.43 3.43 0 0 1 1.95-.607c.177 0 .351.014.521.039l2.873-4.163v-.059a4.52 4.52 0 1 1 4.52 4.52h-.103l-4.099 2.927c.004.061.004.122.004.184a3.437 3.437 0 1 1-6.874 0v-.077L.642 14.604C1.789 19.924 6.52 24 11.979 24 18.617 24 24 18.627 24 11.989 24 5.372 18.617 0 11.979 0zM7.98 18.18l-1.478-.61a2.582 2.582 0 0 0 4.858-.934 2.58 2.58 0 0 0-2.58-2.58c-.173 0-.343.018-.507.051l1.528.633a1.89 1.89 0 0 1 .993 2.478 1.89 1.89 0 0 1-2.477.993h-.001zm8.351-11.543a2.68 2.68 0 1 0 0 5.36 2.68 2.68 0 0 0 0-5.36zm0 .67a2.01 2.01 0 1 1 0 4.02 2.01 2.01 0 0 1 0-4.02z"/></svg></span>' +
+                            'Steam профиль' +
+                        '</a>' +
+                        '<span style="color:var(--text-muted);font-size:0.9rem;">SteamID: ' + steamid + '</span>' +
+                        '<button class="share-btn-large" id="profile-share-btn" title="Поделиться профилем">' + SHARE_SVG + '</button>' +
+                    '</div>' +
+                    '<div class="profile-filters">' +
+                        '<div class="custom-select" id="cs-profile-mode" data-value="premier" style="min-width:170px;"><div class="custom-select-trigger"><span class="custom-select-label">Премьер</span><span class="custom-select-arrow"></span></div><div class="custom-select-options"><div class="custom-select-option selected" data-value="premier">Премьер</div><div class="custom-select-option" data-value="comp">Соревновательный</div><div class="custom-select-option" data-value="duo">Напарники</div></div></div>' +
+                        '<div class="custom-select" id="cs-profile-season" data-value="all" style="min-width:160px;"><div class="custom-select-trigger"><span class="custom-select-label">Все сезоны</span><span class="custom-select-arrow"></span></div><div class="custom-select-options"><div class="custom-select-option selected" data-value="all">Все сезоны</div><div class="custom-select-option" data-value="2">Премьер Сезон 2</div><div class="custom-select-option" data-value="3">Премьер Сезон 3</div><div class="custom-select-option" data-value="4">Премьер Сезон 4</div><div class="custom-select-option" data-value="5">Премьер Сезон 5</div></div></div>' +
+                        '<div class="custom-select" id="cs-profile-period" data-value="all" style="min-width:160px;"><div class="custom-select-trigger"><span class="custom-select-label">За всё время</span><span class="custom-select-arrow"></span></div><div class="custom-select-options"><div class="custom-select-option selected" data-value="all">За всё время</div><div class="custom-select-option" data-value="30">Последние 30 матчей</div><div class="custom-select-option" data-value="60">Последние 60 матчей</div><div class="custom-select-option" data-value="90">Последние 90 матчей</div></div></div>' +
+                        '<div class="custom-select" id="cs-profile-map" data-value="all" style="min-width:160px;"><div class="custom-select-trigger"><span class="custom-select-label">Все карты</span><span class="custom-select-arrow"></span></div><div class="custom-select-options"></div></div>' +
+                    '</div>' +
+                    '<div class="profile-stats-grid" id="profile-stats-grid"></div>' +
+                    '<div id="profile-matches-container">' +
+                        '<h3 style="font-family:\'Orbitron\',sans-serif;font-size:1.2rem;color:var(--accent);margin-bottom:0.8rem;">История совместных матчей</h3>' +
+                        '<div class="profile-matches-list"></div>' +
+                    '</div>';
+
+                var pModeCS = initCustomSelect(body.querySelector('#cs-profile-mode'), function() { updateProfileStats(); updateProfileMatches(); });
+                var pSeasonCS = initCustomSelect(body.querySelector('#cs-profile-season'), function() { updateProfileStats(); updateProfileMatches(); });
+                var pPeriodCS = initCustomSelect(body.querySelector('#cs-profile-period'), function() { updateProfileStats(); updateProfileMatches(); });
+                var pMapCS = initCustomSelect(body.querySelector('#cs-profile-map'), function() { updateProfileStats(); updateProfileMatches(); });
+
+                var shareBtn = body.querySelector('#profile-share-btn');
+                shareBtn.addEventListener('click', function() {
+                    sharePlayer(steamid);
+                });
+
+                var mapItems = [{ value: "all", label: "Все карты" }];
+                availableMaps.forEach(function(m) { mapItems.push({ value: m, label: m }); });
+                pMapCS._setOptions(mapItems);
+                pMapCS._selectValue("all");
+
+                function buildProfileMatchRow(pm, key) {
+                    var m = pm.match;
+                    var p = pm.playerData;
+                    var playerResult = computeResultForPlayer(m, p.team);
+                    var result = getResultFromFlag(playerResult);
+                    var letter = playerResult === "W" ? "W" : playerResult === "L" ? "L" : "T";
+                    var resultClass = result === "win" ? "win" : result === "loss" ? "lose" : "draw";
+                    var rClass = ratingColorClass(parseFloat(p.rating));
+                    var kClass = kdColorClass(p.k, p.d);
+                    var dClass = kdColorClass(p.k, p.d);
+                    var hasPlayers = m.players && m.players.length > 0;
+                    var rankDisplay;
+                    if (m.mode === "premier") {
+                        rankDisplay = p.rank ? '<span class="' + premierRatingClass(p.rank) + '">' + p.rank + '</span>' : '—';
+                    } else {
+                        rankDisplay = getRankIconHTML(p.rank, m.mode);
+                    }
+
+                    var row = document.createElement("div");
+                    row.className = "profile-match-row";
+                    row.dataset.key = key;
+                    row.innerHTML =
+                        '<span class="pm-date">' + m.date + '</span>' +
+                        '<span class="pm-map"><img src="files/images/cs/' + m.map.toLowerCase() + '.png" alt="">' + m.map + '</span>' +
+                        '<span class="pm-score ' + resultClass + '">' + letter + ' ' + m.score + '</span>' +
+                        '<span class="pm-rank">' + rankDisplay + '</span>' +
+                        '<span class="pm-kda"><span class="' + kClass + '">' + p.k + 'K</span> / <span class="' + dClass + '">' + p.d + 'D</span> / ' + p.a + 'A</span>' +
+                        '<span class="pm-rating ' + rClass + '">' + p.rating + '</span>' +
+                        '<span style="color:var(--text-muted);font-size:0.85rem;">' + (m.mode === "premier" ? "Премьер" : m.mode === "comp" ? "Соревн." : "Напарники") + '</span>' +
+                        '<button class="share-btn" title="Поделиться матчем">' + SHARE_SVG + '</button>' +
+                        (hasPlayers ? '<span class="pm-expand">Детали ▾</span>' : '');
+
+                    var shareBtn = row.querySelector('.share-btn');
+                    shareBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        shareMatch(m.id);
+                    });
+
+                    var details = null;
+                    if (hasPlayers) {
+                        details = document.createElement("div");
+                        details.className = "profile-match-details";
+                        details.dataset.key = key;
+                        var inner = document.createElement("div");
+                        inner.innerHTML = buildPlayersTable(m);
+                        var playersDiv = inner.firstElementChild;
+                        if (playersDiv) {
+                            playersDiv.classList.remove("match-players");
+                            playersDiv.style.marginTop = "0";
+                            playersDiv.style.borderTop = "none";
+                            playersDiv.style.paddingTop = "0";
+                        }
+                        details.appendChild(playersDiv);
+
+                        var expandBtn = row.querySelector(".pm-expand");
+                        expandBtn.addEventListener("click", function(e) {
+                            e.stopPropagation();
+                            var isOpen = details.classList.toggle("open");
+                            expandBtn.textContent = isOpen ? 'Скрыть ▴' : 'Детали ▾';
+                        });
+                    }
+                    return { row: row, details: details };
+                }
+
+                function updateProfileStats() {
+                    var mode = pModeCS._getValue();
+                    var season = pSeasonCS._getValue();
+                    var period = pPeriodCS._getValue();
+                    var mapName = pMapCS._getValue();
+
+                    body.querySelector('#cs-profile-season').style.display = mode === 'premier' ? 'inline-block' : 'none';
+
+                    var s = computePlayerStats(playerMatches, mode, season, period, mapName);
+                    var kdClass2 = s.totalKills >= s.totalDeaths ? "kd-green" : "kd-red";
+
+                    var statsGrid = body.querySelector('#profile-stats-grid');
+                    statsGrid.innerHTML =
+                        '<div class="profile-stat-card"><div class="psv">' + s.matchCount + '</div><div class="psl">Матчей</div></div>' +
+                        '<div class="profile-stat-card"><div class="psv win">' + s.wins + ' <small>(' + s.winrate + '%)</small></div><div class="psl">Побед</div></div>' +
+                        '<div class="profile-stat-card"><div class="psv lose">' + s.losses + ' <small>(' + s.lossrate + '%)</small></div><div class="psl">Поражений</div></div>' +
+                        '<div class="profile-stat-card"><div class="psv draw">' + s.draws + ' <small>(' + s.drawrate + '%)</small></div><div class="psl">Ничьих</div></div>' +
+                        '<div class="profile-stat-card"><div class="psv ' + kdClass2 + '">' + s.kd + '</div><div class="psl">K/D</div></div>' +
+                        '<div class="profile-stat-card"><div class="psv ' + kdColorClass(s.totalKills, s.totalDeaths) + '">' + s.totalKills + '</div><div class="psl">Убийств</div></div>' +
+                        '<div class="profile-stat-card"><div class="psv ' + kdColorClass(s.totalKills, s.totalDeaths) + '">' + s.totalDeaths + '</div><div class="psl">Смертей</div></div>' +
+                        '<div class="profile-stat-card"><div class="psv">' + s.totalAssists + '</div><div class="psl">Помощи</div></div>' +
+                        '<div class="profile-stat-card"><div class="psv">' + s.avgHS + '%</div><div class="psl">HS%</div></div>' +
+                        '<div class="profile-stat-card"><div class="psv ' + adrColorClass(s.avgADR) + '">' + s.avgADR + '</div><div class="psl">ADR</div></div>';
+                }
+
+                function updateProfileMatches() {
+                    var mode = pModeCS._getValue();
+                    var season = pSeasonCS._getValue();
+                    var period = pPeriodCS._getValue();
+                    var mapName = pMapCS._getValue();
+
+                    var filtered = playerMatches;
+
+                    if (mode && mode !== "all") {
+                        filtered = filtered.filter(function(pm) { return pm.match.mode === mode; });
+                    }
+
+                    if (season && season !== "all" && mode === "premier") {
+                        var bounds = getPremierSeasonBounds(season);
+                        if (bounds) {
+                            filtered = filtered.filter(function(pm) {
+                                var matchDate = parseDate(pm.match.date);
+                                return matchDate >= bounds.start && matchDate <= bounds.end;
+                            });
+                        }
+                    }
+
+                    if (mapName && mapName !== "all") {
+                        filtered = filtered.filter(function(pm) { return pm.match.map === mapName; });
+                    }
+
+                    filtered.sort(function(a, b) { return parseDate(b.match.date) - parseDate(a.match.date); });
+
+                    if (period && period !== "all") {
+                        var numMatches = parseInt(period);
+                        filtered = filtered.slice(0, numMatches);
+                    }
+
+                    var container = body.querySelector('.profile-matches-list');
+                    container.innerHTML = "";
+
+                    if (filtered.length === 0) {
+                        container.innerHTML = '<div class="empty-msg">Нет матчей для выбранных фильтров</div>';
+                        return;
+                    }
+
+                    var fragment = document.createDocumentFragment();
+                    filtered.forEach(function(pm, idx) {
+                        var key = pm.match.id + "_" + idx;
+                        var built = buildProfileMatchRow(pm, key);
+                        fragment.appendChild(built.row);
+                        if (built.details) fragment.appendChild(built.details);
+                    });
+                    container.appendChild(fragment);
+                }
+
+                updateProfileStats();
+                updateProfileMatches();
+
+                modal.classList.add("open");
+            }
+
+            document.getElementById("player-profile-modal").addEventListener("click", function(e) {
+                if (e.target === e.currentTarget) {
+                    e.currentTarget.classList.remove("open");
+                }
+            });
+            document.getElementById("player-profile-close").addEventListener("click", function() {
+                document.getElementById("player-profile-modal").classList.remove("open");
+            });
+
+            document.addEventListener("click", function(e) {
+                var link = e.target.closest(".player-link");
+                if (link) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var nick = link.getAttribute("data-nick");
+                    var steamid = link.getAttribute("data-steamid");
+                    openPlayerProfile(nick, steamid);
+                }
+            });
+
+            document.getElementById("player-search-input").addEventListener("input", renderPlayerSearch);
+
             updateSeasonVisibility();
             updateSeasonVisibilityHistory();
-            updateMapOptions("map-filter-stats", modeStatsSelect.value);
-            updateMapOptions("filter-map", modeStatsSelect.value);
+            updateMapOptions(mapStatsCS, modeStatsCS._getValue());
+            updateMapOptions(mapHistoryCS, modeHistoryCS._getValue());
             updateStats();
-        });
-
-        premierSeasonSelect.addEventListener("change", updateStats);
-        periodSelect.addEventListener("change", updateStats);
-        mapFilterStats.addEventListener("change", updateStats);
-
-        modeHistorySelect.addEventListener("change", () => {
-            modeStatsSelect.value = modeHistorySelect.value;
-            updateSeasonVisibilityHistory();
-            updateSeasonVisibility();
-            updateMapOptions("filter-map", modeHistorySelect.value);
-            updateMapOptions("map-filter-stats", modeHistorySelect.value);
             renderMatches();
-        });
 
-        premierSeasonHistory.addEventListener("change", renderMatches);
-        filterMap.addEventListener("change", renderMatches);
+            /* ===== Обработка параметров URL ===== */
+            var urlParams = new URLSearchParams(window.location.search);
+            var matchidParam = urlParams.get('matchid');
+            var steamidParam = urlParams.get('steamid');
 
-        updateSeasonVisibility();
-        updateSeasonVisibilityHistory();
-        updateMapOptions("map-filter-stats", modeStatsSelect.value);
-        updateMapOptions("filter-map", modeHistorySelect.value);
-        updateStats();
-        renderMatches();
+            if (matchidParam) {
+                setTimeout(function() {
+                    openMatchById(matchidParam);
+                }, 300);
+            }
 
-        // Sorting functionality for table
-        function makeTableSortable() {
-            const table = document.getElementById('matches-table');
-            if (!table) return;
-            const headers = table.querySelectorAll('th[data-sort]');
-            headers.forEach((header, index) => {
-                header.style.cursor = 'pointer';
-                header.addEventListener('click', () => {
-                    const tbody = table.querySelector('tbody');
-                    const rows = Array.from(tbody.querySelectorAll('tr'));
-                    const colIndex = parseInt(header.getAttribute('data-sort'));
-                    
-                    let ascending = header.getAttribute('data-asc') === 'true';
-                    header.setAttribute('data-asc', !ascending);
-                    
-                    rows.sort((a, b) => {
-                        let valA = a.cells[colIndex] ? a.cells[colIndex].textContent.trim() : '';
-                        let valB = b.cells[colIndex] ? b.cells[colIndex].textContent.trim() : '';
-                        
-                        // Special handling for dates
-                        if (colIndex === 0) {
-                            const dateA = parseDate(valA);
-                            const dateB = parseDate(valB);
-                            return ascending ? dateA - dateB : dateB - dateA;
-                        }
-                        
-                        // Numeric
-                        const numA = parseFloat(valA.replace(/[^0-9.-]/g, ''));
-                        const numB = parseFloat(valB.replace(/[^0-9.-]/g, ''));
-                        if (!isNaN(numA) && !isNaN(numB)) {
-                            return ascending ? numA - numB : numB - numA;
-                        }
-                        
-                        // String compare
-                        return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                    });
-                    
-                    rows.forEach(row => tbody.appendChild(row));
-                });
-            });
-        }
+            if (steamidParam) {
+                setTimeout(function() {
+                    var playerMatches = getPlayerMatches(steamidParam);
+                    if (playerMatches.length > 0) {
+                        openPlayerProfile(playerMatches[0].playerData.nick, steamidParam);
+                    } else {
+                        var modal = document.getElementById("player-profile-modal");
+                        document.getElementById("player-profile-body").innerHTML = '<div class="empty-msg">Матчи с этим игроком не найдены</div>';
+                        modal.classList.add("open");
+                    }
+                }, 300);
+            }
 
-        // Call after render
-        const originalRenderMatches = renderMatches;
-        renderMatches = function() {
-            originalRenderMatches.apply(this, arguments);
-            setTimeout(makeTableSortable, 100);
-        };
+        })();
     </script>
 </body>
 </html>
