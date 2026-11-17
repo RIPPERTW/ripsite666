@@ -3,7 +3,7 @@ streamData = {
     ["Just Chatting", "0:16:59"],
     ["Everlasting Summer", "0:36:40"],
     ["Counter-Strike", "1:08:00"],
-    ["Forager", "4:29:20"],
+    ["Forager", "4:29:00"],
     ["SUPERHOT: MIND CONTROL DELETE", "0:47:31"],
   ],
   "2026-02-20": [
@@ -20,12 +20,10 @@ streamData = {
     ["Cuphead", "1:23:00"],
   ],
   "2026-02-24": [
-    ["Just Chatting", "0:24:20"],
+    ["Just Chatting", "2:29:00"],
     ["Everlasting Summer", "0:41:05"],
     ["Counter-Strike", "0:08:25"],
-    ["Cuphead", "0:52:51"],
-    ["Cuphead", "2:01:08"],
-    ["Just Chatting", "2:04:40"],
+    ["Cuphead", "2:53:59"],
     ["Terraria", "1:33:00"],
   ],
   "2026-02-25": [
@@ -497,5 +495,21 @@ streamData = {
   "2026-10-25": [
     ["Just Chatting", "3:26:59"],
     ["Metro 2033 Redux", "6:19:00"],
-  ]
+  ],
+  "2026-11-03": [
+    ["Just Chatting", "1:08:53"],
+  ],
+  "2026-11-07": [
+    ["Just Chatting", "1:09:23"],
+    ["Games + Demos", "0:24:35"],
+  ],
+  "2026-11-08": [
+    ["Just Chatting", "0:46:29"],
+    ["Metro 2033 Redux", "1:30:00"],
+  ],
+  "2026-11-15": [
+    ["Just Chatting", "0:30:24"],
+    ["Metro 2033 Redux", "0:35:31"],
+    ["Stumble Guys", "0:24:46"],
+  ],
 };
